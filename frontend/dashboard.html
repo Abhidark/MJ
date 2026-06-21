@@ -190,6 +190,8 @@
   .stat-bar.ram { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
   .stat-bar.disk { background: linear-gradient(90deg, var(--blue), #6bb5ff); }
   .stat-bar.battery { background: linear-gradient(90deg, var(--success), #60e89a); }
+  .stat-bar.gpu { background: linear-gradient(90deg, #b92eff, #e066ff); }
+  .stat-bar.gpu-mem { background: linear-gradient(90deg, #ff5900, #ff8c42); }
 
   .stat-value {
     color: var(--text);
@@ -668,6 +670,32 @@
     </div>
   </div>
 
+  <!-- GPU -->
+  <div class="card">
+    <div class="card-title">GPU</div>
+    <div id="gpu-name" style="margin-bottom:10px;color:var(--text-dim);font-size:11px;font-weight:500;">Detecting...</div>
+    <div class="stat-row">
+      <span class="stat-label">Usage</span>
+      <div class="stat-bar-bg"><div class="stat-bar gpu" id="bar-gpu" style="width:0%"></div></div>
+      <span class="stat-value" id="val-gpu">--%</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">VRAM</span>
+      <div class="stat-bar-bg"><div class="stat-bar gpu-mem" id="bar-gpu-mem" style="width:0%"></div></div>
+      <span class="stat-value" id="val-gpu-mem">--%</span>
+    </div>
+    <div class="info-grid" style="margin-top:10px;">
+      <div class="info-item">
+        <div class="label">Temp</div>
+        <div class="value" id="gpu-temp">--°C</div>
+      </div>
+      <div class="info-item">
+        <div class="label">VRAM Used</div>
+        <div class="value" id="gpu-vram-used">-- MB</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Models -->
   <div class="card">
     <div class="card-title">AI Models</div>
@@ -795,6 +823,22 @@ async function updateStats() {
     document.getElementById("info-uptime").textContent = s.uptime || "--";
     document.getElementById("info-ram").textContent = s.ram_used + " GB";
     document.getElementById("info-disk").textContent = s.disk_free + " GB";
+
+    // GPU
+    if (s.gpu_name && s.gpu_name !== "N/A") {
+      document.getElementById("gpu-name").textContent = s.gpu_name;
+      document.getElementById("bar-gpu").style.width = s.gpu_util + "%";
+      document.getElementById("val-gpu").textContent = s.gpu_util + "%";
+      document.getElementById("bar-gpu-mem").style.width = s.gpu_mem_percent + "%";
+      document.getElementById("val-gpu-mem").textContent = s.gpu_mem_percent + "%";
+      document.getElementById("gpu-temp").textContent = s.gpu_temp + "°C";
+      document.getElementById("gpu-vram-used").textContent = s.gpu_mem_used + " MB";
+      // Color coding
+      document.getElementById("gpu-temp").style.color =
+        s.gpu_temp > 85 ? "#e74c3c" : s.gpu_temp > 70 ? "#f39c12" : "#05f470";
+    } else {
+      document.getElementById("gpu-name").textContent = "No GPU detected";
+    }
 
     cpuHistory.push(s.cpu);
     ramHistory.push(s.ram_percent);
