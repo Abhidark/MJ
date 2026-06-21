@@ -44,6 +44,7 @@ from intelligence.context_memory import (
     record_interaction, get_context_prompt, get_memory_stats
 )
 from intelligence.multi_model import needs_deep_reasoning, chain_of_thought, multi_perspective
+from intelligence.live_data import detect_live_data_request, get_live_cricket_scores, get_live_weather, extract_city_from_text
 from intelligence.error_learner import log_error, log_performance, get_diagnostics, get_live_issues
 
 # Zeus Module System
@@ -782,6 +783,25 @@ async def chat(
             yield "data: [DONE]\n\n"
         _save_cmd_to_chat(message, result["message"])
         return StreamingResponse(file_mgr_stream(), media_type="text/event-stream")
+
+    # Check for live data requests (cricket, weather) — direct fetch, no LLM needed
+    live_type = detect_live_data_request(message)
+    if live_type:
+        if live_type == "cricket":
+            live_result = await get_live_cricket_scores()
+        elif live_type == "weather":
+            city = extract_city_from_text(message)
+            live_result = await get_live_weather(city)
+        else:
+            live_result = None
+
+        if live_result:
+            async def live_stream():
+                yield f"data: {json.dumps({'token': live_result})}\n\n"
+                yield f"data: {json.dumps({'emotion': 'happy'})}\n\n"
+                yield "data: [DONE]\n\n"
+            _save_cmd_to_chat(message, live_result)
+            return StreamingResponse(live_stream(), media_type="text/event-stream")
 
     # Check for greeting -> daily briefing
     if is_greeting(message):
