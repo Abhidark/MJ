@@ -190,8 +190,10 @@ def needs_web_search_v2(text: str) -> Optional[str]:
     # Current/real-time info patterns
     realtime_patterns = [
         r"(?:who is|kaun hai).+(?:president|pm|prime minister|ceo|captain|minister|leader)",
-        r"(?:latest|current|today|aaj|abhi|recent|new|naya).+(?:news|score|price|rate|weather|update|version)",
-        r"(?:ipl|world cup|cricket|football|match|game).+(?:score|result|winner|schedule)",
+        r"(?:latest|current|today|aaj|abhi|recent|new|naya|live).+(?:news|score|price|rate|weather|update|version|match)",
+        r"(?:ipl|world cup|cricket|football|match|game|t20|odi|test match).+(?:score|result|winner|schedule|update|kya hua|live)",
+        r"(?:score|result|winner|schedule).+(?:ipl|cricket|football|match|game|t20|odi|test)",
+        r"(?:live|abhi ka|aaj ka|current)\s+(?:score|match|game|cricket|football|ipl|news)",
         r"(?:stock|share|bitcoin|crypto|nifty|sensex).+(?:price|rate|value|today)",
         r"(?:what happened|kya hua|news).+(?:today|yesterday|aaj|kal)",
         r"(?:release date|launch|when.+(?:release|launch|come out|aayega))",
@@ -204,6 +206,8 @@ def needs_web_search_v2(text: str) -> Optional[str]:
         r"(?:recipe|ingredients|kaise banaye|how to (?:cook|make|bake))",
         r"(?:weather|mausam|temperature|barish).*(?:today|tomorrow|aaj|kal|week)?",
         r"(?:meaning|matlab|definition|translate)\s+(?:of\s+)?",
+        r"(?:score|scor)\s*(?:bata|dikha|kya hai|batao|dikhao)",
+        r"(?:kaun|kon)\s+(?:jeet|haar|win|lose|jit|playing)",
     ]
 
     for pat in realtime_patterns:

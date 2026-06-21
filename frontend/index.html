@@ -3286,6 +3286,14 @@ async function send() {
               typing.parentElement.appendChild(imgEl);
             }
             if (data.model_used) updateZeusPanel(data.model_used, data.task_type || 'chat');
+            if (data.perf_time) {
+              console.log("[MJ Perf] Response: " + data.perf_time + "s, model: " + data.model_used);
+            }
+            if (data.issues && data.issues.length > 0) {
+              for (const issue of data.issues) {
+                showOrbAlert(issue.msg, issue.severity === "critical" ? "error" : "error", 10000);
+              }
+            }
             if (data.auto_memory && data.auto_memory.length > 0) {
               for (const fact of data.auto_memory) {
                 addMsg("\u{1F9E0} Auto-saved: " + fact, "assistant");

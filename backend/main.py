@@ -12,6 +12,7 @@ import uuid
 import sys
 import base64
 import os
+import time
 
 # Add backend dir to path for human_layer import
 sys.path.insert(0, str(Path(__file__).parent))
@@ -43,6 +44,7 @@ from intelligence.context_memory import (
     record_interaction, get_context_prompt, get_memory_stats
 )
 from intelligence.multi_model import needs_deep_reasoning, chain_of_thought, multi_perspective
+from intelligence.error_learner import log_error, log_performance, get_diagnostics, get_live_issues
 
 # Zeus Module System
 from zeus.brain import Zeus
@@ -944,8 +946,10 @@ async def chat(
     }
 
     full_reply = []
+    _perf_start = time.time()
 
     async def stream_response():
+        _error_occurred = None
         try:
             async with httpx.AsyncClient(timeout=180) as client:
                 async with client.stream("POST", OLLAMA_URL, json=payload) as resp:
@@ -957,28 +961,39 @@ async def chat(
                                 full_reply.append(token)
                                 yield f"data: {json.dumps({'token': token})}\n\n"
         except httpx.ConnectError:
+            _error_occurred = "connect_error"
             error_msg = "⚠️ Boss, Ollama chal nahi raha! Terminal me `ollama serve` run karo, phir dubara try karo."
             full_reply.append(error_msg)
+            log_error("connect_error", error_msg, {"model": selected_model, "user_msg": message[:80]})
             yield f"data: {json.dumps({'token': error_msg})}\n\n"
         except httpx.ReadTimeout:
+            _error_occurred = "timeout"
             error_msg = "⏳ Ollama response dene me bahut time le raha hai. Model busy hai ya bahut bada question hai. Thoda wait karo ya chhota question pucho."
             full_reply.append(error_msg)
+            log_error("timeout", error_msg, {"model": selected_model, "user_msg": message[:80], "timeout": 180})
             yield f"data: {json.dumps({'token': error_msg})}\n\n"
         except httpx.ConnectTimeout:
+            _error_occurred = "connect_timeout"
             error_msg = "⚠️ Ollama se connect nahi ho pa raha. Check karo ki `ollama serve` chal raha hai aur port 11434 free hai."
             full_reply.append(error_msg)
+            log_error("connect_timeout", error_msg, {"model": selected_model})
             yield f"data: {json.dumps({'token': error_msg})}\n\n"
         except Exception as e:
             error_str = str(e).lower()
             if "connect" in error_str or "refused" in error_str or "connection" in error_str:
+                _error_occurred = "connect_error"
                 error_msg = "⚠️ Ollama se connection fail ho gaya. `ollama serve` run karo terminal me!"
             elif "timeout" in error_str:
+                _error_occurred = "timeout"
                 error_msg = "⏳ Request timeout ho gaya. Ollama slow hai ya model load ho raha hai."
             elif "model" in error_str and "not found" in error_str:
+                _error_occurred = "model_not_found"
                 error_msg = f"❌ Model '{selected_model}' nahi mila. `ollama pull {selected_model}` run karo pehle."
             else:
+                _error_occurred = "unknown"
                 error_msg = f"❌ Kuch gadbad ho gayi: {str(e)[:200]}"
             full_reply.append(error_msg)
+            log_error(_error_occurred, str(e)[:300], {"model": selected_model, "user_msg": message[:80]})
             yield f"data: {json.dumps({'token': error_msg})}\n\n"
 
         # Save to chat (show file label in history)
@@ -1008,10 +1023,37 @@ async def chat(
             "context_memory": bool(context_memory_prompt),
         }
 
-        yield f"data: {json.dumps({'emotion': brain_result['emotion'], 'auto_memory': new_facts, 'model_used': routing['model'], 'task_type': routing['task_type'], 'intelligence': intelligence_info})}\n\n"
+        # Performance tracking
+        _perf_time = round(time.time() - _perf_start, 2)
+        _token_count = len(full_reply)
+        perf_issues = log_performance(
+            user_msg=message, model=selected_model, task_type=routing["task_type"],
+            response_time=_perf_time, token_count=_token_count,
+            success=(_error_occurred is None), error_msg=_error_occurred
+        )
+
+        # Send issues to frontend for orb alert
+        issue_alerts = []
+        for issue in (perf_issues or []):
+            issue_alerts.append({"type": issue["type"], "msg": issue["message"], "severity": issue["severity"]})
+
+        yield f"data: {json.dumps({'emotion': brain_result['emotion'], 'auto_memory': new_facts, 'model_used': routing['model'], 'task_type': routing['task_type'], 'intelligence': intelligence_info, 'perf_time': _perf_time, 'issues': issue_alerts})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+
+# ===== DIAGNOSTICS ENDPOINT =====
+
+@app.get("/diagnostics")
+async def diagnostics():
+    """Self-learning diagnostic report — errors, performance, patterns."""
+    return get_diagnostics()
+
+@app.get("/diagnostics/issues")
+async def live_issues():
+    """Current active issues for orb alert."""
+    return get_live_issues()
 
 
 # ===== KNOWLEDGE BASE ENDPOINTS =====
