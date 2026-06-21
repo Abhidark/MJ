@@ -1,5 +1,33 @@
 [
   {
+    "id": "alert_20260621_194813_408051",
+    "timestamp": "2026-06-21T19:48:13.408051",
+    "time_display": "07:48:13 PM",
+    "title": "Health Issue",
+    "message": "Ollama not running -- 'ollama serve' run karo",
+    "severity": "warning",
+    "category": "health",
+    "source": "health_monitor",
+    "error_id": "",
+    "resolved": true,
+    "resolved_at": "2026-06-21T19:53:13.411061",
+    "resolve_message": "Auto-resolved after timeout"
+  },
+  {
+    "id": "alert_20260621_194805_277431",
+    "timestamp": "2026-06-21T19:48:05.277431",
+    "time_display": "07:48:05 PM",
+    "title": "Disk Warning",
+    "message": "Disk is 94% full. Consider cleanup.",
+    "severity": "warning",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
     "id": "alert_20260621_193921_601297",
     "timestamp": "2026-06-21T19:39:21.601297",
     "time_display": "07:39:21 PM",
