@@ -95,16 +95,132 @@
     z-index: 1;
     position: relative;
     min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
+  #dashboard::-webkit-scrollbar { width: 4px; }
+  #dashboard::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.15); border-radius: 4px; }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    gap: 12px;
+    padding: 12px 16px;
+    flex: 1;
+  }
+
+  .dash-card {
+    background: rgba(2,12,25,0.75);
+    border: 1px solid rgba(0,180,255,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent);
+  }
+  .dash-card:hover {
+    border-color: rgba(0,180,255,0.2);
+    box-shadow: 0 0 20px rgba(0,180,255,0.05);
+  }
+
+  .dash-card-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(0,212,255,0.7);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dash-card-title .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #00ff88;
+    box-shadow: 0 0 8px rgba(0,255,136,0.5);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  .card-span-2 { grid-column: span 2; }
+  .card-span-row { grid-column: 1 / -1; }
+
+  /* Core Status List */
+  .core-status-list { display: flex; flex-direction: column; gap: 8px; }
+  .core-status-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(0,150,255,0.03);
+    border: 1px solid rgba(0,180,255,0.06);
+    transition: all 0.3s;
+  }
+  .core-status-item:hover { background: rgba(0,150,255,0.06); border-color: rgba(0,180,255,0.12); }
+  .csi-icon { font-size: 16px; flex-shrink: 0; }
+  .csi-info { display: flex; flex-direction: column; min-width: 0; }
+  .csi-name { font-size: 11px; color: var(--text); font-weight: 500; }
+  .csi-state { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .csi-state.online { color: var(--success); }
+
+  /* Live Feed */
+  .live-feed-list { display: flex; flex-direction: column; gap: 10px; }
+  .lf-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(0,150,255,0.03);
+    border: 1px solid rgba(0,180,255,0.06);
+  }
+  .lf-item:hover { background: rgba(0,150,255,0.06); }
+  .lf-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .lf-info { display: flex; flex-direction: column; min-width: 0; }
+  .lf-text { font-size: 11px; color: var(--text); font-weight: 500; }
+  .lf-sub { font-size: 9px; color: var(--text-dim); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+  /* System Monitor Gauges */
+  .sysmon-gauges { display: flex; justify-content: space-around; align-items: center; gap: 8px; padding: 8px 0; }
+  .sysmon-gauge { display: flex; flex-direction: column; align-items: center; position: relative; }
+  .sysmon-gauge svg { width: 70px; height: 70px; }
+  .sysmon-val {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text-bright);
+  }
+  .sysmon-label {
+    font-family: 'Orbitron', monospace; font-size: 9px; color: var(--text-dim);
+    letter-spacing: 1px; margin-top: 4px; text-transform: uppercase;
+  }
+
+  /* Quick Commands */
+  .qc-list { display: flex; flex-direction: column; gap: 6px; }
+  .qc-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba(0,150,255,0.03);
+    border: 1px solid rgba(0,180,255,0.06);
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 11px; color: var(--text-dim);
+  }
+  .qc-item:hover { background: rgba(0,150,255,0.08); border-color: rgba(0,212,255,0.2); color: var(--text); }
+  .qc-item .qc-icon { font-size: 14px; flex-shrink: 0; }
+  .qc-item .qc-label { font-weight: 500; }
 
   /* ===== TOP BAR ===== */
   .top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 28px;
-    border-bottom: 1px solid var(--glass-border);
-    background: var(--panel-bg);
+    padding: 10px 20px;
+    border-bottom: 1px solid rgba(0,180,255,0.08);
+    background: rgba(2,8,18,0.85);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
   }
@@ -187,7 +303,6 @@
 
   /* ===== ORB SECTION ===== */
   .orb-section {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -662,23 +777,7 @@
   }
 
   /* ===== BOTTOM WIDGETS ===== */
-  /* ===== ZEUS MODEL ROUTER PANEL ===== */
-  .zeus-panel {
-    padding: 12px 20px;
-    border-top: 1px solid var(--panel-border);
-    background: rgba(2, 8, 20, 0.7);
-  }
-  .zeus-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .zeus-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px; font-weight: 600;
-    color: #00d4ff;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
+  /* ===== ZEUS MODEL ROUTER (inside dash-card) ===== */
   .zeus-auto-badge {
     font-size: 9px; padding: 2px 8px;
     border-radius: 10px;
@@ -794,13 +893,13 @@
 
   .bottom-widgets {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--glass-border);
-    background: var(--panel-bg);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 0;
+    border: none;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .widget-card {
@@ -918,10 +1017,11 @@
 
   /* ===== QUICK ACTIONS ===== */
   .quick-actions {
-    display: flex; gap: 6px; padding: 12px 24px;
-    background: var(--panel-bg);
-    border-top: 1px solid var(--glass-border);
-    overflow-x: auto; backdrop-filter: blur(40px);
+    display: flex; gap: 6px; padding: 0;
+    background: none;
+    border: none;
+    overflow-x: auto; backdrop-filter: none;
+    flex-wrap: wrap;
   }
 
   .quick-actions::-webkit-scrollbar { height: 3px; }
@@ -1515,24 +1615,263 @@
     </div>
   </div>
 
-  <div class="orb-section">
-    <div class="orb-container" id="orb-container">
-      <div class="orb-ring"></div>
-      <div class="orb-ring-2"></div>
-      <div class="orb" id="orb">
-        <canvas id="orb-canvas" width="320" height="320"></canvas>
-        <!-- MJ label removed -->
+  <!-- JARVIS Dashboard Grid -->
+  <div class="dash-grid">
+
+    <!-- AI Core Overview Card -->
+    <div class="dash-card">
+      <div class="dash-card-title">AI Core Overview</div>
+      <div class="core-status-list">
+        <div class="core-status-item">
+          <span class="csi-icon">&#128172;</span>
+          <div class="csi-info">
+            <div class="csi-name">AI Core</div>
+            <div class="csi-state online">Online</div>
+          </div>
+        </div>
+        <div class="core-status-item">
+          <span class="csi-icon">&#129504;</span>
+          <div class="csi-info">
+            <div class="csi-name">Memory</div>
+            <div class="csi-state" id="core-memory-state">Standby</div>
+          </div>
+        </div>
+        <div class="core-status-item">
+          <span class="csi-icon">&#127908;</span>
+          <div class="csi-info">
+            <div class="csi-name">Voice</div>
+            <div class="csi-state" id="core-voice-state">Online</div>
+          </div>
+        </div>
+        <div class="core-status-item">
+          <span class="csi-icon">&#9889;</span>
+          <div class="csi-info">
+            <div class="csi-name">Modules</div>
+            <div class="csi-state online" id="core-modules-state">21 Active</div>
+          </div>
+        </div>
+        <div class="core-status-item">
+          <span class="csi-icon">&#128187;</span>
+          <div class="csi-info">
+            <div class="csi-name">System</div>
+            <div class="csi-state online" id="core-system-state">Normal</div>
+          </div>
+        </div>
       </div>
     </div>
-    <button class="orb-settings-btn" id="orb-settings-btn" title="Orb Settings">&#9881;</button>
-    <div class="orb-status" id="orb-status">
-      <span class="state idle" id="state-dot"></span>
-      <span id="state-text">IDLE</span>
+
+    <!-- Center: Orb Section (all IDs preserved) -->
+    <div class="dash-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;background:transparent;border-color:transparent;">
+      <div class="orb-section">
+        <div class="orb-container" id="orb-container">
+          <div class="orb-ring"></div>
+          <div class="orb-ring-2"></div>
+          <div class="orb" id="orb">
+            <canvas id="orb-canvas" width="320" height="320"></canvas>
+            <!-- MJ label removed -->
+          </div>
+        </div>
+        <button class="orb-settings-btn" id="orb-settings-btn" title="Orb Settings">&#9881;</button>
+        <div class="orb-status" id="orb-status">
+          <span class="state idle" id="state-dot"></span>
+          <span id="state-text">IDLE</span>
+        </div>
+        <div class="orb-mic-status" id="mic-status">Initializing...</div>
+      </div>
     </div>
-    <div class="orb-mic-status" id="mic-status">Initializing...</div>
+
+    <!-- Live Intelligence Feed Card -->
+    <div class="dash-card">
+      <div class="dash-card-title">Live Intelligence <span class="live-dot"></span></div>
+      <div class="live-feed-list" id="live-feed-list">
+        <div class="lf-item">
+          <span class="lf-icon">&#128200;</span>
+          <div class="lf-info">
+            <div class="lf-text">CPU usage at <span id="lf-cpu">--%</span></div>
+            <div class="lf-sub">System load nominal</div>
+          </div>
+        </div>
+        <div class="lf-item">
+          <span class="lf-icon">&#128190;</span>
+          <div class="lf-info">
+            <div class="lf-text">RAM: <span id="lf-ram">--%</span></div>
+            <div class="lf-sub">Memory allocation stable</div>
+          </div>
+        </div>
+        <div class="lf-item">
+          <span class="lf-icon">&#127757;</span>
+          <div class="lf-info">
+            <div class="lf-text">Network: <span id="lf-net">Active</span></div>
+            <div class="lf-sub" id="lf-net-speed">--</div>
+          </div>
+        </div>
+        <div class="lf-item">
+          <span class="lf-icon">&#128296;</span>
+          <div class="lf-info">
+            <div class="lf-text">GPU: <span id="lf-gpu">--%</span></div>
+            <div class="lf-sub" id="lf-gpu-temp">-- °C</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LLM Status Card (Zeus Panel - all IDs preserved) -->
+    <div class="dash-card card-span-2">
+      <div class="dash-card-title">LLM Status <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span></div>
+      <div class="zeus-models">
+        <div class="zeus-model" id="zm-qwen3-8b" data-model="qwen3:8b">
+          <div class="zm-dot"></div>
+          <div class="zm-icon">&#128172;</div>
+          <div class="zm-info">
+            <div class="zm-name">Qwen3 8B</div>
+            <div class="zm-role">Fast Chat</div>
+          </div>
+        </div>
+        <div class="zeus-model" id="zm-qwen3-14b" data-model="qwen3:14b">
+          <div class="zm-dot"></div>
+          <div class="zm-icon">&#128081;</div>
+          <div class="zm-info">
+            <div class="zm-name">Qwen3 14B</div>
+            <div class="zm-role">Complex</div>
+          </div>
+        </div>
+        <div class="zeus-model" id="zm-deepseek" data-model="deepseek-r1:8b">
+          <div class="zm-dot"></div>
+          <div class="zm-icon">&#129513;</div>
+          <div class="zm-info">
+            <div class="zm-name">DeepSeek R1</div>
+            <div class="zm-role">Reasoning</div>
+          </div>
+        </div>
+        <div class="zeus-model" id="zm-moondream" data-model="moondream">
+          <div class="zm-dot"></div>
+          <div class="zm-icon">&#128065;</div>
+          <div class="zm-info">
+            <div class="zm-name">Moondream</div>
+            <div class="zm-role">Vision</div>
+          </div>
+        </div>
+      </div>
+      <div class="zeus-last-used" id="zeus-last-used" style="display:none;">
+        <span class="zlu-label">LAST &#8594;</span>
+        <span class="zlu-model" id="zlu-model">-</span>
+        <span class="zlu-task" id="zlu-task">-</span>
+      </div>
+    </div>
+
+    <!-- Quick Commands Card -->
+    <div class="dash-card">
+      <div class="dash-card-title">Quick Commands</div>
+      <div class="qc-list">
+        <div class="qc-item" onclick="document.querySelector('[data-cmd=\'open chrome\']').click()">
+          <span class="qc-icon">&#127760;</span>
+          <span class="qc-label">Open Chrome</span>
+        </div>
+        <div class="qc-item" onclick="document.querySelector('[data-cmd=\'open vs code\']').click()">
+          <span class="qc-icon">&#128187;</span>
+          <span class="qc-label">VS Code</span>
+        </div>
+        <div class="qc-item" onclick="document.querySelector('[data-cmd=\'screenshot le\']').click()">
+          <span class="qc-icon">&#128247;</span>
+          <span class="qc-label">Screenshot</span>
+        </div>
+        <div class="qc-item" onclick="document.querySelector('[data-cmd=\'good morning\']').click()">
+          <span class="qc-icon">&#9728;</span>
+          <span class="qc-label">Daily Briefing</span>
+        </div>
+        <div class="qc-item" onclick="document.querySelector('[data-cmd=\'check email\']').click()">
+          <span class="qc-icon">&#9993;</span>
+          <span class="qc-label">Check Email</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Monitor Card -->
+    <div class="dash-card">
+      <div class="dash-card-title">System Monitor</div>
+      <div class="sysmon-gauges">
+        <div class="sysmon-gauge">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="35" fill="none" stroke="rgba(0,180,255,0.1)" stroke-width="4"/><circle class="sysmon-ring" id="sg-cpu-ring" cx="40" cy="40" r="35" fill="none" stroke="#00d4ff" stroke-width="4" stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" transform="rotate(-90 40 40)"/></svg>
+          <div class="sysmon-val" id="sg-cpu-val">0%</div>
+          <div class="sysmon-label">CPU</div>
+        </div>
+        <div class="sysmon-gauge">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="35" fill="none" stroke="rgba(0,180,255,0.1)" stroke-width="4"/><circle class="sysmon-ring" id="sg-ram-ring" cx="40" cy="40" r="35" fill="none" stroke="#00aaff" stroke-width="4" stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" transform="rotate(-90 40 40)"/></svg>
+          <div class="sysmon-val" id="sg-ram-val">0%</div>
+          <div class="sysmon-label">RAM</div>
+        </div>
+        <div class="sysmon-gauge">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="35" fill="none" stroke="rgba(0,180,255,0.1)" stroke-width="4"/><circle class="sysmon-ring" id="sg-disk-ring" cx="40" cy="40" r="35" fill="none" stroke="#0088cc" stroke-width="4" stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" transform="rotate(-90 40 40)"/></svg>
+          <div class="sysmon-val" id="sg-disk-val">0%</div>
+          <div class="sysmon-label">Disk</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Stats Card (all widget IDs preserved) -->
+    <div class="dash-card">
+      <div class="dash-card-title">System Stats</div>
+      <div class="bottom-widgets">
+        <div class="widget-card" id="wc-voice">
+          <div class="w-icon">&#127908;</div>
+          <div class="w-title">Voice</div>
+          <div class="w-value" id="wc-voice-val">Ready</div>
+        </div>
+        <div class="widget-card" id="wc-memory">
+          <div class="w-icon">&#129504;</div>
+          <div class="w-title">Memory</div>
+          <div class="w-value" id="wc-memory-val">0 facts</div>
+        </div>
+        <div class="widget-card" id="wc-chats">
+          <div class="w-icon">&#128172;</div>
+          <div class="w-title">Chats</div>
+          <div class="w-value" id="wc-chats-val">0</div>
+        </div>
+        <div class="widget-card" id="wc-model">
+          <div class="w-icon">&#129302;</div>
+          <div class="w-title">Model</div>
+          <div class="w-value" id="wc-model-val">Zeus Auto</div>
+        </div>
+        <div class="widget-card" id="wc-health" title="Click to see errors">
+          <div class="w-icon">&#128154;</div>
+          <div class="w-title">Health</div>
+          <div class="w-value" id="wc-health-val">OK</div>
+        </div>
+        <div class="widget-card" id="wc-modules" onclick="window.location.href='/static/modules.html'" title="Module Dashboard" style="cursor:pointer;">
+          <div class="w-icon">&#9889;</div>
+          <div class="w-title">Modules</div>
+          <div class="w-value" id="wc-modules-val">21</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Row (all qa-btn elements preserved) -->
+    <div class="dash-card card-span-row" style="padding:10px 16px;">
+      <div class="quick-actions">
+        <button class="qa-btn" data-cmd="open chrome">Chrome</button>
+        <button class="qa-btn" data-cmd="open notepad">Notepad</button>
+        <button class="qa-btn" data-cmd="open calculator">Calculator</button>
+        <button class="qa-btn" data-cmd="open file explorer">Files</button>
+        <button class="qa-btn" data-cmd="open vs code">VS Code</button>
+        <button class="qa-btn" data-cmd="screenshot le">Screenshot</button>
+        <button class="qa-btn" data-cmd="volume up">Vol +</button>
+        <button class="qa-btn" data-cmd="volume down">Vol -</button>
+        <button class="qa-btn" data-cmd="open youtube">YouTube</button>
+        <button class="qa-btn" data-cmd="Tell me a joke">Joke</button>
+        <button class="qa-btn" data-cmd="good morning">Briefing</button>
+        <button class="qa-btn" data-cmd="list files in downloads">Downloads</button>
+        <button class="qa-btn" data-cmd="start recording">Rec Start</button>
+        <button class="qa-btn" data-cmd="stop recording">Rec Stop</button>
+        <button class="qa-btn" data-cmd="check email">Email</button>
+        <button class="qa-btn" data-cmd="clipboard history">Clipboard</button>
+        <button class="qa-btn" data-cmd="app usage">Screen Time</button>
+        <button class="qa-btn" data-cmd="generate image of a sunset over mountains">AI Image</button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Orb Settings Panel -->
+  <!-- Orb Settings Panel (unchanged) -->
   <div class="orb-settings-panel" id="orb-settings-panel">
     <div class="os-header">
       <div class="os-header-left">
@@ -1642,86 +1981,6 @@
     </div>
   </div>
 
-  <!-- Zeus Model Router Panel -->
-  <div class="zeus-panel">
-    <div class="zeus-header">
-      <span class="zeus-title">&#9889; Zeus Router</span>
-      <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span>
-    </div>
-    <div class="zeus-models">
-      <div class="zeus-model" id="zm-qwen3-8b" data-model="qwen3:8b">
-        <div class="zm-dot"></div>
-        <div class="zm-icon">&#128172;</div>
-        <div class="zm-info">
-          <div class="zm-name">Qwen3 8B</div>
-          <div class="zm-role">Fast Chat</div>
-        </div>
-      </div>
-      <div class="zeus-model" id="zm-qwen3-14b" data-model="qwen3:14b">
-        <div class="zm-dot"></div>
-        <div class="zm-icon">&#128081;</div>
-        <div class="zm-info">
-          <div class="zm-name">Qwen3 14B</div>
-          <div class="zm-role">Complex</div>
-        </div>
-      </div>
-      <div class="zeus-model" id="zm-deepseek" data-model="deepseek-r1:8b">
-        <div class="zm-dot"></div>
-        <div class="zm-icon">&#129513;</div>
-        <div class="zm-info">
-          <div class="zm-name">DeepSeek R1</div>
-          <div class="zm-role">Reasoning</div>
-        </div>
-      </div>
-      <div class="zeus-model" id="zm-moondream" data-model="moondream">
-        <div class="zm-dot"></div>
-        <div class="zm-icon">&#128065;</div>
-        <div class="zm-info">
-          <div class="zm-name">Moondream</div>
-          <div class="zm-role">Vision</div>
-        </div>
-      </div>
-    </div>
-    <div class="zeus-last-used" id="zeus-last-used" style="display:none;">
-      <span class="zlu-label">LAST &#8594;</span>
-      <span class="zlu-model" id="zlu-model">-</span>
-      <span class="zlu-task" id="zlu-task">-</span>
-    </div>
-  </div>
-
-  <div class="bottom-widgets">
-    <div class="widget-card" id="wc-voice">
-      <div class="w-icon">&#127908;</div>
-      <div class="w-title">Voice</div>
-      <div class="w-value" id="wc-voice-val">Ready</div>
-    </div>
-    <div class="widget-card" id="wc-memory">
-      <div class="w-icon">&#129504;</div>
-      <div class="w-title">Memory</div>
-      <div class="w-value" id="wc-memory-val">0 facts</div>
-    </div>
-    <div class="widget-card" id="wc-chats">
-      <div class="w-icon">&#128172;</div>
-      <div class="w-title">Chats</div>
-      <div class="w-value" id="wc-chats-val">0</div>
-    </div>
-    <div class="widget-card" id="wc-model">
-      <div class="w-icon">&#129302;</div>
-      <div class="w-title">Model</div>
-      <div class="w-value" id="wc-model-val">Zeus Auto</div>
-    </div>
-    <div class="widget-card" id="wc-health" title="Click to see errors">
-      <div class="w-icon">&#128154;</div>
-      <div class="w-title">Health</div>
-      <div class="w-value" id="wc-health-val">OK</div>
-    </div>
-    <div class="widget-card" id="wc-modules" onclick="window.location.href='/static/modules.html'" title="Module Dashboard" style="cursor:pointer;">
-      <div class="w-icon">&#9889;</div>
-      <div class="w-title">Modules</div>
-      <div class="w-value" id="wc-modules-val">21</div>
-    </div>
-  </div>
-
   <div class="alert-toast-container" id="alert-toast-box"></div>
 
   <div class="error-panel" id="error-panel" style="display:none;">
@@ -1734,27 +1993,6 @@
       </div>
     </div>
     <div class="error-list" id="error-list"></div>
-  </div>
-
-  <div class="quick-actions">
-    <button class="qa-btn" data-cmd="open chrome">Chrome</button>
-    <button class="qa-btn" data-cmd="open notepad">Notepad</button>
-    <button class="qa-btn" data-cmd="open calculator">Calculator</button>
-    <button class="qa-btn" data-cmd="open file explorer">Files</button>
-    <button class="qa-btn" data-cmd="open vs code">VS Code</button>
-    <button class="qa-btn" data-cmd="screenshot le">Screenshot</button>
-    <button class="qa-btn" data-cmd="volume up">Vol +</button>
-    <button class="qa-btn" data-cmd="volume down">Vol -</button>
-    <button class="qa-btn" data-cmd="open youtube">YouTube</button>
-    <button class="qa-btn" data-cmd="Tell me a joke">Joke</button>
-    <button class="qa-btn" data-cmd="good morning">Briefing</button>
-    <button class="qa-btn" data-cmd="list files in downloads">Downloads</button>
-    <button class="qa-btn" data-cmd="start recording">Rec Start</button>
-    <button class="qa-btn" data-cmd="stop recording">Rec Stop</button>
-    <button class="qa-btn" data-cmd="check email">Email</button>
-    <button class="qa-btn" data-cmd="clipboard history">Clipboard</button>
-    <button class="qa-btn" data-cmd="app usage">Screen Time</button>
-    <button class="qa-btn" data-cmd="generate image of a sunset over mountains">AI Image</button>
   </div>
 </div>
 
@@ -2860,24 +3098,37 @@ async function updateRealStats() {
       document.getElementById("w-cpu").style.color = s.cpu > 80 ? "var(--error)" : s.cpu > 50 ? "var(--warning)" : "var(--text)";
       document.getElementById("hud-cpu-val").textContent = s.cpu + "%";
       setHudBar(document.getElementById("hud-cpu-bar"), document.getElementById("hud-cpu-dot"), s.cpu, 60, 85);
+      // Live feed + gauge
+      var lfCpu = document.getElementById("lf-cpu"); if (lfCpu) lfCpu.textContent = s.cpu + "%";
+      var sgCpu = document.getElementById("sg-cpu-ring"); if (sgCpu) sgCpu.setAttribute("stroke-dashoffset", 220 - (220 * s.cpu / 100));
+      var sgCpuV = document.getElementById("sg-cpu-val"); if (sgCpuV) sgCpuV.textContent = s.cpu + "%";
     }
     if (s.ram_percent >= 0) {
       document.getElementById("w-ram").textContent = s.ram_percent + "%";
       document.getElementById("w-ram").style.color = s.ram_percent > 85 ? "var(--error)" : s.ram_percent > 60 ? "var(--warning)" : "var(--text)";
       document.getElementById("hud-ram-val").textContent = s.ram_percent + "% (" + s.ram_used + "/" + s.ram_total + " GB)";
       setHudBar(document.getElementById("hud-ram-bar"), document.getElementById("hud-ram-dot"), s.ram_percent, 70, 90);
+      // Live feed + gauge
+      var lfRam = document.getElementById("lf-ram"); if (lfRam) lfRam.textContent = s.ram_percent + "%";
+      var sgRam = document.getElementById("sg-ram-ring"); if (sgRam) sgRam.setAttribute("stroke-dashoffset", 220 - (220 * s.ram_percent / 100));
+      var sgRamV = document.getElementById("sg-ram-val"); if (sgRamV) sgRamV.textContent = s.ram_percent + "%";
     }
     // GPU
     if (s.gpu_util >= 0) {
       document.getElementById("hud-gpu-val").textContent = s.gpu_util + "% | " + s.gpu_temp + "°C";
       setHudBar(document.getElementById("hud-gpu-bar"), document.getElementById("hud-gpu-dot"), s.gpu_util, 70, 90);
+      var lfGpu = document.getElementById("lf-gpu"); if (lfGpu) lfGpu.textContent = s.gpu_util + "%";
+      var lfGpuT = document.getElementById("lf-gpu-temp"); if (lfGpuT) lfGpuT.textContent = s.gpu_temp + " °C";
     } else {
       document.getElementById("hud-gpu-val").textContent = "N/A";
+      var lfGpu2 = document.getElementById("lf-gpu"); if (lfGpu2) lfGpu2.textContent = "N/A";
     }
     // Disk
     if (s.disk_percent >= 0) {
       document.getElementById("hud-disk-val").textContent = s.disk_percent + "% (" + s.disk_free + " GB free)";
       setHudBar(document.getElementById("hud-disk-bar"), document.getElementById("hud-disk-dot"), s.disk_percent, 75, 90);
+      var sgDisk = document.getElementById("sg-disk-ring"); if (sgDisk) sgDisk.setAttribute("stroke-dashoffset", 220 - (220 * s.disk_percent / 100));
+      var sgDiskV = document.getElementById("sg-disk-val"); if (sgDiskV) sgDiskV.textContent = s.disk_percent + "%";
     }
     // Network
     const netTotal = (s.net_down_kbs || 0) + (s.net_up_kbs || 0);
@@ -2885,6 +3136,8 @@ async function updateRealStats() {
     const netBar = Math.min(100, netTotal / 10);
     document.getElementById("hud-net-bar").style.width = Math.max(3, netBar) + "%";
     document.getElementById("hud-net-dot").className = "hud-hex-dot" + (netTotal > 0 ? "" : " warn");
+    var lfNetSpeed = document.getElementById("lf-net-speed"); if (lfNetSpeed) lfNetSpeed.textContent = "↓" + (s.net_down_kbs||0) + " ↑" + (s.net_up_kbs||0) + " KB/s";
+    var lfNet = document.getElementById("lf-net"); if (lfNet) lfNet.textContent = netTotal > 0 ? "Active" : "Idle";
     // Processes
     if (s.process_count) document.getElementById("hud-proc-val").textContent = s.process_count;
     // Uptime
