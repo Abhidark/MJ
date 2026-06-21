@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MJ Voice Settings</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d0d0d;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 40px;
+  }
+
+  .container { max-width: 700px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  h1 { color: #7c8aff; font-size: 24px; }
+
+  .back-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: transparent;
+    color: #7c8aff;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .back-btn:hover { background: #1a1a1a; }
+
+  .section {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .section h2 {
+    font-size: 16px;
+    color: #7c8aff;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  .field {
+    margin-bottom: 20px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .field select, .field input[type="range"] {
+    width: 100%;
+  }
+
+  select {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: #111;
+    color: #e0e0e0;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  select:focus { border-color: #7c8aff; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: #333;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #7c8aff;
+    cursor: pointer;
+  }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .range-row input { flex: 1; }
+
+  .range-value {
+    min-width: 50px;
+    text-align: right;
+    font-size: 13px;
+    color: #7c8aff;
+    font-weight: 600;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+  }
+
+  .toggle-row span { font-size: 14px; }
+
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+  }
+
+  .toggle input { display: none; }
+
+  .toggle-slider {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #333;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px;
+    background: #888;
+    border-radius: 50%;
+    transition: 0.3s;
+  }
+
+  .toggle input:checked + .toggle-slider { background: #7c8aff; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(20px); background: #fff; }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary { background: #7c8aff; color: #fff; }
+  .btn-primary:hover { background: #6b79ee; }
+
+  .btn-secondary { background: transparent; border: 1px solid #333; color: #aaa; }
+  .btn-secondary:hover { background: #1a1a1a; }
+
+  .btn-test { background: #2a2a2a; color: #7c8aff; border: 1px solid #333; }
+  .btn-test:hover { background: #333; }
+
+  .status {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #44ff44;
+    display: none;
+  }
+
+  .status.show { display: block; }
+
+  .test-text {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: #111;
+    color: #e0e0e0;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 12px;
+  }
+
+  .test-text:focus { border-color: #7c8aff; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>MJ Voice Settings</h1>
+    <a href="/static/index.html" class="back-btn">Back to Chat</a>
+  </div>
+
+  <!-- Voice Selection -->
+  <div class="section">
+    <h2>Voice Selection</h2>
+    <div class="field">
+      <label>Hindi / Hinglish Voice</label>
+      <select id="hindi-voice"></select>
+    </div>
+    <div class="field">
+      <label>English Voice</label>
+      <select id="english-voice"></select>
+    </div>
+  </div>
+
+  <!-- Voice Tuning -->
+  <div class="section">
+    <h2>Voice Tuning</h2>
+    <div class="field">
+      <label>Speed (Rate)</label>
+      <div class="range-row">
+        <span style="font-size:12px;color:#666">Slow</span>
+        <input type="range" id="rate" min="-50" max="50" value="-5">
+        <span style="font-size:12px;color:#666">Fast</span>
+        <span class="range-value" id="rate-val">-5%</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Pitch</label>
+      <div class="range-row">
+        <span style="font-size:12px;color:#666">Low</span>
+        <input type="range" id="pitch" min="-50" max="50" value="0">
+        <span style="font-size:12px;color:#666">High</span>
+        <span class="range-value" id="pitch-val">+0Hz</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Volume</label>
+      <div class="range-row">
+        <span style="font-size:12px;color:#666">Quiet</span>
+        <input type="range" id="volume" min="-50" max="50" value="0">
+        <span style="font-size:12px;color:#666">Loud</span>
+        <span class="range-value" id="volume-val">+0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Behavior -->
+  <div class="section">
+    <h2>Behavior</h2>
+    <div class="toggle-row">
+      <span>Auto-speak replies</span>
+      <label class="toggle">
+        <input type="checkbox" id="auto-speak" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <span>Emotion-based voice (adjust tone by mood)</span>
+      <label class="toggle">
+        <input type="checkbox" id="emotion-voice" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Test Voice -->
+  <div class="section">
+    <h2>Test Voice</h2>
+    <input type="text" class="test-text" id="test-text" value="Haan Abhi, samajh gayi. Chalo isko step by step karte hain." placeholder="Type test text...">
+    <div class="btn-row">
+      <button class="btn btn-test" id="test-hindi">Test Hindi Voice</button>
+      <button class="btn btn-test" id="test-english">Test English Voice</button>
+    </div>
+  </div>
+
+  <!-- Save -->
+  <div class="btn-row">
+    <button class="btn btn-primary" id="save-btn">Save Settings</button>
+    <button class="btn btn-secondary" id="reset-btn">Reset to Default</button>
+  </div>
+  <div class="status" id="status">Settings saved!</div>
+</div>
+
+<script>
+const API = window.location.origin;
+let availableVoices = {};
+
+// Load settings on page load
+async function loadSettings() {
+  const res = await fetch(API + "/voice-settings");
+  const data = await res.json();
+  const s = data.settings;
+  availableVoices = data.available_voices;
+
+  // Populate voice dropdowns
+  const hindiSelect = document.getElementById("hindi-voice");
+  const engSelect = document.getElementById("english-voice");
+  hindiSelect.innerHTML = "";
+  engSelect.innerHTML = "";
+
+  for (const [id, name] of Object.entries(availableVoices)) {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = name;
+
+    if (id.startsWith("hi-")) {
+      hindiSelect.appendChild(opt.cloneNode(true));
+    }
+    engSelect.appendChild(opt);
+  }
+
+  // Set values
+  hindiSelect.value = s.hindi_voice;
+  engSelect.value = s.english_voice;
+
+  const rate = parseInt(s.rate);
+  const pitch = parseInt(s.pitch);
+  const vol = parseInt(s.volume);
+
+  document.getElementById("rate").value = rate;
+  document.getElementById("pitch").value = pitch;
+  document.getElementById("volume").value = vol;
+  updateRangeDisplays();
+
+  document.getElementById("auto-speak").checked = s.auto_speak;
+  document.getElementById("emotion-voice").checked = s.emotion_voice;
+}
+
+function updateRangeDisplays() {
+  const rate = document.getElementById("rate").value;
+  const pitch = document.getElementById("pitch").value;
+  const vol = document.getElementById("volume").value;
+  document.getElementById("rate-val").textContent = (rate >= 0 ? "+" : "") + rate + "%";
+  document.getElementById("pitch-val").textContent = (pitch >= 0 ? "+" : "") + pitch + "Hz";
+  document.getElementById("volume-val").textContent = (vol >= 0 ? "+" : "") + vol + "%";
+}
+
+document.getElementById("rate").addEventListener("input", updateRangeDisplays);
+document.getElementById("pitch").addEventListener("input", updateRangeDisplays);
+document.getElementById("volume").addEventListener("input", updateRangeDisplays);
+
+// Save settings
+document.getElementById("save-btn").addEventListener("click", async () => {
+  const rate = parseInt(document.getElementById("rate").value);
+  const pitch = parseInt(document.getElementById("pitch").value);
+  const vol = parseInt(document.getElementById("volume").value);
+
+  const settings = {
+    hindi_voice: document.getElementById("hindi-voice").value,
+    english_voice: document.getElementById("english-voice").value,
+    rate: (rate >= 0 ? "+" : "") + rate + "%",
+    pitch: (pitch >= 0 ? "+" : "") + pitch + "Hz",
+    volume: (vol >= 0 ? "+" : "") + vol + "%",
+    auto_speak: document.getElementById("auto-speak").checked,
+    emotion_voice: document.getElementById("emotion-voice").checked,
+  };
+
+  await fetch(API + "/voice-settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+
+  const status = document.getElementById("status");
+  status.classList.add("show");
+  setTimeout(() => status.classList.remove("show"), 2000);
+});
+
+// Reset
+document.getElementById("reset-btn").addEventListener("click", async () => {
+  const defaults = {
+    hindi_voice: "hi-IN-SwaraNeural",
+    english_voice: "en-IN-NeerjaNeural",
+    rate: "-5%",
+    pitch: "+0Hz",
+    volume: "+0%",
+    auto_speak: true,
+    emotion_voice: true,
+  };
+
+  await fetch(API + "/voice-settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(defaults),
+  });
+
+  loadSettings();
+  const status = document.getElementById("status");
+  status.textContent = "Reset to defaults!";
+  status.classList.add("show");
+  setTimeout(() => { status.classList.remove("show"); status.textContent = "Settings saved!"; }, 2000);
+});
+
+// Test voice
+async function testVoice(voiceType) {
+  const text = document.getElementById("test-text").value;
+  const rate = parseInt(document.getElementById("rate").value);
+  const pitch = parseInt(document.getElementById("pitch").value);
+  const vol = parseInt(document.getElementById("volume").value);
+
+  const voice = voiceType === "hindi"
+    ? document.getElementById("hindi-voice").value
+    : document.getElementById("english-voice").value;
+
+  const res = await fetch(API + "/test-voice", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: text,
+      voice: voice,
+      rate: (rate >= 0 ? "+" : "") + rate + "%",
+      pitch: (pitch >= 0 ? "+" : "") + pitch + "Hz",
+      volume: (vol >= 0 ? "+" : "") + vol + "%",
+    }),
+  });
+
+  const data = await res.json();
+  const audio = new Audio(API + data.audio_url);
+  audio.play();
+}
+
+document.getElementById("test-hindi").addEventListener("click", () => testVoice("hindi"));
+document.getElementById("test-english").addEventListener("click", () => testVoice("english"));
+
+loadSettings();
+</script>
+</body>
+</html>

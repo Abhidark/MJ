@@ -369,6 +369,136 @@
   }
 
   /* ===== BOTTOM WIDGETS ===== */
+  /* ===== ZEUS MODEL ROUTER PANEL ===== */
+  .zeus-panel {
+    padding: 12px 20px;
+    border-top: 1px solid var(--panel-border);
+    background: rgba(10, 3, 3, 0.6);
+  }
+  .zeus-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .zeus-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px; font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .zeus-auto-badge {
+    font-size: 9px; padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(0,255,136,0.15);
+    color: var(--success);
+    border: 1px solid rgba(0,255,136,0.3);
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 1px;
+  }
+  .zeus-models {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .zeus-model {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.02);
+    transition: all 0.4s ease;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+  .zeus-model::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, transparent, rgba(255,26,26,0.05));
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .zeus-model.active {
+    border-color: var(--primary);
+    background: rgba(255,26,26,0.08);
+    box-shadow: 0 0 15px rgba(255,26,26,0.15), inset 0 0 15px rgba(255,26,26,0.05);
+  }
+  .zeus-model.active::before { opacity: 1; }
+  .zeus-model .zm-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.4s;
+    flex-shrink: 0;
+  }
+  .zeus-model.active .zm-dot {
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: zmPulse 2s ease-in-out infinite;
+  }
+  @keyframes zmPulse {
+    0%, 100% { box-shadow: 0 0 4px var(--success); }
+    50% { box-shadow: 0 0 12px var(--success), 0 0 20px rgba(0,255,136,0.3); }
+  }
+  .zeus-model .zm-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .zeus-model .zm-info {
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+  .zeus-model .zm-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px; font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.4s;
+  }
+  .zeus-model.active .zm-name { color: var(--text-bright); }
+  .zeus-model .zm-role {
+    font-size: 10px;
+    color: rgba(255,255,255,0.2);
+    white-space: nowrap;
+    transition: color 0.4s;
+  }
+  .zeus-model.active .zm-role { color: var(--accent); }
+  .zeus-last-used {
+    margin-top: 8px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: rgba(255,102,0,0.06);
+    border: 1px solid rgba(255,102,0,0.12);
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px;
+    color: var(--text-dim);
+    transition: all 0.3s;
+  }
+  .zeus-last-used .zlu-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 8px; letter-spacing: 1px;
+    color: var(--accent);
+    opacity: 0.7;
+  }
+  .zeus-last-used .zlu-model {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .zeus-last-used .zlu-task {
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(255,26,26,0.1);
+    color: var(--primary);
+    font-size: 9px;
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 0.5px;
+  }
+
   .bottom-widgets {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -820,6 +950,53 @@
     <div class="orb-mic-status" id="mic-status">Initializing...</div>
   </div>
 
+  <!-- Zeus Model Router Panel -->
+  <div class="zeus-panel">
+    <div class="zeus-header">
+      <span class="zeus-title">&#9889; Zeus Router</span>
+      <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span>
+    </div>
+    <div class="zeus-models">
+      <div class="zeus-model" id="zm-qwen3-8b" data-model="qwen3:8b">
+        <div class="zm-dot"></div>
+        <div class="zm-icon">&#128172;</div>
+        <div class="zm-info">
+          <div class="zm-name">Qwen3 8B</div>
+          <div class="zm-role">Fast Chat</div>
+        </div>
+      </div>
+      <div class="zeus-model" id="zm-qwen3-14b" data-model="qwen3:14b">
+        <div class="zm-dot"></div>
+        <div class="zm-icon">&#128081;</div>
+        <div class="zm-info">
+          <div class="zm-name">Qwen3 14B</div>
+          <div class="zm-role">Complex</div>
+        </div>
+      </div>
+      <div class="zeus-model" id="zm-deepseek" data-model="deepseek-r1:8b">
+        <div class="zm-dot"></div>
+        <div class="zm-icon">&#129513;</div>
+        <div class="zm-info">
+          <div class="zm-name">DeepSeek R1</div>
+          <div class="zm-role">Reasoning</div>
+        </div>
+      </div>
+      <div class="zeus-model" id="zm-moondream" data-model="moondream">
+        <div class="zm-dot"></div>
+        <div class="zm-icon">&#128065;</div>
+        <div class="zm-info">
+          <div class="zm-name">Moondream</div>
+          <div class="zm-role">Vision</div>
+        </div>
+      </div>
+    </div>
+    <div class="zeus-last-used" id="zeus-last-used" style="display:none;">
+      <span class="zlu-label">LAST &#8594;</span>
+      <span class="zlu-model" id="zlu-model">-</span>
+      <span class="zlu-task" id="zlu-task">-</span>
+    </div>
+  </div>
+
   <div class="bottom-widgets">
     <div class="widget-card" id="wc-voice">
       <div class="w-icon">&#127908;</div>
@@ -839,7 +1016,7 @@
     <div class="widget-card" id="wc-model">
       <div class="w-icon">&#129302;</div>
       <div class="w-title">Model</div>
-      <div class="w-value">Q2.5 1.5B</div>
+      <div class="w-value" id="wc-model-val">Zeus Auto</div>
     </div>
     <div class="widget-card" id="wc-health" title="Click to see errors">
       <div class="w-icon">&#128154;</div>
@@ -1065,6 +1242,68 @@ async function loadHistory() {
 
 loadHistory(); loadChatList(); loadMemoryCount();
 
+// ===== ZEUS MODEL ROUTER UI =====
+const zeusModelMap = {
+  'qwen3:8b': 'zm-qwen3-8b',
+  'qwen3:14b': 'zm-qwen3-14b',
+  'deepseek-r1:8b': 'zm-deepseek',
+  'moondream': 'zm-moondream',
+};
+const taskIcons = {
+  chat: '💬', coding: '💻', creative: '🎨', analysis: '📊',
+  reasoning: '🧩', vision: '👁', translation: '🌐',
+};
+
+function updateZeusPanel(modelUsed, taskType) {
+  // Clear all active states
+  document.querySelectorAll('.zeus-model').forEach(el => el.classList.remove('active'));
+
+  // Find and activate the used model
+  for (const [model, elId] of Object.entries(zeusModelMap)) {
+    if (modelUsed.includes(model.split(':')[0])) {
+      const el = document.getElementById(elId);
+      if (el) el.classList.add('active');
+      break;
+    }
+  }
+
+  // Update last-used bar
+  const lastUsed = document.getElementById('zeus-last-used');
+  const zluModel = document.getElementById('zlu-model');
+  const zluTask = document.getElementById('zlu-task');
+  lastUsed.style.display = 'flex';
+  zluModel.textContent = modelUsed;
+  zluTask.textContent = (taskIcons[taskType] || '') + ' ' + (taskType || 'chat').toUpperCase();
+
+  // Update model widget card
+  const wcModel = document.getElementById('wc-model-val');
+  if (wcModel) {
+    const shortName = modelUsed.split(':')[0];
+    wcModel.textContent = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+  }
+}
+
+// Set model to "thinking" state while waiting for response
+function setZeusThinking() {
+  document.querySelectorAll('.zeus-model').forEach(el => el.classList.remove('active'));
+}
+
+// Load initial model config
+async function loadModelConfig() {
+  try {
+    const res = await fetch(API + '/models');
+    const data = await res.json();
+    const badge = document.getElementById('zeus-auto-badge');
+    if (badge) {
+      badge.textContent = data.auto_select ? 'AUTO' : 'MANUAL';
+      badge.style.background = data.auto_select ? 'rgba(0,255,136,0.15)' : 'rgba(255,170,0,0.15)';
+      badge.style.color = data.auto_select ? 'var(--success)' : 'var(--warning)';
+      badge.style.borderColor = data.auto_select ? 'rgba(0,255,136,0.3)' : 'rgba(255,170,0,0.3)';
+    }
+  } catch(e) {}
+}
+loadModelConfig();
+
 async function send() {
   const text = input.value.trim();
   if (!text && !pendingFile) return;
@@ -1086,7 +1325,7 @@ async function send() {
     userMsgEl.appendChild(badge);
   }
 
-  input.value = ""; sendBtn.disabled = true; setOrbState("thinking");
+  input.value = ""; sendBtn.disabled = true; setOrbState("thinking"); setZeusThinking();
   const typing = addMsg("Thinking...", "assistant typing");
 
   try {
@@ -1121,6 +1360,7 @@ async function send() {
               imgEl.onclick = () => window.open(data.image_url, "_blank");
               typing.parentElement.appendChild(imgEl);
             }
+            if (data.model_used) updateZeusPanel(data.model_used, data.task_type || 'chat');
             if (data.auto_memory && data.auto_memory.length > 0) {
               for (const fact of data.auto_memory) {
                 addMsg("\u{1F9E0} Auto-saved: " + fact, "assistant");

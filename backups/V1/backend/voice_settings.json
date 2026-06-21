@@ -1,0 +1,9 @@
+{
+  "hindi_voice": "hi-IN-SwaraNeural",
+  "english_voice": "en-IN-NeerjaNeural",
+  "rate": "+2%",
+  "pitch": "+0Hz",
+  "volume": "+5%",
+  "auto_speak": true,
+  "emotion_voice": true
+}

@@ -33,6 +33,17 @@ from pc_control.app_tracker import parse_tracker_command, handle_tracker_command
 from pc_control.image_gen import parse_image_command, handle_image_command
 from human_layer.auto_memory import auto_remember
 
+# Intelligence Layer
+from intelligence.web_browser import deep_search, format_search_for_llm, needs_web_search_v2
+from intelligence.knowledge_base import (
+    ingest_document, search_knowledge, format_kb_context,
+    get_kb_stats, delete_document, needs_kb_search
+)
+from intelligence.context_memory import (
+    record_interaction, get_context_prompt, get_memory_stats
+)
+from intelligence.multi_model import needs_deep_reasoning, chain_of_thought, multi_perspective
+
 # Zeus Module System
 from zeus.brain import Zeus
 from modules.echo.module import EchoModule
@@ -800,11 +811,31 @@ async def chat(
     if core_facts:
         memory_context = "User facts: " + ", ".join(core_facts)
 
-    # Check if web search is needed
-    search_query = needs_web_search(message)
-    search_results = ""
+    # === INTELLIGENCE LAYER ===
+
+    # 1. Advanced Web Search (upgraded from basic)
+    search_query = needs_web_search_v2(message)
+    search_context = ""
     if search_query:
-        search_results = await web_search(search_query)
+        search_data = await deep_search(search_query)
+        search_context = format_search_for_llm(search_data)
+
+    # 2. RAG Knowledge Base search
+    kb_context = ""
+    if needs_kb_search(message):
+        kb_results = search_knowledge(message, top_k=3)
+        kb_context = format_kb_context(kb_results)
+    elif not search_query:
+        # Also try KB for general questions (lower priority)
+        kb_results = search_knowledge(message, top_k=2)
+        if kb_results and kb_results[0]["score"] > 0.1:
+            kb_context = format_kb_context(kb_results)
+
+    # 3. Context Memory — get learned preferences
+    context_memory_prompt = get_context_prompt()
+
+    # 4. Multi-Model Reasoning — detect if needed
+    reasoning_type = needs_deep_reasoning(message)
 
     # Process through Human Brain
     brain_result = mj_brain.process(
@@ -825,27 +856,52 @@ async def chat(
     if file_context:
         system_content += "\n\nWhen a user shares a file, analyze its content thoroughly and provide helpful insights."
 
-    if search_results:
-        system_content += f"\n\nWEB SEARCH RESULTS (use this info to answer accurately):\n{search_results}"
+    if search_context:
+        system_content += f"\n\n{search_context}"
 
-    messages = [
-        {"role": "system", "content": system_content}
-    ]
+    if kb_context:
+        system_content += f"\n\n{kb_context}"
 
-    messages.extend(chat_data["messages"])
+    if context_memory_prompt:
+        system_content += context_memory_prompt
+
+    if reasoning_type:
+        system_content += f"\n\nDEEP REASONING MODE: Use step-by-step {reasoning_type} reasoning for this question."
 
     # Append file context to user message for LLM
     user_prompt = brain_result["response_prompt"] + file_context
-    user_msg_entry = {"role": "user", "content": user_prompt}
-    if images:
-        user_msg_entry["images"] = images
-    messages.append(user_msg_entry)
 
-    # Multi-model: pick best model for this task
     # Zeus Smart Router — pick best model (vision if image attached)
     has_image = len(images) > 0
     selected_model = get_model_for_task(message, has_image=has_image)
     routing = get_routing_info(message, has_image=has_image)
+
+    # If deep reasoning is needed, run chain-of-thought and inject result
+    reasoning_context = ""
+    if reasoning_type and not file_context:
+        try:
+            if reasoning_type == "chain":
+                cot_result = await chain_of_thought(message, selected_model, context=kb_context or search_context)
+            else:
+                cot_result = await multi_perspective(message, selected_model, context=kb_context or search_context)
+
+            if cot_result.get("answer"):
+                reasoning_context = f"\n\nDEEP ANALYSIS (pre-computed for you — use this to give a better answer):\n{cot_result['answer']}"
+                if cot_result.get("verification"):
+                    reasoning_context += f"\n\nVerification notes: {cot_result['verification'][:300]}"
+        except Exception:
+            pass  # Fall through to normal response
+
+    if reasoning_context:
+        system_content += reasoning_context
+
+    # Rebuild messages with updated system content
+    messages = [{"role": "system", "content": system_content}]
+    messages.extend(chat_data["messages"])
+    user_msg_entry = {"role": "user", "content": user_prompt}
+    if images:
+        user_msg_entry["images"] = images
+    messages.append(user_msg_entry)
 
     payload = {
         "model": selected_model,
@@ -872,17 +928,103 @@ async def chat(
         # Save to chat (show file label in history)
         display_msg = message + file_label
         chat_data["messages"].append({"role": "user", "content": display_msg})
-        chat_data["messages"].append({"role": "assistant", "content": "".join(full_reply)})
+        reply_text = "".join(full_reply)
+        chat_data["messages"].append({"role": "assistant", "content": reply_text})
 
         if chat_data["title"] == "New Chat":
             chat_data["title"] = message[:40]
 
         save_chat(chat_id, chat_data)
 
-        yield f"data: {json.dumps({'emotion': brain_result['emotion'], 'auto_memory': new_facts, 'model_used': routing['model'], 'task_type': routing['task_type']})}\n\n"
+        # Record interaction for context memory learning
+        try:
+            record_interaction(message, reply_text, brain_result.get("emotion", "neutral"))
+        except Exception:
+            pass
+
+        intelligence_info = {
+            "web_searched": bool(search_context),
+            "kb_used": bool(kb_context),
+            "deep_reasoning": reasoning_type or "none",
+            "context_memory": bool(context_memory_prompt),
+        }
+
+        yield f"data: {json.dumps({'emotion': brain_result['emotion'], 'auto_memory': new_facts, 'model_used': routing['model'], 'task_type': routing['task_type'], 'intelligence': intelligence_info})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+
+# ===== KNOWLEDGE BASE ENDPOINTS =====
+
+@app.post("/knowledge-base/ingest")
+async def kb_ingest(file: UploadFile = File(...)):
+    """Upload a document to the knowledge base."""
+    if not file.filename:
+        return {"status": "error", "message": "No file provided"}
+
+    content_bytes = await file.read()
+    try:
+        content = content_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        return {"status": "error", "message": "Could not read file — only text-based files supported"}
+
+    result = ingest_document(file.filename, content)
+    return result
+
+
+@app.get("/knowledge-base")
+async def kb_status():
+    """Get knowledge base stats."""
+    return get_kb_stats()
+
+
+@app.post("/knowledge-base/search")
+async def kb_search(body: dict):
+    """Search the knowledge base."""
+    query = body.get("query", "")
+    if not query:
+        return {"results": []}
+    results = search_knowledge(query, top_k=5)
+    return {"results": results}
+
+
+@app.delete("/knowledge-base/{doc_id}")
+async def kb_delete(doc_id: str):
+    """Remove a document from the knowledge base."""
+    return delete_document(doc_id)
+
+
+# ===== CONTEXT MEMORY ENDPOINTS =====
+
+@app.get("/context-memory")
+async def context_memory_stats():
+    """Get context memory learning stats."""
+    return get_memory_stats()
+
+
+# ===== INTELLIGENCE STATUS =====
+
+@app.get("/intelligence")
+async def intelligence_status():
+    """Get status of all intelligence features."""
+    kb = get_kb_stats()
+    mem = get_memory_stats()
+    return {
+        "web_search": "active",
+        "knowledge_base": {
+            "status": "active" if kb["document_count"] > 0 else "empty",
+            "documents": kb["document_count"],
+            "chunks": kb["total_chunks"]
+        },
+        "context_memory": {
+            "status": mem["learning_status"],
+            "interactions": mem["total_interactions"],
+            "preferred_language": mem["preferred_language"],
+            "top_topics": mem["top_topics"]
+        },
+        "multi_model_reasoning": "active"
+    }
 
 
 class SpeakRequest(BaseModel):
