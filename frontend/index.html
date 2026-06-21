@@ -1596,10 +1596,12 @@
     background: rgba(0,212,255,0.3);
   }
   body.dash-editing .dragging {
-    opacity: 0.85;
-    outline-color: #ffd900 !important;
-    box-shadow: 0 0 40px rgba(255,217,0,0.2) !important;
+    opacity: 0.7;
+    outline: 3px solid #ffd900 !important;
+    box-shadow: 0 0 40px rgba(255,217,0,0.4) !important;
     border-radius: 12px;
+    transform: scale(0.97);
+    transition: opacity 0.2s, transform 0.2s;
   }
   body.dash-editing .dash-card .card-edit-toolbar {
     display: flex !important;
@@ -4064,50 +4066,30 @@ input.focus();
 
   function startDrag(item, e) {
     dragCard = item;
-    const rect = dragCard.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-    const w = rect.width;
-    const h = rect.height;
-
-    // Create placeholder in grid where card was
-    placeholder = document.createElement("div");
-    placeholder.className = "drag-placeholder";
-    placeholder.style.minHeight = h + "px";
-    if (dragCard.classList.contains("card-span-2")) placeholder.classList.add("card-span-2");
-    if (dragCard.classList.contains("card-span-row")) placeholder.classList.add("card-span-row");
-    grid.insertBefore(placeholder, dragCard);
-
-    // Move card to body so position:fixed works properly
-    document.body.appendChild(dragCard);
-    dragCard.style.position = "fixed";
-    dragCard.style.left = rect.left + "px";
-    dragCard.style.top = rect.top + "px";
-    dragCard.style.width = w + "px";
-    dragCard.style.height = h + "px";
-    dragCard.style.zIndex = "99999";
-    dragCard.style.opacity = "0.9";
-    dragCard.style.margin = "0";
-    dragCard.style.boxSizing = "border-box";
     dragCard.classList.add("dragging");
+    let lastSwap = null;
 
     function onMove(ev) {
-      dragCard.style.left = (ev.clientX - offsetX) + "px";
-      dragCard.style.top = (ev.clientY - offsetY) + "px";
-
-      // Find drop target among grid items (not including our placeholder)
-      const items = Array.from(grid.children).filter(el => el !== placeholder);
-      let inserted = false;
+      // Find which grid item mouse is over (not the dragged one)
+      const items = Array.from(grid.children).filter(el => el !== dragCard);
       for (const target of items) {
         const r = target.getBoundingClientRect();
         if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
-          const midY = r.top + r.height / 2;
-          if (ev.clientY < midY) {
-            grid.insertBefore(placeholder, target);
-          } else if (target.nextSibling !== placeholder) {
-            grid.insertBefore(placeholder, target.nextSibling);
+          if (target !== lastSwap) {
+            // Swap positions in DOM
+            const dragIdx = Array.from(grid.children).indexOf(dragCard);
+            const targetIdx = Array.from(grid.children).indexOf(target);
+            if (dragIdx < targetIdx) {
+              grid.insertBefore(dragCard, target.nextSibling);
+            } else {
+              grid.insertBefore(dragCard, target);
+            }
+            lastSwap = target;
+            // Flash effect on swapped card
+            target.style.transition = "transform 0.3s ease";
+            target.style.transform = "scale(0.95)";
+            setTimeout(() => { target.style.transform = ""; }, 300);
           }
-          inserted = true;
           break;
         }
       }
@@ -4116,28 +4098,9 @@ input.focus();
     function onUp() {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-
-      // Reset styles
-      dragCard.style.position = "";
-      dragCard.style.left = "";
-      dragCard.style.top = "";
-      dragCard.style.width = "";
-      dragCard.style.height = "";
-      dragCard.style.zIndex = "";
-      dragCard.style.opacity = "";
-      dragCard.style.margin = "";
-      dragCard.style.boxSizing = "";
       dragCard.classList.remove("dragging");
-
-      // Put card back into grid at placeholder position
-      if (placeholder && placeholder.parentElement) {
-        grid.insertBefore(dragCard, placeholder);
-        placeholder.remove();
-      } else {
-        grid.appendChild(dragCard);
-      }
       dragCard = null;
-      placeholder = null;
+      lastSwap = null;
     }
 
     document.addEventListener("mousemove", onMove);
