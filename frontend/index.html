@@ -766,6 +766,45 @@
 
   @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+  /* Orb Alert Notification */
+  .orb-alert {
+    margin-top: 8px;
+    max-width: 360px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ff3b30;
+    text-shadow: 0 0 8px rgba(255,59,48,0.5);
+    min-height: 0;
+    opacity: 0;
+    transform: translateY(-5px) scale(0.95);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+    line-height: 1.4;
+    padding: 0;
+  }
+  .orb-alert.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    padding: 6px 14px;
+    background: rgba(255,59,48,0.08);
+    border: 1px solid rgba(255,59,48,0.25);
+    border-radius: 8px;
+    animation: orbAlertPulse 2s ease-in-out infinite;
+  }
+  .orb-alert.success {
+    color: #00ff88;
+    text-shadow: 0 0 8px rgba(0,255,136,0.5);
+    background: rgba(0,255,136,0.06);
+    border-color: rgba(0,255,136,0.2);
+    animation: none;
+  }
+  @keyframes orbAlertPulse {
+    0%, 100% { border-color: rgba(255,59,48,0.25); box-shadow: none; }
+    50% { border-color: rgba(255,59,48,0.5); box-shadow: 0 0 15px rgba(255,59,48,0.15); }
+  }
+
   .orb-mic-status {
     margin-top: 10px;
     font-size: 12px;
@@ -2040,6 +2079,7 @@
           <span class="state idle" id="state-dot"></span>
           <span id="state-text">IDLE</span>
         </div>
+        <div class="orb-alert" id="orb-alert"></div>
         <div class="orb-mic-status" id="mic-status">Initializing...</div>
       </div>
       <!-- Orb Settings Panel (positioned below orb) -->
@@ -2447,6 +2487,21 @@ function setOrbState(state) {
   if (window._setOrbParticleState) window._setOrbParticleState(state);
   if (window._hudUpdateTask) window._hudUpdateTask(state);
   if (window._aiFlowSetState) window._aiFlowSetState(state);
+}
+
+// Orb Alert — show error/success messages on orb, not in chat
+let orbAlertTimer = null;
+function showOrbAlert(msg, type, duration) {
+  type = type || "error";
+  duration = duration || 8000;
+  const alertEl = document.getElementById("orb-alert");
+  if (!alertEl) return;
+  clearTimeout(orbAlertTimer);
+  alertEl.textContent = msg;
+  alertEl.className = "orb-alert active" + (type === "success" ? " success" : "");
+  orbAlertTimer = setTimeout(function() {
+    alertEl.classList.remove("active", "success");
+  }, duration);
 }
 
 function updateClock() {
@@ -3240,9 +3295,10 @@ async function send() {
     loadChatList();
 
   } catch (err) {
-    typing.textContent = `Error: ${err.message}`;
+    typing.textContent = "";
     typing.classList.remove("typing");
-    setOrbState("error"); stopZeusScanning(); setTimeout(() => setOrbState("idle"), 3000);
+    showOrbAlert("SEND FAILED — " + err.message, "error", 8000);
+    setOrbState("error"); stopZeusScanning(); setTimeout(() => setOrbState("idle"), 5000);
   }
 
   sendBtn.disabled = false; input.focus();
@@ -3971,8 +4027,7 @@ async function checkOllamaStatus(showMsg = false) {
     const data = await res.json();
     if (data.status === "online") {
       if (!ollamaOnline && ollamaLastNotified > 0) {
-        // Was offline, now back online — notify
-        addMsg("✅ Ollama wapas online aa gaya! Ab baat kar sakte ho.", "assistant");
+        showOrbAlert("OLLAMA ONLINE — System Ready", "success", 5000);
         setOrbState("listening");
       }
       ollamaOnline = true;
@@ -3983,7 +4038,7 @@ async function checkOllamaStatus(showMsg = false) {
       if (statusEl) { statusEl.textContent = "OFFLINE"; statusEl.style.color = "var(--error)"; }
       if (statusLabel) statusLabel.textContent = "OLLAMA";
       if (showMsg || (Date.now() - ollamaLastNotified > 60000)) {
-        addMsg("⚠️ " + (data.message || "Ollama chal nahi raha. 'ollama serve' run karo."), "assistant");
+        showOrbAlert(data.message || "OLLAMA OFFLINE — Run 'ollama serve'", "error", 15000);
         ollamaLastNotified = Date.now();
         setOrbState("error");
       }
@@ -3993,6 +4048,8 @@ async function checkOllamaStatus(showMsg = false) {
     if (statusEl) { statusEl.textContent = "DOWN"; statusEl.style.color = "var(--error)"; }
     if (statusLabel) statusLabel.textContent = "SERVER";
     ollamaOnline = false;
+    showOrbAlert("SERVER DOWN — Backend not responding", "error", 15000);
+    setOrbState("error");
   }
 }
 
