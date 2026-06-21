@@ -1167,6 +1167,11 @@
     border-color: #00d4ff; color: #00d4ff;
     background: rgba(0,180,255,0.06);
   }
+  #delete-chat-btn:hover {
+    border-color: rgba(255,60,60,0.4) !important;
+    color: #ff4444 !important;
+    background: rgba(255,60,60,0.1) !important;
+  }
 
   /* Chat history sidebar */
   .chat-history {
@@ -2052,6 +2057,7 @@
     <div class="chat-header-btns">
       <button id="toggle-history">History</button>
       <button id="new-chat-btn">+ New</button>
+      <button id="delete-chat-btn" title="Delete current chat" style="color:#ff4444;border-color:rgba(255,60,60,0.2);">&#128465; Delete</button>
     </div>
   </div>
 
@@ -2926,6 +2932,27 @@ document.getElementById("new-chat-btn").addEventListener("click", async () => {
 
 document.getElementById("toggle-history").addEventListener("click", () => {
   document.getElementById("chat-history").classList.toggle("open");
+});
+
+document.getElementById("delete-chat-btn").addEventListener("click", async () => {
+  try {
+    const res = await fetch(API + "/chats");
+    const data = await res.json();
+    if (!data.active) return;
+    if (!confirm("Delete current chat?")) return;
+    await fetch(API + "/delete-chat/" + data.active, { method: "DELETE" });
+    chatBox.innerHTML = "";
+    await loadChatList();
+    // Load the new active chat
+    const r2 = await fetch(API + "/chats");
+    const d2 = await r2.json();
+    if (d2.active) {
+      const cr = await fetch(API + "/select-chat/" + d2.active, { method: "POST" });
+      const cd = await cr.json();
+      for (const m of cd.messages || []) chatBox.appendChild(createMessage(m.role === "user" ? "user" : "assistant", m.content));
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  } catch(e) {}
 });
 
 document.querySelectorAll(".qa-btn").forEach(btn => {
