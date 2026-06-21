@@ -1453,6 +1453,93 @@
     font-size: 11px; color: #00aaff; margin-top: 8px; font-weight: 500;
   }
 
+  /* ===== ROADMAP PANEL ===== */
+  .roadmap-panel {
+    position: fixed; top: 0; left: -420px; width: 410px; height: 100vh;
+    background: rgba(5,8,18,0.97); backdrop-filter: blur(30px);
+    border-right: 1px solid rgba(0,212,255,0.15);
+    z-index: 9998; display: flex; flex-direction: column;
+    transition: left 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+    box-shadow: 5px 0 40px rgba(0,0,0,0.6);
+  }
+  .roadmap-panel.open { left: 0; }
+  .roadmap-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px; border-bottom: 1px solid rgba(0,180,255,0.1);
+  }
+  .roadmap-title {
+    font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700;
+    color: #00d4ff; letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .roadmap-close {
+    background: none; border: 1px solid rgba(255,60,60,0.3); color: #ff4444;
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .roadmap-close:hover { background: rgba(255,60,60,0.15); }
+  .roadmap-progress-bar {
+    margin: 12px 18px; height: 8px; background: rgba(0,180,255,0.08);
+    border-radius: 4px; position: relative; overflow: hidden;
+  }
+  .roadmap-progress-fill {
+    height: 100%; border-radius: 4px; width: 0%;
+    background: linear-gradient(90deg, #00d4ff, #00ff88);
+    transition: width 0.6s ease;
+  }
+  .roadmap-progress-text {
+    position: absolute; right: 0; top: -18px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #00ff88; font-weight: 600;
+  }
+  .roadmap-list {
+    flex: 1; overflow-y: auto; padding: 8px 14px;
+  }
+  .roadmap-list::-webkit-scrollbar { width: 4px; }
+  .roadmap-list::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 4px; }
+  .roadmap-phase {
+    margin-bottom: 16px;
+  }
+  .roadmap-phase-title {
+    font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700;
+    color: rgba(0,212,255,0.5); letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 8px; padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0,180,255,0.08);
+  }
+  .roadmap-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; margin-bottom: 4px;
+    border-radius: 8px; background: rgba(0,150,255,0.03);
+    border: 1px solid rgba(0,180,255,0.06); transition: all 0.2s;
+  }
+  .roadmap-item:hover { background: rgba(0,150,255,0.08); border-color: rgba(0,180,255,0.15); }
+  .roadmap-item .ri-status {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .ri-status.done { background: rgba(0,255,136,0.15); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+  .ri-status.partial { background: rgba(255,217,0,0.12); color: #ffd900; border: 1px solid rgba(255,217,0,0.3); }
+  .ri-status.soon { background: rgba(0,180,255,0.08); color: rgba(0,180,255,0.4); border: 1px solid rgba(0,180,255,0.15); }
+  .roadmap-item .ri-info { flex: 1; min-width: 0; }
+  .ri-version {
+    font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 600;
+    color: rgba(0,212,255,0.6); letter-spacing: 1px;
+  }
+  .ri-name { font-size: 12px; color: var(--text-bright); font-weight: 500; margin-top: 1px; }
+  .ri-desc { font-size: 9px; color: var(--text-dim); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .ri-percent {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; flex-shrink: 0;
+  }
+  .ri-percent.done { color: #00ff88; }
+  .ri-percent.partial { color: #ffd900; }
+  .ri-percent.soon { color: rgba(0,180,255,0.4); }
+  .ri-bar {
+    width: 50px; height: 4px; background: rgba(0,180,255,0.1); border-radius: 2px; overflow: hidden; flex-shrink: 0;
+  }
+  .ri-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+  .ri-bar-fill.done { background: #00ff88; }
+  .ri-bar-fill.partial { background: #ffd900; }
+  .ri-bar-fill.soon { background: rgba(0,180,255,0.2); }
+
   /* ===== DASHBOARD EDITOR MODE ===== */
   .dash-edit-btn { color: #00d4ff !important; }
   .dash-save-btn { color: #00ff88 !important; border-color: rgba(0,255,136,0.3) !important; font-size: 11px !important; }
@@ -1670,6 +1757,17 @@
     </div>
   </div>
 
+  <!-- Upcoming Features -->
+  <div class="hud-item clickable" id="hud-roadmap-btn" title="Upcoming Features" style="cursor:pointer;">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#128640;</span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">ROADMAP</div>
+      <div class="hud-detail-value" style="font-size:10px;color:#ffd900;">V1 → V25</div>
+    </div>
+  </div>
+
   <!-- Uptime -->
   <div class="hud-item" style="margin-top:auto;">
     <div class="hud-hex">
@@ -1697,6 +1795,19 @@
   <div class="proc-list" id="proc-list">
     <div class="proc-loading">Loading processes...</div>
   </div>
+</div>
+
+<!-- ===== ROADMAP PANEL ===== -->
+<div class="roadmap-panel" id="roadmap-panel">
+  <div class="roadmap-header">
+    <span class="roadmap-title">&#128640; JARVIS Roadmap — V1 to V25</span>
+    <button class="roadmap-close" id="roadmap-close">&#10005;</button>
+  </div>
+  <div class="roadmap-progress-bar">
+    <div class="roadmap-progress-fill" id="roadmap-progress-fill"></div>
+    <span class="roadmap-progress-text" id="roadmap-progress-text">0%</span>
+  </div>
+  <div class="roadmap-list" id="roadmap-list"></div>
 </div>
 
 <!-- ===== LEFT: DASHBOARD ===== -->
@@ -4103,6 +4214,112 @@ input.focus();
   editBtn.addEventListener("click", enterEditMode);
   saveBtn.addEventListener("click", () => exitEditMode(true));
   cancelBtn.addEventListener("click", () => exitEditMode(false));
+})();
+
+// ===== ROADMAP PANEL =====
+(function(){
+  const btn = document.getElementById("hud-roadmap-btn");
+  const panel = document.getElementById("roadmap-panel");
+  const closeBtn = document.getElementById("roadmap-close");
+  const list = document.getElementById("roadmap-list");
+  const progressFill = document.getElementById("roadmap-progress-fill");
+  const progressText = document.getElementById("roadmap-progress-text");
+  if (!btn || !panel) return;
+
+  const roadmap = [
+    { phase: "Phase 1 — Foundation", items: [
+      { v:"V1", name:"Core Assistant", desc:"Chat, TTS, History, UI, Logging", pct:75, features:"Chat ✅ | TTS ✅ | History ✅ | UI ✅ | Wake Word ❌ | STT ❌ | Auth ❌" },
+      { v:"V2", name:"Memory System", desc:"Core memory, auto memory, context tracking", pct:70, features:"Core Memory ✅ | Auto Memory ✅ | Context ✅ | Vector DB ❌ | Summaries ❌" },
+      { v:"V3", name:"Tool Framework", desc:"Router, search, files, plugins, calculator", pct:70, features:"Tool Router ✅ | Search ✅ | Files ✅ | Plugins ✅ | Weather ❌ | Calendar ❌" },
+      { v:"V4", name:"Agent Framework", desc:"21 modules, task routing, agent registry", pct:80, features:"21 Modules ✅ | Registry ✅ | Routing ✅ | Agent Comms ❌ | Parallel ❌" },
+      { v:"V5", name:"Constitutional AI", desc:"AI principles, safety, validation", pct:0, features:"Principles ❌ | Safety Rules ❌ | Validation ❌ | Hallucination Check ❌" },
+    ]},
+    { phase: "Phase 2 — Specialized Agents", items: [
+      { v:"V6", name:"Zeus (Orchestrator)", desc:"Intent analysis, model selection", pct:60, features:"Intent Analysis ✅ | Model Selection ✅ | Multi-Agent ❌ | Workflow Planning ❌" },
+      { v:"V7", name:"Hermes (Communication)", desc:"WhatsApp, Gmail, Slack, Telegram", pct:10, features:"Desktop Notify ✅ | WhatsApp ❌ | Gmail ❌ | Slack ❌ | Telegram ❌" },
+      { v:"V8", name:"Athena (Knowledge)", desc:"Web research, RAG, PDF analysis", pct:40, features:"Web Search ✅ | RAG (TF-IDF) ✅ | PDF ❌ | Knowledge Graph ❌" },
+      { v:"V9", name:"Hephaestus (Developer)", desc:"Code gen, sandbox execution", pct:30, features:"Code Gen ✅ | Sandbox ✅ | Git ❌ | Testing ❌ | Deployment ❌" },
+      { v:"V10", name:"Apollo (Creative)", desc:"Image gen, creative writing", pct:25, features:"Writing ✅ | Image Gen ✅ | Video ❌ | Presentations ❌ | Music ❌" },
+      { v:"V11", name:"Ares (Execution)", desc:"PC control, screenshots, clipboard", pct:50, features:"App Control ✅ | Screenshots ✅ | Clipboard ✅ | Browser Auto ❌" },
+      { v:"V12", name:"Argus (Vision)", desc:"Camera, OCR, screen understanding", pct:10, features:"Module Stub ✅ | Camera ❌ | OCR ❌ | Screen Analysis ❌" },
+      { v:"V13", name:"Mnemosyne (Memory Agent)", desc:"Episodic, semantic, importance scoring", pct:40, features:"Remember/Recall ✅ | Episodic ❌ | Scoring ❌ | Compression ❌" },
+      { v:"V14", name:"Chronos (Time Agent)", desc:"Calendar, reminders, scheduling", pct:30, features:"Todos ✅ | Calendar ❌ | Scheduling ❌ | Habits ❌" },
+      { v:"V15", name:"Hestia (Smart Home)", desc:"IoT, sensors, lights, appliances", pct:5, features:"Stub Only ✅ | IoT ❌ | Lights ❌ | Sensors ❌" },
+    ]},
+    { phase: "Phase 3 — Intelligence Layer", items: [
+      { v:"V16", name:"Reflection Engine", desc:"Self-critique, performance analysis", pct:0, features:"Self-Critique ❌ | Error Detection ❌ | Agent Eval ❌" },
+      { v:"V17", name:"Learning Engine", desc:"Preference learning, prompt optimization", pct:15, features:"Emotion Detect ✅ | Preferences ✅ | Prompt Tuning ❌" },
+      { v:"V18", name:"Dashboard (Orb UI)", desc:"Animated orb, live stats, HUD", pct:90, features:"Orb ✅ | Live Stats ✅ | HUD ✅ | System Health ✅ | AI Flow ✅" },
+      { v:"V19", name:"Workflow Automation", desc:"Morning routine, email automation", pct:0, features:"Workflows ❌ | Routines ❌ | Triggers ❌" },
+      { v:"V20", name:"AI Team Collaboration", desc:"Parallel agents, shared memory", pct:0, features:"Parallel ❌ | Shared Memory ❌ | Consensus ❌" },
+    ]},
+    { phase: "Phase 4 — AI Operating System", items: [
+      { v:"V21", name:"Local AI", desc:"Ollama, Qwen3, DeepSeek, Moondream", pct:85, features:"Ollama ✅ | Qwen3 8B/14B ✅ | DeepSeek-R1 ✅ | Moondream ✅ | Routing ✅" },
+      { v:"V22", name:"Cloud AI", desc:"OpenAI, Anthropic, Gemini", pct:0, features:"OpenAI ❌ | Anthropic ❌ | Gemini ❌ | Azure ❌" },
+      { v:"V23", name:"AI Operating System", desc:"Plugin marketplace, multi-user, sync", pct:0, features:"Plugins ❌ | Multi-User ❌ | Sync ❌ | API Gateway ❌" },
+    ]},
+    { phase: "Phase 5 — Autonomous JARVIS", items: [
+      { v:"V24", name:"Self-Improving AI", desc:"Auto prompt tuning, optimization", pct:0, features:"Prompt Tuning ❌ | Optimization ❌ | Health Monitor ❌" },
+      { v:"V25", name:"Ultimate JARVIS", desc:"Everything unified as one AI OS", pct:0, features:"Full Integration ❌ | All Agents ❌ | Autonomous ❌" },
+    ]},
+  ];
+
+  function getStatus(pct) {
+    if (pct >= 70) return "done";
+    if (pct > 0) return "partial";
+    return "soon";
+  }
+  function getIcon(pct) {
+    if (pct >= 70) return "✓";
+    if (pct > 0) return "◐";
+    return "○";
+  }
+
+  function render() {
+    list.innerHTML = "";
+    let totalPct = 0, count = 0;
+    roadmap.forEach(phase => {
+      const sec = document.createElement("div");
+      sec.className = "roadmap-phase";
+      sec.innerHTML = '<div class="roadmap-phase-title">' + phase.phase + '</div>';
+      phase.items.forEach(item => {
+        const st = getStatus(item.pct);
+        const row = document.createElement("div");
+        row.className = "roadmap-item";
+        row.innerHTML =
+          '<div class="ri-status ' + st + '">' + getIcon(item.pct) + '</div>' +
+          '<div class="ri-info">' +
+            '<div class="ri-version">' + item.v + '</div>' +
+            '<div class="ri-name">' + item.name + '</div>' +
+            '<div class="ri-desc">' + item.desc + '</div>' +
+            '<div class="ri-desc" style="margin-top:4px;color:rgba(0,212,255,0.5);display:none;" class="ri-features">' + item.features + '</div>' +
+          '</div>' +
+          '<div class="ri-bar"><div class="ri-bar-fill ' + st + '" style="width:' + item.pct + '%"></div></div>' +
+          '<div class="ri-percent ' + st + '">' + item.pct + '%</div>';
+        // Toggle features on click
+        row.addEventListener("click", function() {
+          const feat = row.querySelectorAll(".ri-desc")[1];
+          if (feat) feat.style.display = feat.style.display === "none" ? "block" : "none";
+        });
+        row.style.cursor = "pointer";
+        sec.appendChild(row);
+        totalPct += item.pct;
+        count++;
+      });
+      list.appendChild(sec);
+    });
+    const avg = Math.round(totalPct / count);
+    progressFill.style.width = avg + "%";
+    progressText.textContent = avg + "% Complete";
+  }
+
+  btn.addEventListener("click", function() {
+    panel.classList.toggle("open");
+    if (panel.classList.contains("open")) render();
+  });
+  closeBtn.addEventListener("click", function() {
+    panel.classList.remove("open");
+  });
 })();
 
 // ===== AI FLOW PANEL RESIZE =====
