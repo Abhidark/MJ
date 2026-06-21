@@ -3412,6 +3412,23 @@ input.addEventListener('input', () => {
 });
 
 document.getElementById("orb-container").addEventListener("click", () => {
+  // If MJ is speaking, stop immediately (shut up)
+  if (mjAudio && !mjAudio.paused) {
+    mjAudio.pause();
+    mjAudio.currentTime = 0;
+    mjAudio = null;
+    setOrbState(listening ? "listening" : "idle");
+    showOrbAlert("MUTED — MJ stopped speaking", "success", 3000);
+    return;
+  }
+  // Also stop browser speechSynthesis if active
+  if (window.speechSynthesis && window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    setOrbState(listening ? "listening" : "idle");
+    showOrbAlert("MUTED — MJ stopped speaking", "success", 3000);
+    return;
+  }
+  // Otherwise toggle mic
   document.getElementById("mic-btn").click();
 });
 
