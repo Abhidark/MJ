@@ -227,6 +227,25 @@ async def remember(req: RememberRequest):
     return {"status": "ok", "facts": facts}
 
 
+@app.delete("/delete-chat/{chat_id}")
+async def delete_chat(chat_id: str):
+    """Delete a specific chat."""
+    chat_file = CHATS_DIR / f"{chat_id}.json"
+    if chat_file.exists():
+        chat_file.unlink()
+    # If deleted chat was active, switch to another or create new
+    if get_active_chat_id() == chat_id:
+        remaining = sorted(CHATS_DIR.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True)
+        if remaining:
+            new_active = json.loads(remaining[0].read_text(encoding="utf-8"))["id"]
+            set_active_chat_id(new_active)
+        else:
+            new_id = str(uuid.uuid4())[:8]
+            save_chat(new_id, {"id": new_id, "title": "New Chat", "messages": []})
+            set_active_chat_id(new_id)
+    return {"status": "ok"}
+
+
 @app.post("/new-chat")
 async def new_chat():
     chat_id = str(uuid.uuid4())[:8]

@@ -1076,13 +1076,33 @@
   .chat-history.open { max-height: 220px; overflow-y: auto; }
   .chat-history-inner { padding: 8px; }
   .ch-item {
+    display: flex; align-items: center; justify-content: space-between;
     padding: 10px 14px; border-radius: 8px; font-size: 12px;
-    color: var(--text-dim); cursor: pointer; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; transition: var(--transition);
+    color: var(--text-dim); cursor: pointer;
+    transition: var(--transition);
     margin-bottom: 2px; font-weight: 500;
+    gap: 6px;
   }
   .ch-item:hover { background: rgba(0,180,255,0.05); color: var(--text); }
   .ch-item.active { background: rgba(0,180,255,0.08); color: #00d4ff; border-left: 2px solid #00d4ff; }
+  .ch-item-title {
+    flex: 1; min-width: 0; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ch-delete {
+    display: none; width: 22px; height: 22px;
+    border-radius: 6px; border: 1px solid rgba(255,60,60,0.15);
+    background: rgba(255,60,60,0.06); color: rgba(255,80,80,0.5);
+    font-size: 11px; cursor: pointer; flex-shrink: 0;
+    align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .ch-item:hover .ch-delete { display: flex; }
+  .ch-delete:hover {
+    background: rgba(255,60,60,0.15); color: #ff4444;
+    border-color: rgba(255,60,60,0.4);
+    box-shadow: 0 0 8px rgba(255,60,60,0.1);
+  }
 
   /* ===== MESSAGES ===== */
   #chat-container {
@@ -2378,8 +2398,20 @@ async function loadChatList() {
       count++;
       const item = document.createElement("div");
       item.className = "ch-item" + (chat.id === data.active ? " active" : "");
-      item.textContent = chat.title;
-      item.addEventListener("click", () => selectChat(chat.id));
+
+      const title = document.createElement("span");
+      title.className = "ch-item-title";
+      title.textContent = chat.title;
+      title.addEventListener("click", () => selectChat(chat.id));
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "ch-delete";
+      delBtn.innerHTML = "&#10005;";
+      delBtn.title = "Delete chat";
+      delBtn.addEventListener("click", (e) => { e.stopPropagation(); deleteChat(chat.id, chat.title); });
+
+      item.appendChild(title);
+      item.appendChild(delBtn);
       chatList.appendChild(item);
     }
     document.getElementById("wc-chats-val").textContent = count;
@@ -2390,6 +2422,26 @@ async function loadMemoryCount() {
   try {
     const res = await fetch(API + "/core-memory"); const data = await res.json();
     document.getElementById("wc-memory-val").textContent = data.facts.length + " facts";
+  } catch(e) {}
+}
+
+async function deleteChat(chatId, chatTitle) {
+  if (!confirm("Delete chat: \"" + chatTitle + "\"?")) return;
+  try {
+    await fetch(API + "/delete-chat/" + chatId, { method: "DELETE" });
+    await loadChatList();
+    // If deleted the active chat, reload messages
+    const res = await fetch(API + "/chats");
+    const data = await res.json();
+    if (data.active) {
+      const chatRes = await fetch(API + "/select-chat/" + data.active, { method: "POST" });
+      const chatData = await chatRes.json();
+      chatBox.innerHTML = "";
+      for (const m of chatData.messages || []) {
+        chatBox.appendChild(createMessage(m.role === "user" ? "user" : "assistant", m.content));
+      }
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
   } catch(e) {}
 }
 
