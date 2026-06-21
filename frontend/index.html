@@ -1462,18 +1462,21 @@
   body.dash-editing .dash-grid {
     gap: 14px;
   }
-  body.dash-editing .dash-card {
+  body.dash-editing .dash-grid > * {
     outline: 2px dashed rgba(0,212,255,0.3);
     cursor: grab;
     transition: outline 0.2s, box-shadow 0.2s;
+    border-radius: 12px;
   }
-  body.dash-editing .dash-card:hover {
+  body.dash-editing .dash-grid > *:hover {
     outline-color: rgba(0,212,255,0.6);
     box-shadow: 0 0 20px rgba(0,212,255,0.15);
   }
-  body.dash-editing .dash-card.dragging {
-    opacity: 0.5;
-    outline-color: #ffd900;
+  body.dash-editing .dragging {
+    opacity: 0.85;
+    outline-color: #ffd900 !important;
+    box-shadow: 0 0 40px rgba(255,217,0,0.2) !important;
+    border-radius: 12px;
   }
   body.dash-editing .dash-card .card-edit-toolbar {
     display: flex !important;
@@ -3802,11 +3805,19 @@ input.focus();
   if (!editBtn || !grid) return;
 
   let editing = false;
-  let savedLayout = null;
-  let toolbars = [];
+  let savedHTML = null;
+  let dragCard = null;
+  let placeholder = null;
 
-  function getCards() {
-    return Array.from(grid.children).filter(el => el.classList.contains("dash-card") || el.style.display !== undefined);
+  // Get all direct grid children (cards + wrapper divs)
+  function getGridItems() {
+    return Array.from(grid.children);
+  }
+
+  // Find closest grid item from a click target
+  function closestGridItem(el) {
+    while (el && el.parentElement !== grid) el = el.parentElement;
+    return el;
   }
 
   function enterEditMode() {
@@ -3815,115 +3826,160 @@ input.focus();
     editBtn.style.display = "none";
     saveBtn.style.display = "inline-flex";
     cancelBtn.style.display = "inline-flex";
+    savedHTML = grid.innerHTML;
 
-    // Save current state
-    savedLayout = grid.innerHTML;
+    // Tag each grid item + add toolbars
+    getGridItems().forEach((item, i) => {
+      item.setAttribute("data-grid-idx", i);
+      // Only add toolbar to visible dash-cards (not wrapper divs' inner cards)
+      const cards = item.classList.contains("dash-card") ? [item] : item.querySelectorAll(".dash-card");
+      cards.forEach(card => {
+        if (card.querySelector(".card-edit-toolbar")) return;
+        card.style.position = "relative";
 
-    // Add toolbars to each dash-card
-    grid.querySelectorAll(".dash-card").forEach((card, i) => {
-      if (card.querySelector(".card-edit-toolbar")) return;
-      card.style.position = "relative";
-      card.setAttribute("data-card-id", "card-" + i);
+        const toolbar = document.createElement("div");
+        toolbar.className = "card-edit-toolbar";
+        toolbar.innerHTML =
+          '<input type="color" value="#020c19" title="Card Color" class="card-color-pick">' +
+          '<button title="Wider" class="card-wider">&#8644;</button>' +
+          '<button title="Taller" class="card-taller">&#8645;</button>' +
+          '<button title="Reset Size" class="card-reset-size">&#8634;</button>';
+        card.appendChild(toolbar);
 
-      // Toolbar: color picker + size buttons
-      const toolbar = document.createElement("div");
-      toolbar.className = "card-edit-toolbar";
-      toolbar.innerHTML = `
-        <input type="color" value="#020c19" title="Card Color" class="card-color-pick">
-        <button title="Wider" class="card-wider">&#8644;</button>
-        <button title="Taller" class="card-taller">&#8645;</button>
-        <button title="Reset Size" class="card-reset-size">&#8634;</button>
-      `;
-      card.appendChild(toolbar);
+        const handle = document.createElement("div");
+        handle.className = "card-resize-handle";
+        handle.textContent = "⤡";
+        card.appendChild(handle);
 
-      // Resize handle
-      const handle = document.createElement("div");
-      handle.className = "card-resize-handle";
-      handle.textContent = "⤡";
-      card.appendChild(handle);
-
-      // Color picker
-      toolbar.querySelector(".card-color-pick").addEventListener("input", function(e) {
-        card.style.background = e.target.value;
-      });
-
-      // Wider
-      toolbar.querySelector(".card-wider").addEventListener("click", function() {
-        if (!card.classList.contains("card-span-2") && !card.classList.contains("card-span-row")) {
-          card.classList.add("card-span-2");
-        } else if (card.classList.contains("card-span-2")) {
-          card.classList.remove("card-span-2");
-          card.classList.add("card-span-row");
-        }
-      });
-
-      // Taller
-      toolbar.querySelector(".card-taller").addEventListener("click", function() {
-        const h = card.offsetHeight;
-        card.style.minHeight = (h + 50) + "px";
-      });
-
-      // Reset
-      toolbar.querySelector(".card-reset-size").addEventListener("click", function() {
-        card.style.minHeight = "";
-        card.classList.remove("card-span-2", "card-span-row");
-      });
-
-      // Drag-drop reorder
-      card.setAttribute("draggable", "true");
-      card.addEventListener("dragstart", function(e) {
-        card.classList.add("dragging");
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", card.getAttribute("data-card-id"));
-      });
-      card.addEventListener("dragend", function() {
-        card.classList.remove("dragging");
-        grid.querySelectorAll(".drag-placeholder").forEach(p => p.remove());
-      });
-      card.addEventListener("dragover", function(e) {
-        e.preventDefault();
-        const dragging = grid.querySelector(".dragging");
-        if (dragging && dragging !== card) {
-          const rect = card.getBoundingClientRect();
-          const mid = rect.top + rect.height / 2;
-          if (e.clientY < mid) {
-            grid.insertBefore(dragging, card);
+        // Color
+        toolbar.querySelector(".card-color-pick").addEventListener("input", function(e) {
+          card.style.background = e.target.value;
+        });
+        // Wider
+        toolbar.querySelector(".card-wider").addEventListener("click", function() {
+          const target = closestGridItem(card) || card;
+          if (!target.classList.contains("card-span-2") && !target.classList.contains("card-span-row")) {
+            target.classList.add("card-span-2");
+          } else if (target.classList.contains("card-span-2")) {
+            target.classList.remove("card-span-2");
+            target.classList.add("card-span-row");
           } else {
-            grid.insertBefore(dragging, card.nextSibling);
+            target.classList.remove("card-span-row");
           }
-        }
+        });
+        // Taller
+        toolbar.querySelector(".card-taller").addEventListener("click", function() {
+          card.style.minHeight = (card.offsetHeight + 50) + "px";
+        });
+        // Reset
+        toolbar.querySelector(".card-reset-size").addEventListener("click", function() {
+          card.style.minHeight = "";
+          const target = closestGridItem(card) || card;
+          target.classList.remove("card-span-2", "card-span-row");
+        });
+
+        // Resize handle
+        handle.addEventListener("mousedown", function(e) {
+          e.preventDefault(); e.stopPropagation();
+          const startX = e.clientX, startY = e.clientY;
+          const startW = card.offsetWidth, startH = card.offsetHeight;
+          function onMove(ev) {
+            card.style.width = Math.max(150, startW + (ev.clientX - startX)) + "px";
+            card.style.minHeight = Math.max(80, startH + (ev.clientY - startY)) + "px";
+          }
+          function onUp() {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+          }
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+        });
       });
-
-      // Free resize via handle
-      let resizing = false, startX, startY, startW, startH;
-      handle.addEventListener("mousedown", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        resizing = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startW = card.offsetWidth;
-        startH = card.offsetHeight;
-        card.setAttribute("draggable", "false");
-
-        function onMove(ev) {
-          if (!resizing) return;
-          card.style.width = Math.max(150, startW + (ev.clientX - startX)) + "px";
-          card.style.minHeight = Math.max(80, startH + (ev.clientY - startY)) + "px";
-        }
-        function onUp() {
-          resizing = false;
-          card.setAttribute("draggable", "true");
-          document.removeEventListener("mousemove", onMove);
-          document.removeEventListener("mouseup", onUp);
-        }
-        document.addEventListener("mousemove", onMove);
-        document.addEventListener("mouseup", onUp);
-      });
-
-      toolbars.push(toolbar);
-      toolbars.push(handle);
     });
+
+    // Mouse-based drag reorder on grid
+    grid.addEventListener("mousedown", onDragStart);
+  }
+
+  function onDragStart(e) {
+    if (!editing) return;
+    // Don't drag if clicking toolbar, handle, color picker, button, input, slider
+    if (e.target.closest(".card-edit-toolbar, .card-resize-handle, button, input, select, .os-slider, .orb-settings-panel")) return;
+
+    const item = closestGridItem(e.target);
+    if (!item) return;
+
+    e.preventDefault();
+    dragCard = item;
+    const rect = dragCard.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    // Create placeholder
+    placeholder = document.createElement("div");
+    placeholder.className = "drag-placeholder";
+    placeholder.style.minHeight = rect.height + "px";
+    // Copy grid span classes
+    if (dragCard.classList.contains("card-span-2")) placeholder.classList.add("card-span-2");
+    if (dragCard.classList.contains("card-span-row")) placeholder.classList.add("card-span-row");
+
+    // Make card floating
+    dragCard.style.position = "fixed";
+    dragCard.style.left = rect.left + "px";
+    dragCard.style.top = rect.top + "px";
+    dragCard.style.width = rect.width + "px";
+    dragCard.style.zIndex = "9999";
+    dragCard.style.opacity = "0.85";
+    dragCard.style.pointerEvents = "none";
+    dragCard.classList.add("dragging");
+
+    // Insert placeholder where card was
+    dragCard.parentElement.insertBefore(placeholder, dragCard);
+
+    function onMove(ev) {
+      dragCard.style.left = (ev.clientX - offsetX) + "px";
+      dragCard.style.top = (ev.clientY - offsetY) + "px";
+
+      // Find which grid item we're hovering over
+      const items = getGridItems().filter(el => el !== dragCard && el !== placeholder);
+      for (const target of items) {
+        const r = target.getBoundingClientRect();
+        const cx = ev.clientX, cy = ev.clientY;
+        if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
+          const midY = r.top + r.height / 2;
+          if (cy < midY) {
+            grid.insertBefore(placeholder, target);
+          } else {
+            grid.insertBefore(placeholder, target.nextSibling);
+          }
+          break;
+        }
+      }
+    }
+
+    function onUp() {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      // Drop card at placeholder position
+      dragCard.style.position = "";
+      dragCard.style.left = "";
+      dragCard.style.top = "";
+      dragCard.style.width = "";
+      dragCard.style.zIndex = "";
+      dragCard.style.opacity = "";
+      dragCard.style.pointerEvents = "";
+      dragCard.classList.remove("dragging");
+
+      if (placeholder && placeholder.parentElement) {
+        grid.insertBefore(dragCard, placeholder);
+        placeholder.remove();
+      }
+      dragCard = null;
+      placeholder = null;
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   }
 
   function exitEditMode(save) {
@@ -3932,51 +3988,63 @@ input.focus();
     editBtn.style.display = "";
     saveBtn.style.display = "none";
     cancelBtn.style.display = "none";
+    grid.removeEventListener("mousedown", onDragStart);
 
     if (save) {
-      // Save layout to localStorage
+      // Save: card order (by data-grid-idx), colors, sizes
       const layout = [];
-      grid.querySelectorAll(".dash-card").forEach((card) => {
-        layout.push({
-          id: card.getAttribute("data-card-id"),
-          bg: card.style.background || "",
-          minH: card.style.minHeight || "",
-          w: card.style.width || "",
-          span2: card.classList.contains("card-span-2"),
-          spanRow: card.classList.contains("card-span-row")
+      getGridItems().forEach(item => {
+        const cards = item.classList.contains("dash-card") ? [item] : Array.from(item.querySelectorAll(".dash-card"));
+        cards.forEach(card => {
+          layout.push({
+            bg: card.style.background || "",
+            minH: card.style.minHeight || "",
+            w: card.style.width || "",
+          });
         });
+        layout.push({ _gridIdx: item.getAttribute("data-grid-idx") });
       });
-      localStorage.setItem("mj-dash-layout", JSON.stringify(layout));
+      // Save order of grid items
+      const order = getGridItems().map(el => el.getAttribute("data-grid-idx"));
+      localStorage.setItem("mj-dash-layout", JSON.stringify({ order, cards: layout }));
     } else {
-      // Restore saved layout
-      if (savedLayout) grid.innerHTML = savedLayout;
+      if (savedHTML) grid.innerHTML = savedHTML;
     }
 
-    // Remove toolbars and handles
-    grid.querySelectorAll(".card-edit-toolbar, .card-resize-handle").forEach(el => el.remove());
-    grid.querySelectorAll(".dash-card").forEach(card => {
-      card.removeAttribute("draggable");
-      card.removeAttribute("data-card-id");
-    });
-    toolbars = [];
+    // Cleanup
+    grid.querySelectorAll(".card-edit-toolbar, .card-resize-handle, .drag-placeholder").forEach(el => el.remove());
+    grid.querySelectorAll("[data-grid-idx]").forEach(el => el.removeAttribute("data-grid-idx"));
   }
 
-  // Load saved layout on page load
+  // Load saved layout
   function loadSavedLayout() {
-    const data = localStorage.getItem("mj-dash-layout");
-    if (!data) return;
+    const raw = localStorage.getItem("mj-dash-layout");
+    if (!raw) return;
     try {
-      const layout = JSON.parse(data);
-      const cards = grid.querySelectorAll(".dash-card");
-      layout.forEach((item, i) => {
-        if (cards[i]) {
-          if (item.bg) cards[i].style.background = item.bg;
-          if (item.minH) cards[i].style.minHeight = item.minH;
-          if (item.w) cards[i].style.width = item.w;
-          if (item.span2 && !cards[i].classList.contains("card-span-2")) cards[i].classList.add("card-span-2");
-          if (item.spanRow && !cards[i].classList.contains("card-span-row")) cards[i].classList.add("card-span-row");
-        }
-      });
+      const data = JSON.parse(raw);
+      if (data.order) {
+        // Reorder grid items
+        const items = getGridItems();
+        const map = {};
+        items.forEach((el, i) => { map[i] = el; });
+        data.order.forEach(idx => {
+          const el = map[parseInt(idx)];
+          if (el) grid.appendChild(el);
+        });
+      }
+      if (data.cards) {
+        const allCards = grid.querySelectorAll(".dash-card");
+        let ci = 0;
+        data.cards.forEach(item => {
+          if (item._gridIdx !== undefined) return;
+          if (allCards[ci]) {
+            if (item.bg) allCards[ci].style.background = item.bg;
+            if (item.minH) allCards[ci].style.minHeight = item.minH;
+            if (item.w) allCards[ci].style.width = item.w;
+            ci++;
+          }
+        });
+      }
     } catch(e) {}
   }
   loadSavedLayout();

@@ -2,10 +2,10 @@
   "date": "2026-06-21",
   "apps": {
     "uvicorn  main:app --host 0.0.0": 23.052722,
-    "Google Chrome": 391.947984,
+    "Google Chrome": 432.586293,
     "VS Code": 27.998561000000002,
-    "Unknown": 5.663845,
-    "http://localhost:8000 wants to": 40.211254,
+    "Unknown": 11.488512,
+    "http://localhost:8000 wants to": 57.792553999999996,
     "localhost:8000": 5.7814,
     "Snipping Tool Overlay": 34.925505,
     "Quick settings": 44.652824,
@@ -16,5 +16,5 @@
     "Task Switching": 16.769896000000003,
     "Select an account": 6.235755
   },
-  "session_start": "2026-06-21T19:54:51.718580"
+  "session_start": "2026-06-21T20:06:24.869955"
 }
