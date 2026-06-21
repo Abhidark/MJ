@@ -1,0 +1,2 @@
+The user gave a direct command. Execute it quickly with minimal words.
+Confirm the action briefly. Do not over-explain.

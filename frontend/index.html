@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MJ - AI Assistant</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #06060b;
+    --bg2: #0a0a12;
+    --primary: #e63946;
+    --primary-dim: #9d1520;
+    --accent: #ff6b35;
+    --accent2: #f7931e;
+    --glow: rgba(230, 57, 70, 0.35);
+    --glow2: rgba(255, 107, 53, 0.25);
+    --glass: rgba(255, 255, 255, 0.03);
+    --glass2: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-hover: rgba(255, 255, 255, 0.15);
+    --panel-bg: rgba(12, 10, 18, 0.75);
+    --text: #e2dcd5;
+    --text-dim: #6b6560;
+    --text-bright: #ffffff;
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --error: #e74c3c;
+    --blue: #3498db;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+  }
+
+  /* ===== ANIMATED BACKGROUND ===== */
+  #particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hex-grid {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(230,57,70,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 30%, rgba(255,107,53,0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(52,152,219,0.02) 0%, transparent 50%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .scanline {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 4px,
+      rgba(255,255,255,0.003) 4px,
+      rgba(255,255,255,0.003) 5px
+    );
+    mix-blend-mode: overlay;
+  }
+
+  /* ===== LEFT DASHBOARD ===== */
+  #dashboard {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+    position: relative;
+    min-width: 0;
+  }
+
+  /* ===== TOP BAR ===== */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--panel-bg);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+
+  .top-bar .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 5px;
+    filter: drop-shadow(0 0 20px var(--glow));
+  }
+
+  .top-bar .logo span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .top-bar-widgets {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+  }
+
+  .widget-mini {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  .widget-mini .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .widget-mini .val.time-val {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .top-bar-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    color: var(--text-dim);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    text-decoration: none;
+  }
+
+  .icon-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(230,57,70,0.08);
+    box-shadow: 0 0 20px rgba(230,57,70,0.1);
+    transform: translateY(-1px);
+  }
+
+  /* ===== ORB SECTION ===== */
+  .orb-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 0;
+  }
+
+  .orb-container {
+    position: relative;
+    width: 240px;
+    height: 240px;
+    cursor: pointer;
+  }
+
+  .orb-ring {
+    position: absolute;
+    top: -20px; left: -20px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    border: 1px solid rgba(230,57,70,0.15);
+    animation: ring-rotate 25s linear infinite;
+  }
+
+  .orb-ring::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    width: 8px; height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 15px var(--primary), 0 0 30px rgba(230,57,70,0.3);
+  }
+
+  .orb-ring-2 {
+    position: absolute;
+    top: -35px; left: -35px;
+    width: 310px; height: 310px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255,107,53,0.08);
+    animation: ring-rotate 35s linear infinite reverse;
+  }
+
+  @keyframes ring-rotate { to { transform: rotate(360deg); } }
+
+  .orb {
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%,
+      rgba(255,140,60,0.85),
+      rgba(230,57,70,0.65) 40%,
+      rgba(157,21,32,0.45) 65%,
+      rgba(40,0,0,0.25)
+    );
+    box-shadow:
+      0 0 80px var(--glow),
+      0 0 160px rgba(230,57,70,0.15),
+      inset 0 0 80px rgba(230,57,70,0.2);
+    animation: orb-pulse 4s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .orb::after {
+    content: '';
+    position: absolute;
+    width: 55%; height: 55%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 70%);
+    top: 12%; left: 12%;
+  }
+
+  @keyframes orb-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 80px var(--glow), 0 0 160px rgba(230,57,70,0.15); }
+    50% { transform: scale(1.04); box-shadow: 0 0 100px var(--glow), 0 0 200px rgba(230,57,70,0.2); }
+  }
+
+  .orb.listening {
+    animation: orb-listen 1.8s ease-in-out infinite;
+    background: radial-gradient(circle at 30% 30%,
+      rgba(46,204,113,0.85), rgba(39,174,96,0.65) 40%,
+      rgba(22,100,55,0.45) 65%, rgba(0,30,15,0.25)
+    );
+    box-shadow: 0 0 100px rgba(46,204,113,0.35), 0 0 200px rgba(46,204,113,0.15);
+  }
+
+  @keyframes orb-listen {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.07); }
+  }
+
+  .orb.thinking {
+    animation: orb-think 1s ease-in-out infinite;
+    background: radial-gradient(circle at 30% 30%,
+      rgba(243,156,18,0.85), rgba(241,196,15,0.65) 40%,
+      rgba(180,120,0,0.45) 65%, rgba(60,40,0,0.25)
+    );
+    box-shadow: 0 0 100px rgba(243,156,18,0.35), 0 0 200px rgba(243,156,18,0.15);
+  }
+
+  @keyframes orb-think {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.02) rotate(1deg); }
+    75% { transform: scale(0.98) rotate(-1deg); }
+  }
+
+  .orb.speaking {
+    animation: orb-speak 0.7s ease-in-out infinite;
+    background: radial-gradient(circle at 30% 30%,
+      rgba(155,89,182,0.85), rgba(142,68,173,0.65) 40%,
+      rgba(90,40,120,0.45) 65%, rgba(30,10,40,0.25)
+    );
+    box-shadow: 0 0 100px rgba(142,68,173,0.35), 0 0 200px rgba(142,68,173,0.15);
+  }
+
+  @keyframes orb-speak {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .orb.error {
+    background: radial-gradient(circle at 30% 30%,
+      rgba(231,76,60,0.9), rgba(192,57,43,0.75) 40%,
+      rgba(120,30,20,0.55) 65%, rgba(40,10,5,0.3)
+    );
+    box-shadow: 0 0 120px rgba(231,76,60,0.4);
+    animation: orb-error 0.4s ease-in-out infinite;
+  }
+
+  @keyframes orb-error {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  .orb-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 32px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 0 30px rgba(255,255,255,0.4);
+    z-index: 1;
+    letter-spacing: 4px;
+  }
+
+  .orb-status {
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .orb-status .state {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  .orb-status .state.idle { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+  .orb-status .state.listen { background: var(--success); box-shadow: 0 0 10px var(--success); }
+  .orb-status .state.think { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
+  .orb-status .state.speak { background: #9b59b6; box-shadow: 0 0 10px #9b59b6; }
+  .orb-status .state.err { background: var(--error); box-shadow: 0 0 10px var(--error); }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .orb-mic-status {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+    max-width: 320px;
+    text-align: center;
+    min-height: 18px;
+    font-weight: 400;
+  }
+
+  /* ===== BOTTOM WIDGETS ===== */
+  .bottom-widgets {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--glass-border);
+    background: var(--panel-bg);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+
+  .widget-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .widget-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .widget-card:hover {
+    border-color: var(--glass-border-hover);
+    background: var(--glass2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 20px rgba(230,57,70,0.05);
+  }
+
+  .widget-card:hover::before { opacity: 1; }
+
+  .widget-card .w-icon { font-size: 20px; margin-bottom: 6px; filter: grayscale(0.2); }
+  .widget-card .w-title {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+  }
+  .widget-card .w-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* ===== ERROR PANEL ===== */
+  .error-panel {
+    background: rgba(20, 5, 5, 0.95);
+    border: 1px solid rgba(231,76,60,0.3);
+    border-radius: var(--radius-sm);
+    margin: 8px 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    backdrop-filter: blur(20px);
+  }
+  .error-panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px;
+    background: rgba(231,76,60,0.08);
+    color: var(--error);
+    font-weight: 600; font-size: 13px;
+    border-bottom: 1px solid rgba(231,76,60,0.15);
+  }
+  .error-panel-header div { display: flex; gap: 6px; }
+  .err-btn {
+    padding: 4px 12px; border-radius: 6px;
+    border: 1px solid rgba(231,76,60,0.25);
+    background: transparent; color: rgba(231,76,60,0.7);
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+    cursor: pointer; transition: var(--transition);
+  }
+  .err-btn:hover { background: rgba(231,76,60,0.1); color: var(--error); }
+  .error-list { padding: 4px; }
+  .error-item {
+    padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 12px; color: #aaa;
+  }
+  .error-item:last-child { border-bottom: none; }
+  .error-item .err-type { color: var(--error); font-weight: 600; }
+  .error-item .err-msg { color: #888; margin-left: 4px; }
+  .error-item .err-time { color: #555; font-size: 11px; float: right; font-family: 'JetBrains Mono', monospace; }
+  .error-item .err-status {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; margin-left: 6px; font-weight: 600;
+  }
+  .err-status.fixed { background: rgba(46,204,113,0.12); color: var(--success); }
+  .err-status.pending { background: rgba(243,156,18,0.12); color: var(--warning); }
+  .err-status.attempting { background: rgba(52,152,219,0.12); color: var(--blue); }
+  .err-status.failed { background: rgba(231,76,60,0.12); color: var(--error); }
+
+  /* ===== ALERT TOASTS ===== */
+  .alert-toast-container {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  }
+  .alert-toast {
+    padding: 14px 18px; border-radius: var(--radius-sm);
+    font-size: 13px; min-width: 300px; max-width: 400px;
+    animation: atoast-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), atoast-out 0.4s ease 4.6s forwards;
+    pointer-events: auto; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    font-family: 'Inter', sans-serif;
+  }
+  .alert-toast-critical { background: rgba(60,0,0,0.92); border: 1px solid rgba(231,76,60,0.6); color: #ff8888; }
+  .alert-toast-error { background: rgba(50,15,0,0.92); border: 1px solid rgba(255,107,53,0.5); color: #ffaa88; }
+  .alert-toast-warning { background: rgba(50,40,0,0.92); border: 1px solid rgba(243,156,18,0.5); color: #ffdd66; }
+  .alert-toast-info { background: rgba(0,20,50,0.92); border: 1px solid rgba(52,152,219,0.5); color: #88ccff; }
+  @keyframes atoast-in { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+  @keyframes atoast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+
+  /* ===== QUICK ACTIONS ===== */
+  .quick-actions {
+    display: flex; gap: 6px; padding: 12px 24px;
+    background: var(--panel-bg);
+    border-top: 1px solid var(--glass-border);
+    overflow-x: auto; backdrop-filter: blur(40px);
+  }
+
+  .quick-actions::-webkit-scrollbar { height: 3px; }
+  .quick-actions::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 3px; }
+
+  .qa-btn {
+    padding: 7px 16px; border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass); color: var(--text-dim);
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; white-space: nowrap;
+    transition: var(--transition);
+  }
+
+  .qa-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255,107,53,0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(255,107,53,0.1);
+  }
+
+  /* ===== RIGHT CHAT PANEL ===== */
+  #chat-panel {
+    width: 440px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    border-left: 1px solid var(--glass-border);
+    background: var(--panel-bg);
+    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+    z-index: 1;
+    position: relative;
+  }
+
+  .chat-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .chat-header h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 3px; font-weight: 700;
+  }
+
+  .chat-header-btns { display: flex; gap: 6px; }
+
+  .chat-header-btns button {
+    padding: 5px 14px; border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass); color: var(--text-dim);
+    font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 500;
+    cursor: pointer; transition: var(--transition);
+  }
+
+  .chat-header-btns button:hover {
+    border-color: var(--primary); color: var(--primary);
+    background: rgba(230,57,70,0.06);
+  }
+
+  /* Chat history sidebar */
+  .chat-history {
+    max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-bottom: 1px solid var(--glass-border); background: rgba(0,0,0,0.25);
+  }
+  .chat-history.open { max-height: 220px; overflow-y: auto; }
+  .chat-history-inner { padding: 8px; }
+  .ch-item {
+    padding: 10px 14px; border-radius: 8px; font-size: 12px;
+    color: var(--text-dim); cursor: pointer; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; transition: var(--transition);
+    margin-bottom: 2px; font-weight: 500;
+  }
+  .ch-item:hover { background: rgba(230,57,70,0.05); color: var(--text); }
+  .ch-item.active { background: rgba(230,57,70,0.08); color: var(--primary); border-left: 2px solid var(--primary); }
+
+  /* ===== MESSAGES ===== */
+  #chat-container {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  #chat-container::-webkit-scrollbar { width: 4px; }
+  #chat-container::-webkit-scrollbar-track { background: transparent; }
+  #chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+  .msg-row {
+    display: flex; gap: 10px; max-width: 92%;
+    animation: msg-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes msg-in { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-row.assistant { align-self: flex-start; }
+
+  .avatar {
+    width: 30px; height: 30px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    font-family: 'Orbitron', monospace;
+  }
+
+  .avatar.user-avatar {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+  }
+  .avatar.mj-avatar {
+    background: transparent;
+    border: 1px solid rgba(230,57,70,0.4);
+    color: var(--primary);
+    box-shadow: 0 0 12px rgba(230,57,70,0.15);
+  }
+
+  .msg-content { flex: 1; min-width: 0; }
+
+  .msg {
+    padding: 12px 16px; border-radius: 14px;
+    line-height: 1.6; font-size: 13px; font-weight: 400;
+    white-space: pre-wrap; word-wrap: break-word;
+  }
+
+  .msg.user {
+    background: linear-gradient(135deg, var(--primary), rgba(230,57,70,0.85));
+    color: #fff; border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 15px rgba(230,57,70,0.2);
+  }
+
+  .msg.assistant {
+    background: var(--glass2);
+    border: 1px solid var(--glass-border);
+    color: var(--text); border-bottom-left-radius: 4px;
+    backdrop-filter: blur(10px);
+  }
+
+  .msg.typing { color: var(--text-dim); font-style: italic; }
+
+  .timestamp {
+    font-size: 10px; color: var(--text-dim); margin-top: 4px;
+    padding: 0 4px; display: flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-weight: 400;
+  }
+
+  .msg-row.user .timestamp { justify-content: flex-end; }
+
+  .speak-btn {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 12px; padding: 0; transition: color 0.3s;
+  }
+  .speak-btn:hover { color: var(--primary); }
+
+  /* ===== INPUT BAR ===== */
+  #input-bar {
+    display: flex; gap: 8px; padding: 14px 18px;
+    border-top: 1px solid var(--glass-border);
+    background: rgba(0,0,0,0.2);
+    backdrop-filter: blur(20px);
+  }
+
+  #user-input {
+    flex: 1; padding: 12px 16px; border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif;
+    outline: none; transition: var(--transition); font-weight: 400;
+  }
+
+  #user-input:focus {
+    border-color: rgba(230,57,70,0.4);
+    box-shadow: 0 0 20px rgba(230,57,70,0.08);
+    background: rgba(255,255,255,0.04);
+  }
+  #user-input::placeholder { color: var(--text-dim); }
+
+  #send-btn {
+    padding: 12px 22px; border-radius: var(--radius-sm);
+    border: 1px solid rgba(230,57,70,0.3);
+    background: linear-gradient(135deg, rgba(230,57,70,0.15), rgba(230,57,70,0.05));
+    color: var(--primary); font-size: 12px; font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: var(--transition);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+
+  #send-btn:hover {
+    background: linear-gradient(135deg, var(--primary), rgba(230,57,70,0.8));
+    color: #fff; border-color: var(--primary);
+    box-shadow: 0 4px 20px rgba(230,57,70,0.3);
+    transform: translateY(-1px);
+  }
+  #send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+  #mic-btn, #attach-btn {
+    padding: 12px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--glass); color: var(--text-dim);
+    font-size: 14px; cursor: pointer; transition: var(--transition);
+  }
+
+  #mic-btn:hover { border-color: var(--success); color: var(--success); }
+  #mic-btn.recording {
+    background: rgba(46,204,113,0.1); border-color: var(--success);
+    color: var(--success); box-shadow: 0 0 15px rgba(46,204,113,0.15);
+    animation: mic-glow 1.5s ease-in-out infinite;
+  }
+  @keyframes mic-glow {
+    0%, 100% { box-shadow: 0 0 15px rgba(46,204,113,0.15); }
+    50% { box-shadow: 0 0 25px rgba(46,204,113,0.25); }
+  }
+
+  #attach-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #attach-btn.has-file {
+    background: rgba(255,107,53,0.1); border-color: var(--accent);
+    color: var(--accent); box-shadow: 0 0 15px rgba(255,107,53,0.15);
+  }
+
+  /* ===== FILE PREVIEW ===== */
+  #file-preview {
+    display: none; padding: 10px 18px;
+    border-top: 1px solid var(--glass-border);
+    background: rgba(0,0,0,0.3); align-items: center; gap: 12px;
+    animation: msg-in 0.3s ease;
+  }
+  #file-preview.visible { display: flex; }
+
+  .file-preview-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .file-preview-icon { font-size: 20px; flex-shrink: 0; }
+  .file-preview-name { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+  .file-preview-size { font-size: 11px; color: var(--text-dim); flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+  .file-preview-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid var(--glass-border); flex-shrink: 0; }
+
+  #file-remove {
+    background: none; border: 1px solid rgba(231,76,60,0.2);
+    color: var(--error); font-size: 14px; cursor: pointer;
+    padding: 5px 10px; border-radius: 8px; transition: var(--transition);
+    flex-shrink: 0;
+  }
+  #file-remove:hover { background: rgba(231,76,60,0.08); border-color: rgba(231,76,60,0.4); }
+
+  /* ===== DROP OVERLAY ===== */
+  .drop-overlay {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(6,6,11,0.92); border: 2px dashed var(--accent);
+    border-radius: var(--radius-sm); z-index: 100;
+    align-items: center; justify-content: center; flex-direction: column;
+    gap: 12px; pointer-events: none;
+    backdrop-filter: blur(10px);
+  }
+  .drop-overlay.active { display: flex; }
+  .drop-overlay-icon { font-size: 48px; }
+  .drop-overlay-text {
+    font-family: 'Orbitron', monospace; font-size: 13px;
+    color: var(--accent); letter-spacing: 3px;
+  }
+
+  /* ===== FILE BADGE ===== */
+  .file-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 6px;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.2);
+    font-size: 11px; color: var(--accent); margin-top: 8px; font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="hex-grid"></div>
+<div class="scanline"></div>
+
+<!-- ===== LEFT: DASHBOARD ===== -->
+<div id="dashboard">
+  <div class="top-bar">
+    <div class="logo">M<span>J</span></div>
+    <div class="top-bar-widgets">
+      <div class="widget-mini">
+        <div class="val time-val" id="live-time">--:--</div>
+        <div id="live-date">--</div>
+      </div>
+      <div class="widget-mini">
+        <div class="val" id="w-temp" style="color:var(--accent)">--°C</div>
+        <div id="w-location">Location</div>
+      </div>
+      <div class="widget-mini">
+        <div class="val" id="w-cpu">--%</div>
+        <div>CPU</div>
+      </div>
+      <div class="widget-mini">
+        <div class="val" id="w-ram">--%</div>
+        <div>RAM</div>
+      </div>
+      <div class="widget-mini">
+        <div class="val" id="w-status" style="color:var(--success)">ONLINE</div>
+        <div>SYSTEM</div>
+      </div>
+    </div>
+    <div class="top-bar-actions">
+      <a href="/static/dashboard.html" class="icon-btn" title="System Dashboard">&#128202;</a>
+      <a href="/static/settings.html" class="icon-btn" title="Voice Settings">&#9881;</a>
+      <button class="icon-btn" id="fullscreen-btn" title="Fullscreen">&#9974;</button>
+    </div>
+  </div>
+
+  <div class="orb-section">
+    <div class="orb-container" id="orb-container">
+      <div class="orb-ring"></div>
+      <div class="orb-ring-2"></div>
+      <div class="orb" id="orb">
+        <span class="orb-label">MJ</span>
+      </div>
+    </div>
+    <div class="orb-status" id="orb-status">
+      <span class="state idle" id="state-dot"></span>
+      <span id="state-text">IDLE</span>
+    </div>
+    <div class="orb-mic-status" id="mic-status">Initializing...</div>
+  </div>
+
+  <div class="bottom-widgets">
+    <div class="widget-card" id="wc-voice">
+      <div class="w-icon">&#127908;</div>
+      <div class="w-title">Voice</div>
+      <div class="w-value" id="wc-voice-val">Ready</div>
+    </div>
+    <div class="widget-card" id="wc-memory">
+      <div class="w-icon">&#129504;</div>
+      <div class="w-title">Memory</div>
+      <div class="w-value" id="wc-memory-val">0 facts</div>
+    </div>
+    <div class="widget-card" id="wc-chats">
+      <div class="w-icon">&#128172;</div>
+      <div class="w-title">Chats</div>
+      <div class="w-value" id="wc-chats-val">0</div>
+    </div>
+    <div class="widget-card" id="wc-model">
+      <div class="w-icon">&#129302;</div>
+      <div class="w-title">Model</div>
+      <div class="w-value">Q2.5 1.5B</div>
+    </div>
+    <div class="widget-card" id="wc-health" title="Click to see errors">
+      <div class="w-icon">&#128154;</div>
+      <div class="w-title">Health</div>
+      <div class="w-value" id="wc-health-val">OK</div>
+    </div>
+    <div class="widget-card" id="wc-modules" onclick="window.location.href='/static/modules.html'" title="Module Dashboard" style="cursor:pointer;">
+      <div class="w-icon">&#9889;</div>
+      <div class="w-title">Modules</div>
+      <div class="w-value" id="wc-modules-val">21</div>
+    </div>
+  </div>
+
+  <div class="alert-toast-container" id="alert-toast-box"></div>
+
+  <div class="error-panel" id="error-panel" style="display:none;">
+    <div class="error-panel-header">
+      <span>SYSTEM ERRORS</span>
+      <div>
+        <button class="err-btn" id="err-fix-all">Auto Fix All</button>
+        <button class="err-btn" id="err-clear">Clear</button>
+        <button class="err-btn" id="err-close">&#10005;</button>
+      </div>
+    </div>
+    <div class="error-list" id="error-list"></div>
+  </div>
+
+  <div class="quick-actions">
+    <button class="qa-btn" data-cmd="open chrome">Chrome</button>
+    <button class="qa-btn" data-cmd="open notepad">Notepad</button>
+    <button class="qa-btn" data-cmd="open calculator">Calculator</button>
+    <button class="qa-btn" data-cmd="open file explorer">Files</button>
+    <button class="qa-btn" data-cmd="open vs code">VS Code</button>
+    <button class="qa-btn" data-cmd="screenshot le">Screenshot</button>
+    <button class="qa-btn" data-cmd="volume up">Vol +</button>
+    <button class="qa-btn" data-cmd="volume down">Vol -</button>
+    <button class="qa-btn" data-cmd="open youtube">YouTube</button>
+    <button class="qa-btn" data-cmd="Tell me a joke">Joke</button>
+    <button class="qa-btn" data-cmd="good morning">Briefing</button>
+    <button class="qa-btn" data-cmd="list files in downloads">Downloads</button>
+    <button class="qa-btn" data-cmd="start recording">Rec Start</button>
+    <button class="qa-btn" data-cmd="stop recording">Rec Stop</button>
+    <button class="qa-btn" data-cmd="check email">Email</button>
+    <button class="qa-btn" data-cmd="clipboard history">Clipboard</button>
+    <button class="qa-btn" data-cmd="app usage">Screen Time</button>
+    <button class="qa-btn" data-cmd="generate image of a sunset over mountains">AI Image</button>
+  </div>
+</div>
+
+<!-- ===== RIGHT: CHAT PANEL ===== -->
+<div id="chat-panel">
+  <div class="chat-header">
+    <h2>COMM CHANNEL</h2>
+    <div class="chat-header-btns">
+      <button id="toggle-history">History</button>
+      <button id="new-chat-btn">+ New</button>
+    </div>
+  </div>
+
+  <div class="chat-history" id="chat-history">
+    <div class="chat-history-inner" id="chat-list"></div>
+  </div>
+
+  <div id="chat-container"></div>
+
+  <div class="drop-overlay" id="drop-overlay">
+    <div class="drop-overlay-icon">&#128206;</div>
+    <div class="drop-overlay-text">DROP FILE HERE</div>
+  </div>
+
+  <div id="file-preview">
+    <div class="file-preview-info">
+      <span class="file-preview-icon" id="fp-icon">&#128196;</span>
+      <img class="file-preview-thumb" id="fp-thumb" style="display:none">
+      <span class="file-preview-name" id="fp-name"></span>
+    </div>
+    <span class="file-preview-size" id="fp-size"></span>
+    <button id="file-remove" title="Remove file">&#10005;</button>
+  </div>
+
+  <div id="input-bar">
+    <button id="mic-btn" title="Voice input">&#127908;</button>
+    <button id="attach-btn" title="Attach file">&#128206;</button>
+    <input type="file" id="file-input" style="display:none" accept=".txt,.md,.csv,.json,.xml,.yaml,.yml,.py,.js,.ts,.jsx,.tsx,.html,.css,.java,.c,.cpp,.h,.cs,.go,.rs,.rb,.php,.swift,.kt,.sql,.sh,.bat,.log,.png,.jpg,.jpeg,.gif,.bmp,.webp,.pdf">
+    <input id="user-input" type="text" placeholder="Talk to MJ..." autocomplete="off">
+    <button id="send-btn">SEND</button>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const chatBox = document.getElementById("chat-container");
+const input = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
+const chatList = document.getElementById("chat-list");
+const orb = document.getElementById("orb");
+const stateDot = document.getElementById("state-dot");
+const stateText = document.getElementById("state-text");
+
+let pendingFile = null;
+const fileInput = document.getElementById("file-input");
+const attachBtn = document.getElementById("attach-btn");
+const filePreview = document.getElementById("file-preview");
+const chatPanel = document.getElementById("chat-panel");
+const dropOverlay = document.getElementById("drop-overlay");
+
+function setOrbState(state) {
+  orb.className = "orb";
+  stateDot.className = "state";
+  switch(state) {
+    case "idle": stateDot.classList.add("idle"); stateText.textContent = "IDLE"; break;
+    case "listening": orb.classList.add("listening"); stateDot.classList.add("listen"); stateText.textContent = "LISTENING"; break;
+    case "thinking": orb.classList.add("thinking"); stateDot.classList.add("think"); stateText.textContent = "PROCESSING"; break;
+    case "speaking": orb.classList.add("speaking"); stateDot.classList.add("speak"); stateText.textContent = "SPEAKING"; break;
+    case "error": orb.classList.add("error"); stateDot.classList.add("err"); stateText.textContent = "ERROR"; break;
+  }
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById("live-time").textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById("live-date").textContent = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+let particles = [];
+
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+for (let i = 0; i < 50; i++) {
+  particles.push({
+    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+    vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+    size: Math.random() * 1.5 + 0.5, alpha: Math.random() * 0.2 + 0.05
+  });
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(230, 57, 70, ${p.alpha})`;
+    ctx.fill();
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+function addMsg(text, role, time) {
+  const row = document.createElement("div");
+  row.className = `msg-row ${role}`;
+  const avatar = document.createElement("div");
+  avatar.className = `avatar ${role === "user" ? "user-avatar" : "mj-avatar"}`;
+  avatar.textContent = role === "user" ? "U" : "MJ";
+  const content = document.createElement("div");
+  content.className = "msg-content";
+  const msg = document.createElement("div");
+  msg.className = `msg ${role}`;
+  msg.textContent = text;
+  const footer = document.createElement("div");
+  footer.className = "timestamp";
+  footer.textContent = time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (role === "assistant") {
+    const speakBtn = document.createElement("button");
+    speakBtn.className = "speak-btn"; speakBtn.innerHTML = "&#128264;";
+    speakBtn.title = "Listen";
+    speakBtn.addEventListener("click", () => speakText(msg.textContent));
+    footer.appendChild(speakBtn);
+  }
+  content.appendChild(msg); content.appendChild(footer);
+  row.appendChild(avatar); row.appendChild(content);
+  chatBox.appendChild(row); chatBox.scrollTop = chatBox.scrollHeight;
+  return msg;
+}
+
+async function loadChatList() {
+  try {
+    const res = await fetch(API + "/chats"); const data = await res.json();
+    chatList.innerHTML = ""; let count = 0;
+    for (const chat of data.chats) {
+      count++;
+      const item = document.createElement("div");
+      item.className = "ch-item" + (chat.id === data.active ? " active" : "");
+      item.textContent = chat.title;
+      item.addEventListener("click", () => selectChat(chat.id));
+      chatList.appendChild(item);
+    }
+    document.getElementById("wc-chats-val").textContent = count;
+  } catch (e) {}
+}
+
+async function loadMemoryCount() {
+  try {
+    const res = await fetch(API + "/core-memory"); const data = await res.json();
+    document.getElementById("wc-memory-val").textContent = data.facts.length + " facts";
+  } catch(e) {}
+}
+
+async function selectChat(chatId) {
+  try {
+    const res = await fetch(API + "/select-chat/" + chatId, { method: "POST" });
+    const data = await res.json();
+    chatBox.innerHTML = "";
+    for (const msg of data.history) { addMsg(msg.content, msg.role === "user" ? "user" : "assistant"); }
+    loadChatList();
+  } catch (e) {}
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(API + "/history"); const data = await res.json();
+    for (const msg of data.history) { addMsg(msg.content, msg.role === "user" ? "user" : "assistant"); }
+  } catch (e) {}
+}
+
+loadHistory(); loadChatList(); loadMemoryCount();
+
+async function send() {
+  const text = input.value.trim();
+  if (!text && !pendingFile) return;
+  if (!text) { input.focus(); return; }
+
+  if (text.startsWith("/remember ")) {
+    const fact = text.slice(10).trim();
+    addMsg(text, "user"); input.value = ""; clearFile();
+    await fetch(API + "/remember", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fact: fact }) });
+    addMsg("Saved to permanent memory: " + fact, "assistant");
+    loadMemoryCount(); return;
+  }
+
+  const userMsgEl = addMsg(text, "user");
+  if (pendingFile) {
+    const badge = document.createElement("div");
+    badge.className = "file-badge";
+    badge.textContent = "\u{1F4CE} " + pendingFile.name;
+    userMsgEl.appendChild(badge);
+  }
+
+  input.value = ""; sendBtn.disabled = true; setOrbState("thinking");
+  const typing = addMsg("Thinking...", "assistant typing");
+
+  try {
+    const formData = new FormData();
+    formData.append("message", text);
+    if (pendingFile) formData.append("file", pendingFile);
+    clearFile();
+
+    const res = await fetch(API + "/chat", { method: "POST", body: formData });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+    typing.textContent = ""; typing.classList.remove("typing");
+    const reader = res.body.getReader(); const decoder = new TextDecoder();
+    let detectedEmotion = "neutral";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      for (const line of chunk.split("\n")) {
+        if (line.startsWith("data: ") && line !== "data: [DONE]") {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.token) { typing.textContent += data.token; chatBox.scrollTop = chatBox.scrollHeight; }
+            if (data.emotion) detectedEmotion = data.emotion;
+            if (data.image_url) {
+              const imgEl = document.createElement("img");
+              imgEl.src = data.image_url;
+              imgEl.style.cssText = "max-width:300px;border-radius:12px;margin-top:8px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;transition:transform 0.3s";
+              imgEl.onmouseover = () => imgEl.style.transform = "scale(1.02)";
+              imgEl.onmouseout = () => imgEl.style.transform = "scale(1)";
+              imgEl.onclick = () => window.open(data.image_url, "_blank");
+              typing.parentElement.appendChild(imgEl);
+            }
+            if (data.auto_memory && data.auto_memory.length > 0) {
+              for (const fact of data.auto_memory) {
+                addMsg("\u{1F9E0} Auto-saved: " + fact, "assistant");
+                sendNotification("MJ Memory", "Remembered: " + fact);
+              }
+              loadMemoryCount();
+            }
+          } catch(e) {}
+        }
+      }
+    }
+
+    setOrbState("speaking");
+    await speakText(typing.textContent, detectedEmotion);
+    loadChatList();
+
+  } catch (err) {
+    typing.textContent = `Error: ${err.message}`;
+    typing.classList.remove("typing");
+    setOrbState("error"); setTimeout(() => setOrbState("idle"), 3000);
+  }
+
+  sendBtn.disabled = false; input.focus();
+}
+
+sendBtn.addEventListener("click", send);
+input.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+
+document.getElementById("new-chat-btn").addEventListener("click", async () => {
+  await fetch(API + "/new-chat", { method: "POST" });
+  chatBox.innerHTML = ""; loadChatList();
+});
+
+document.getElementById("toggle-history").addEventListener("click", () => {
+  document.getElementById("chat-history").classList.toggle("open");
+});
+
+document.querySelectorAll(".qa-btn").forEach(btn => {
+  btn.addEventListener("click", () => { input.value = btn.dataset.cmd; send(); });
+});
+
+document.getElementById("fullscreen-btn").addEventListener("click", () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+
+document.getElementById("orb-container").addEventListener("click", () => {
+  document.getElementById("mic-btn").click();
+});
+
+document.getElementById("wc-voice").addEventListener("click", () => {
+  window.location.href = "/static/settings.html";
+});
+
+// ===== VOICE INPUT =====
+const micBtn = document.getElementById("mic-btn");
+const micStatus = document.getElementById("mic-status");
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let listening = false;
+let wakeDetected = false;
+
+function setMicStatus(text) { micStatus.textContent = text; }
+
+if (SpeechRecognition) {
+  const recognition = new SpeechRecognition();
+  recognition.lang = "hi-IN"; recognition.continuous = false; recognition.interimResults = true;
+
+  function startListening() {
+    listening = true; micBtn.classList.add("recording");
+    wakeDetected = false; setOrbState("listening");
+    setMicStatus('Say "MJ" to activate...');
+    document.getElementById("wc-voice-val").textContent = "Active";
+    try { recognition.start(); } catch(e) {}
+  }
+
+  function stopListening() {
+    listening = false; micBtn.classList.remove("recording");
+    setOrbState("idle"); setMicStatus("Mic off");
+    document.getElementById("wc-voice-val").textContent = "Off";
+    try { recognition.stop(); } catch(e) {}
+  }
+
+  micBtn.addEventListener("click", () => { if (listening) stopListening(); else startListening(); });
+
+  recognition.onresult = (e) => {
+    let transcript = "";
+    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    const lower = transcript.toLowerCase();
+    setMicStatus("Heard: " + transcript);
+    const isFinal = e.results[e.results.length - 1].isFinal;
+    if (!isFinal) return;
+    const wakePatterns = ["mj", "m.j", "em j", "hey mj", "ok mj", "emj", "m j"];
+    let hasWake = wakePatterns.some(w => lower.includes(w));
+    if (hasWake) {
+      let command = transcript;
+      for (const w of ["MJ", "mj", "M.J", "m.j", "em j", "hey MJ", "ok MJ", "emj", "Hey MJ", "OK MJ"]) {
+        command = command.replace(new RegExp(w, "gi"), "").trim();
+      }
+      if (command.length > 1) { input.value = command; send(); }
+      else { wakeDetected = true; setMicStatus("MJ activated! Speak your command..."); }
+    } else if (wakeDetected) { input.value = transcript.trim(); wakeDetected = false; send(); }
+  };
+
+  recognition.onend = () => {
+    if (listening) {
+      setTimeout(() => {
+        if (listening) {
+          if (!wakeDetected) setMicStatus('Say "MJ" to activate...');
+          try { recognition.start(); } catch(e) {}
+        }
+      }, 200);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === "no-speech") setMicStatus("Listening...");
+    else if (e.error !== "aborted") setMicStatus("Mic error: " + e.error);
+  };
+
+  startListening();
+} else {
+  micBtn.style.display = "none";
+  setMicStatus("Speech not supported");
+}
+
+// ===== TTS =====
+let mjAudio = null;
+async function speakText(text, emotion) {
+  if (mjAudio) { mjAudio.pause(); mjAudio = null; }
+  try {
+    const res = await fetch(API + "/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, emotion: emotion || "neutral" }) });
+    if (!res.ok) return;
+    const data = await res.json();
+    mjAudio = new Audio(API + data.audio_url);
+    setOrbState("speaking");
+    mjAudio.onended = () => { setOrbState(listening ? "listening" : "idle"); };
+    mjAudio.play();
+  } catch (e) { console.log("TTS error:", e); setOrbState(listening ? "listening" : "idle"); }
+}
+
+// ===== REAL SYSTEM STATS =====
+async function updateRealStats() {
+  try {
+    const res = await fetch(API + "/system-stats"); const s = await res.json();
+    if (s.cpu >= 0) {
+      document.getElementById("w-cpu").textContent = s.cpu + "%";
+      document.getElementById("w-cpu").style.color = s.cpu > 80 ? "var(--error)" : s.cpu > 50 ? "var(--warning)" : "var(--text)";
+    }
+    if (s.ram_percent >= 0) {
+      document.getElementById("w-ram").textContent = s.ram_percent + "%";
+      document.getElementById("w-ram").style.color = s.ram_percent > 85 ? "var(--error)" : s.ram_percent > 60 ? "var(--warning)" : "var(--text)";
+    }
+  } catch(e) {}
+}
+updateRealStats(); setInterval(updateRealStats, 5000);
+
+// ===== DESKTOP NOTIFICATIONS =====
+async function sendNotification(title, msg) {
+  if (Notification.permission === "granted") new Notification(title, { body: msg });
+  else if (Notification.permission !== "denied") { const perm = await Notification.requestPermission(); if (perm === "granted") new Notification(title, { body: msg }); }
+  try { await fetch(API + "/notify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, message: msg }) }); } catch(e) {}
+}
+if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+
+// ===== LIVE WEATHER =====
+async function fetchWeather() {
+  try {
+    const pos = await new Promise((resolve, reject) => { navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 }); });
+    const lat = pos.coords.latitude.toFixed(4), lon = pos.coords.longitude.toFixed(4);
+    try {
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`);
+      const geoData = await geoRes.json();
+      const city = geoData.address?.city || geoData.address?.town || geoData.address?.village || geoData.address?.state_district || "Unknown";
+      document.getElementById("w-location").textContent = city;
+    } catch(e) { document.getElementById("w-location").textContent = `${lat}, ${lon}`; }
+    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+    const weatherData = await weatherRes.json();
+    const temp = Math.round(weatherData.current.temperature_2m);
+    const code = weatherData.current.weather_code;
+    const weatherEmoji = code <= 1 ? "☀️" : code <= 3 ? "⛅" : code <= 48 ? "🌫️" : code <= 67 ? "🌧️" : code <= 77 ? "❄️" : code <= 82 ? "🌧️" : code <= 86 ? "❄️" : "⛈️";
+    document.getElementById("w-temp").textContent = `${weatherEmoji} ${temp}°C`;
+  } catch(e) { document.getElementById("w-temp").textContent = "--°C"; document.getElementById("w-location").textContent = "No access"; }
+}
+fetchWeather(); setInterval(fetchWeather, 600000);
+
+// ===== FILE UPLOAD =====
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+function getFileIcon(filename) {
+  const ext = filename.split(".").pop().toLowerCase();
+  const icons = { py:"&#128013;",js:"&#9881;",ts:"&#9881;",html:"&#127760;",css:"&#127912;",json:"&#128196;",csv:"&#128202;",md:"&#128221;",txt:"&#128196;",png:"&#128247;",jpg:"&#128247;",jpeg:"&#128247;",gif:"&#128247;",webp:"&#128247;",pdf:"&#128213;",xml:"&#128196;",yaml:"&#128196;",yml:"&#128196;",java:"&#9749;",c:"&#128196;",cpp:"&#128196;",sql:"&#128451;" };
+  return icons[ext] || "&#128196;";
+}
+function setFile(file) {
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { alert("File too large. Max 10 MB."); return; }
+  pendingFile = file; attachBtn.classList.add("has-file"); filePreview.classList.add("visible");
+  document.getElementById("fp-icon").innerHTML = getFileIcon(file.name);
+  document.getElementById("fp-name").textContent = file.name;
+  document.getElementById("fp-size").textContent = formatFileSize(file.size);
+  const thumb = document.getElementById("fp-thumb");
+  if (file.type.startsWith("image/")) {
+    const reader = new FileReader();
+    reader.onload = (e) => { thumb.src = e.target.result; thumb.style.display = "block"; };
+    reader.readAsDataURL(file);
+    document.getElementById("fp-icon").style.display = "none";
+  } else { thumb.style.display = "none"; document.getElementById("fp-icon").style.display = "inline"; }
+  input.focus();
+}
+function clearFile() {
+  pendingFile = null; attachBtn.classList.remove("has-file");
+  filePreview.classList.remove("visible"); fileInput.value = "";
+  document.getElementById("fp-thumb").style.display = "none";
+  document.getElementById("fp-icon").style.display = "inline";
+}
+attachBtn.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", (e) => { if (e.target.files[0]) setFile(e.target.files[0]); });
+document.getElementById("file-remove").addEventListener("click", clearFile);
+
+let dragCounter = 0;
+chatPanel.addEventListener("dragenter", (e) => { e.preventDefault(); dragCounter++; dropOverlay.classList.add("active"); });
+chatPanel.addEventListener("dragleave", (e) => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dropOverlay.classList.remove("active"); dragCounter = 0; } });
+chatPanel.addEventListener("dragover", (e) => e.preventDefault());
+chatPanel.addEventListener("drop", (e) => { e.preventDefault(); dragCounter = 0; dropOverlay.classList.remove("active"); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+
+document.addEventListener("paste", (e) => {
+  const items = e.clipboardData?.items; if (!items) return;
+  for (const item of items) { if (item.kind === "file") { e.preventDefault(); setFile(item.getAsFile()); break; } }
+});
+
+// ===== SELF-HEALING ERROR MONITOR =====
+const errorPanel = document.getElementById("error-panel");
+const errorList = document.getElementById("error-list");
+const healthVal = document.getElementById("wc-health-val");
+const healthIcon = document.querySelector("#wc-health .w-icon");
+
+async function checkErrors() {
+  try {
+    const res = await fetch(API + "/errors"); const data = await res.json(); const stats = data.stats;
+    if (stats.total === 0) { healthVal.textContent = "OK"; healthIcon.textContent = "\u{1F49A}"; healthVal.style.color = "var(--text)"; return; }
+    if (stats.pending > 0) { healthVal.textContent = stats.pending + " errors"; healthIcon.textContent = "\u{1F534}"; healthVal.style.color = "#ff4444"; }
+    else if (stats.fixed > 0) { healthVal.textContent = stats.fixed + " fixed"; healthIcon.textContent = "\u{1F7E2}"; healthVal.style.color = "#44ff44"; }
+    else { healthVal.textContent = "OK"; healthIcon.textContent = "\u{1F49A}"; healthVal.style.color = "var(--text)"; }
+    if (errorPanel.style.display !== "none") renderErrors(data.errors);
+  } catch(e) {}
+}
+
+function renderErrors(errors) {
+  errorList.innerHTML = "";
+  if (!errors || errors.length === 0) { errorList.innerHTML = '<div class="error-item" style="text-align:center;color:#555;">No errors</div>'; return; }
+  for (const err of errors.slice(0, 15)) {
+    const item = document.createElement("div"); item.className = "error-item";
+    item.innerHTML = `<span class="err-time">${err.time_display}</span><span class="err-type">${err.type}</span><span class="err-msg">${err.message.substring(0, 80)}</span><span class="err-status ${err.fix_status}">${err.fix_status}</span>${err.fix_status === 'pending' || err.fix_status === 'failed' ? `<button class="err-btn" onclick="fixError('${err.id}')" style="margin-left:6px;font-size:11px;">Fix</button>` : ''}`;
+    errorList.appendChild(item);
+  }
+}
+
+async function fixError(errorId) {
+  try {
+    const res = await fetch(API + "/errors/" + errorId + "/fix", { method: "POST" }); const data = await res.json();
+    addMsg(data.message, "assistant");
+    if (data.success) sendNotification("MJ Self-Heal", "Error auto-fixed! Restart server.");
+    checkErrors();
+  } catch(e) { addMsg("Fix attempt failed: " + e.message, "assistant"); }
+}
+
+document.getElementById("wc-health").addEventListener("click", () => {
+  if (errorPanel.style.display === "none") { errorPanel.style.display = "block"; checkErrors(); }
+  else errorPanel.style.display = "none";
+});
+document.getElementById("err-close").addEventListener("click", () => { errorPanel.style.display = "none"; });
+document.getElementById("err-clear").addEventListener("click", async () => { await fetch(API + "/errors/clear", { method: "POST" }); checkErrors(); errorPanel.style.display = "none"; });
+document.getElementById("err-fix-all").addEventListener("click", async () => {
+  const res = await fetch(API + "/errors"); const data = await res.json();
+  const pending = data.errors.filter(e => e.fix_status === "pending" || e.fix_status === "failed");
+  for (const err of pending) await fixError(err.id);
+});
+checkErrors(); setInterval(checkErrors, 10000);
+
+// ===== HEALTH CHECK ON LOAD =====
+async function healthCheck() {
+  try {
+    const res = await fetch(API + "/health"); const data = await res.json();
+    if (data.status === "unhealthy" || data.status === "critical") sendNotification("MJ Health Warning", data.issues.join(", "));
+    if (!data.ollama) addMsg("⚠️ Ollama chal nahi raha! 'ollama serve' run karo.", "assistant");
+  } catch(e) {}
+}
+healthCheck();
+
+// ===== LIVE ALERT SSE =====
+const alertToastBox = document.getElementById("alert-toast-box");
+const alertIcons = { critical: "🔴", error: "🟠", warning: "🟡", info: "🔵" };
+
+function showAlertToast(alert) {
+  const sev = alert.severity || "info";
+  const t = document.createElement("div");
+  t.className = "alert-toast alert-toast-" + sev;
+  t.innerHTML = `<span style="font-size:16px;">${alertIcons[sev]}</span><div style="flex:1;"><div style="font-weight:600;">${alert.title || "Alert"}</div><div style="font-size:11px;opacity:0.8;">${(alert.message || "").substring(0, 80)}</div></div><span style="cursor:pointer;opacity:0.5;font-size:14px;" onclick="this.parentElement.remove()">✕</span>`;
+  alertToastBox.appendChild(t);
+  setTimeout(() => { if (t.parentElement) t.remove(); }, 5000);
+  checkErrors();
+}
+
+function connectAlertStream() {
+  const es = new EventSource(API + "/alerts/stream");
+  es.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "heartbeat" || data.type === "init" || data.type === "resolve") return;
+      showAlertToast(data);
+      if (data.severity === "critical" || data.severity === "error") sendNotification("MJ Alert: " + (data.title || "Error"), data.message || "");
+    } catch(e) {}
+  };
+  es.onerror = () => { es.close(); setTimeout(connectAlertStream, 5000); };
+}
+connectAlertStream();
+
+input.focus();
+</script>
+</body>
+</html>

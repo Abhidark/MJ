@@ -1,0 +1,44 @@
+[
+  {
+    "id": "alert_20260621_134634_812068",
+    "timestamp": "2026-06-21T13:46:34.812068",
+    "time_display": "01:46:34 PM",
+    "title": "CPU Critical",
+    "message": "CPU usage is at 97%! System may freeze or crash.",
+    "severity": "critical",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
+    "id": "alert_20260621_134629_671121",
+    "timestamp": "2026-06-21T13:46:29.671121",
+    "time_display": "01:46:29 PM",
+    "title": "Health Issue",
+    "message": "Ollama not running -- 'ollama serve' run karo",
+    "severity": "warning",
+    "category": "health",
+    "source": "health_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
+    "id": "alert_20260621_134625_384733",
+    "timestamp": "2026-06-21T13:46:25.384733",
+    "time_display": "01:46:25 PM",
+    "title": "Disk Warning",
+    "message": "Disk is 94% full. Consider cleanup.",
+    "severity": "warning",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  }
+]

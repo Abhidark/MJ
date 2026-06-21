@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MJ - Zeus Module System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #050508;
+    --primary: #ff1a1a;
+    --primary-dim: #aa0000;
+    --accent: #ff6600;
+    --glow: rgba(255, 26, 26, 0.4);
+    --glow2: rgba(255, 102, 0, 0.3);
+    --panel-bg: rgba(15, 5, 5, 0.85);
+    --panel-border: rgba(255, 26, 26, 0.15);
+    --text: #e8ddd0;
+    --text-dim: #887766;
+    --text-bright: #ffffff;
+    --success: #00ff88;
+    --warning: #ffaa00;
+    --error: #ff3333;
+    --cat-core: #ff1a1a;
+    --cat-utility: #4488ff;
+    --cat-creative: #aa44ff;
+    --cat-system: #00ff88;
+    --cat-lifestyle: #ff6600;
+  }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== SCANLINE OVERLAY ===== */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 26, 26, 0.012) 2px,
+      rgba(255, 26, 26, 0.012) 3px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== BACKGROUND ===== */
+  .bg-grid {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+      radial-gradient(ellipse at 20% 40%, rgba(255,26,26,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 60%, rgba(255,102,0,0.03) 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ===== TOP BAR ===== */
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--panel-border);
+    backdrop-filter: blur(12px);
+  }
+
+  .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .top-bar-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--primary);
+    text-shadow: 0 0 20px var(--glow);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .module-count-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(255, 102, 0, 0.1);
+    border: 1px solid rgba(255, 102, 0, 0.3);
+    border-radius: 20px;
+    padding: 3px 12px;
+    letter-spacing: 1px;
+  }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 0 12px;
+    transition: border-color 0.3s;
+  }
+
+  .search-box:focus-within {
+    border-color: var(--primary-dim);
+  }
+
+  .search-box .search-icon {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-right: 8px;
+  }
+
+  .search-box input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    padding: 8px 0;
+    width: 200px;
+  }
+
+  .search-box input::placeholder {
+    color: var(--text-dim);
+  }
+
+  .back-link {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 6px 16px;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+
+  .back-link:hover {
+    color: var(--primary);
+    border-color: var(--primary-dim);
+    background: rgba(255, 26, 26, 0.05);
+  }
+
+  /* ===== CATEGORY TABS ===== */
+  .category-bar {
+    display: flex;
+    gap: 6px;
+    padding: 14px 28px;
+    background: rgba(10, 3, 3, 0.6);
+    border-bottom: 1px solid var(--panel-border);
+    position: sticky;
+    top: 54px;
+    z-index: 99;
+    backdrop-filter: blur(8px);
+    flex-wrap: wrap;
+  }
+
+  .cat-tab {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 7px 18px;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .cat-tab:hover {
+    color: var(--text);
+    border-color: rgba(255, 26, 26, 0.3);
+    background: rgba(255, 26, 26, 0.05);
+  }
+
+  .cat-tab.active {
+    color: var(--primary);
+    border-color: var(--primary-dim);
+    background: rgba(255, 26, 26, 0.08);
+    text-shadow: 0 0 8px var(--glow);
+  }
+
+  /* ===== MODULE GRID ===== */
+  .modules-container {
+    padding: 24px 28px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 18px;
+  }
+
+  /* ===== MODULE CARD ===== */
+  .module-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.35s ease;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: cardFadeIn 0.4s ease forwards;
+  }
+
+  @keyframes cardFadeIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .module-card:hover {
+    border-color: rgba(255, 26, 26, 0.35);
+    box-shadow: 0 0 24px rgba(255, 26, 26, 0.08), 0 4px 20px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+  }
+
+  .module-card.disabled {
+    opacity: 0.55;
+  }
+
+  .module-card.disabled:hover {
+    opacity: 0.75;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .card-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .card-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 26, 26, 0.06);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 26, 26, 0.1);
+  }
+
+  .card-name-group {
+    min-width: 0;
+  }
+
+  .card-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-version {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .card-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.3s;
+  }
+
+  .status-dot.active {
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  }
+
+  .gear-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+  }
+
+  .gear-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(255, 102, 0, 0.08);
+  }
+
+  .card-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 14px;
+    min-height: 42px;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cat-badge {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+
+  .cat-badge.core {
+    color: var(--cat-core);
+    border-color: rgba(255, 26, 26, 0.3);
+    background: rgba(255, 26, 26, 0.08);
+  }
+  .cat-badge.utility {
+    color: var(--cat-utility);
+    border-color: rgba(68, 136, 255, 0.3);
+    background: rgba(68, 136, 255, 0.08);
+  }
+  .cat-badge.creative {
+    color: var(--cat-creative);
+    border-color: rgba(170, 68, 255, 0.3);
+    background: rgba(170, 68, 255, 0.08);
+  }
+  .cat-badge.system {
+    color: var(--cat-system);
+    border-color: rgba(0, 255, 136, 0.3);
+    background: rgba(0, 255, 136, 0.08);
+  }
+  .cat-badge.lifestyle {
+    color: var(--cat-lifestyle);
+    border-color: rgba(255, 102, 0, 0.3);
+    background: rgba(255, 102, 0, 0.08);
+  }
+
+  /* ===== TOGGLE SWITCH ===== */
+  .toggle {
+    position: relative;
+    width: 42px;
+    height: 22px;
+    cursor: pointer;
+  }
+
+  .toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+
+  .toggle-track {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s;
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: var(--text-dim);
+    border-radius: 50%;
+    transition: all 0.3s;
+  }
+
+  .toggle input:checked ~ .toggle-track {
+    background: rgba(0, 255, 136, 0.15);
+    border-color: rgba(0, 255, 136, 0.4);
+  }
+
+  .toggle input:checked ~ .toggle-thumb {
+    left: 23px;
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+  }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
+
+  .modal-panel {
+    background: #0c0808;
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    width: 520px;
+    max-width: 92vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 60px rgba(255, 26, 26, 0.1), 0 20px 60px rgba(0, 0, 0, 0.6);
+    transform: scale(0.95);
+    transition: transform 0.3s;
+  }
+
+  .modal-overlay.open .modal-panel {
+    transform: scale(1);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .modal-icon {
+    font-size: 28px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 26, 26, 0.06);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 26, 26, 0.12);
+  }
+
+  .modal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: 1.5px;
+  }
+
+  .modal-subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .modal-body {
+    padding: 20px 24px;
+  }
+
+  .setting-group {
+    margin-bottom: 20px;
+  }
+
+  .setting-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .setting-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+  }
+
+  .setting-toggle-label {
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .setting-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .setting-input:focus {
+    border-color: var(--primary-dim);
+  }
+
+  .setting-select {
+    width: 100%;
+    padding: 10px 14px;
+    background: #0c0808;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23887766'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+
+  .setting-select:focus {
+    border-color: var(--primary-dim);
+  }
+
+  .setting-select option {
+    background: #0c0808;
+    color: var(--text);
+  }
+
+  .setting-range-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .setting-range {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .setting-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--glow);
+  }
+
+  .setting-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 8px var(--glow);
+  }
+
+  .range-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px 22px;
+    border-top: 1px solid var(--panel-border);
+  }
+
+  .modal-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 8px 24px;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .modal-btn:hover {
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .modal-btn.save {
+    background: rgba(255, 26, 26, 0.12);
+    border-color: var(--primary-dim);
+    color: var(--primary);
+  }
+
+  .modal-btn.save:hover {
+    background: rgba(255, 26, 26, 0.22);
+    box-shadow: 0 0 16px rgba(255, 26, 26, 0.15);
+  }
+
+  /* ===== LOADING STATE ===== */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    gap: 16px;
+  }
+
+  .loading-spinner {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--panel-border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+
+  .empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    font-size: 15px;
+    letter-spacing: 1px;
+  }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 2000;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 22px;
+    border-radius: 8px;
+    border: 1px solid;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast.success {
+    color: var(--success);
+    border-color: rgba(0, 255, 136, 0.3);
+    background: rgba(0, 255, 136, 0.08);
+  }
+
+  .toast.error {
+    color: var(--error);
+    border-color: rgba(255, 51, 51, 0.3);
+    background: rgba(255, 51, 51, 0.08);
+  }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 26, 26, 0.2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255, 26, 26, 0.35); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .top-bar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+    .search-box input { width: 140px; }
+    .category-bar { padding: 10px 16px; }
+    .modules-container { padding: 16px; }
+    .module-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (min-width: 1400px) {
+    .module-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="top-bar-title">&#9889; ZEUS MODULE SYSTEM</div>
+      <div class="module-count-badge" id="moduleCount">0 MODULES</div>
+    </div>
+    <div class="top-bar-right">
+      <div class="search-box">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="searchInput" placeholder="Search modules..." autocomplete="off">
+      </div>
+      <a href="/static/index.html" class="back-link">&larr; Back to MJ</a>
+    </div>
+  </div>
+
+  <!-- CATEGORY TABS -->
+  <div class="category-bar">
+    <button class="cat-tab active" data-cat="all">All</button>
+    <button class="cat-tab" data-cat="core">Core</button>
+    <button class="cat-tab" data-cat="utility">Utility</button>
+    <button class="cat-tab" data-cat="creative">Creative</button>
+    <button class="cat-tab" data-cat="system">System</button>
+    <button class="cat-tab" data-cat="lifestyle">Lifestyle</button>
+  </div>
+
+  <!-- MODULE GRID -->
+  <div class="modules-container">
+    <div class="module-grid" id="moduleGrid">
+      <div class="loading-state" id="loadingState">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">LOADING MODULES</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div class="modal-icon" id="modalIcon"></div>
+        <div>
+          <div class="modal-title" id="modalTitle"></div>
+          <div class="modal-subtitle" id="modalSubtitle">Module Settings</div>
+        </div>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <div class="loading-state">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">LOADING SETTINGS</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn" id="modalCancel">Cancel</button>
+        <button class="modal-btn save" id="modalSave">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- State ---
+  let allModules = [];
+  let activeCategory = 'all';
+  let searchQuery = '';
+  let currentModuleName = null;
+
+  // --- DOM Refs ---
+  const grid = document.getElementById('moduleGrid');
+  const loadingState = document.getElementById('loadingState');
+  const countBadge = document.getElementById('moduleCount');
+  const searchInput = document.getElementById('searchInput');
+  const modal = document.getElementById('settingsModal');
+  const modalIcon = document.getElementById('modalIcon');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalSubtitle = document.getElementById('modalSubtitle');
+  const modalBody = document.getElementById('modalBody');
+  const modalCancel = document.getElementById('modalCancel');
+  const modalSave = document.getElementById('modalSave');
+  const toast = document.getElementById('toast');
+
+  // --- API ---
+  async function fetchModules() {
+    try {
+      const res = await fetch('/zeus/modules');
+      if (!res.ok) throw new Error('Failed to fetch modules');
+      const data = await res.json();
+      return data.modules || [];
+    } catch (err) {
+      console.error('fetchModules error:', err);
+      showToast('Failed to load modules', 'error');
+      return [];
+    }
+  }
+
+  async function fetchModuleDetail(name) {
+    try {
+      const res = await fetch('/zeus/modules/' + encodeURIComponent(name));
+      if (!res.ok) throw new Error('Failed to fetch module detail');
+      return await res.json();
+    } catch (err) {
+      console.error('fetchModuleDetail error:', err);
+      showToast('Failed to load settings', 'error');
+      return null;
+    }
+  }
+
+  async function postModuleSettings(name, settings) {
+    try {
+      const res = await fetch('/zeus/modules/' + encodeURIComponent(name) + '/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+      if (!res.ok) throw new Error('Failed to save settings');
+      return true;
+    } catch (err) {
+      console.error('postModuleSettings error:', err);
+      showToast('Failed to save settings', 'error');
+      return false;
+    }
+  }
+
+  // --- Toast ---
+  let toastTimer;
+  function showToast(message, type) {
+    clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.className = 'toast ' + type;
+    requestAnimationFrame(() => { toast.classList.add('show'); });
+    toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2800);
+  }
+
+  // --- Filtering ---
+  function getFilteredModules() {
+    return allModules.filter(m => {
+      const catMatch = activeCategory === 'all' || m.category === activeCategory;
+      const searchMatch = !searchQuery ||
+        m.display_name.toLowerCase().includes(searchQuery) ||
+        m.name.toLowerCase().includes(searchQuery) ||
+        m.description.toLowerCase().includes(searchQuery);
+      return catMatch && searchMatch;
+    });
+  }
+
+  function updateCount(filtered) {
+    const total = allModules.length;
+    const shown = filtered.length;
+    if (activeCategory === 'all' && !searchQuery) {
+      countBadge.textContent = total + ' MODULE' + (total !== 1 ? 'S' : '');
+    } else {
+      countBadge.textContent = shown + ' / ' + total + ' MODULES';
+    }
+  }
+
+  // --- Render ---
+  function renderModules() {
+    const filtered = getFilteredModules();
+    updateCount(filtered);
+
+    // Clear existing cards (keep loading state hidden)
+    grid.querySelectorAll('.module-card, .empty-state').forEach(el => el.remove());
+    loadingState.style.display = 'none';
+
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = '<div class="empty-icon">&#128268;</div><p>No modules found</p>';
+      empty.style.gridColumn = '1 / -1';
+      grid.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach((mod, i) => {
+      const card = document.createElement('div');
+      card.className = 'module-card' + (mod.enabled ? '' : ' disabled');
+      card.style.animationDelay = (i * 0.06) + 's';
+      card.dataset.name = mod.name;
+
+      card.innerHTML =
+        '<div class="card-header">' +
+          '<div class="card-identity">' +
+            '<div class="card-icon">' + escHtml(mod.icon || '&#9881;') + '</div>' +
+            '<div class="card-name-group">' +
+              '<div class="card-name">' + escHtml(mod.display_name) + '</div>' +
+              '<div class="card-version">v' + escHtml(mod.version || '1.0') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-controls">' +
+            '<div class="status-dot' + (mod.enabled ? ' active' : '') + '"></div>' +
+            '<button class="gear-btn" title="Settings" data-module="' + escAttr(mod.name) + '">&#9881;</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card-desc">' + escHtml(mod.description || 'No description available.') + '</div>' +
+        '<div class="card-footer">' +
+          '<span class="cat-badge ' + escAttr(mod.category || 'core') + '">' + escHtml((mod.category || 'core').toUpperCase()) + '</span>' +
+          '<label class="toggle">' +
+            '<input type="checkbox"' + (mod.enabled ? ' checked' : '') + ' data-module="' + escAttr(mod.name) + '">' +
+            '<div class="toggle-track"></div>' +
+            '<div class="toggle-thumb"></div>' +
+          '</label>' +
+        '</div>';
+
+      grid.appendChild(card);
+    });
+
+    // Attach events
+    grid.querySelectorAll('.toggle input').forEach(input => {
+      input.addEventListener('change', handleToggle);
+    });
+    grid.querySelectorAll('.gear-btn').forEach(btn => {
+      btn.addEventListener('click', handleGearClick);
+    });
+  }
+
+  // --- Event Handlers ---
+  async function handleToggle(e) {
+    const name = e.target.dataset.module;
+    const enabled = e.target.checked;
+    const card = e.target.closest('.module-card');
+    const dot = card.querySelector('.status-dot');
+
+    // Optimistic UI
+    card.classList.toggle('disabled', !enabled);
+    dot.classList.toggle('active', enabled);
+
+    const success = await postModuleSettings(name, { enabled: enabled });
+    if (success) {
+      // Update local state
+      const mod = allModules.find(m => m.name === name);
+      if (mod) mod.enabled = enabled;
+      showToast(enabled ? 'Module enabled' : 'Module disabled', 'success');
+    } else {
+      // Revert
+      e.target.checked = !enabled;
+      card.classList.toggle('disabled', enabled);
+      dot.classList.toggle('active', !enabled);
+    }
+  }
+
+  async function handleGearClick(e) {
+    e.stopPropagation();
+    const name = e.currentTarget.dataset.module;
+    const mod = allModules.find(m => m.name === name);
+    if (!mod) return;
+
+    currentModuleName = name;
+    modalIcon.textContent = mod.icon || '⚙';
+    modalTitle.textContent = mod.display_name;
+    modalSubtitle.textContent = 'Module Settings • v' + (mod.version || '1.0');
+    modalBody.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">LOADING SETTINGS</div></div>';
+
+    openModal();
+
+    const detail = await fetchModuleDetail(name);
+    if (!detail || !detail.settings || detail.settings.length === 0) {
+      modalBody.innerHTML = '<div class="empty-state" style="padding:30px 0"><p>No configurable settings</p></div>';
+      return;
+    }
+
+    renderSettings(detail.settings);
+  }
+
+  function renderSettings(settings) {
+    let html = '';
+    settings.forEach(s => {
+      html += '<div class="setting-group">';
+      html += '<label class="setting-label">' + escHtml(s.label || s.key) + '</label>';
+
+      switch (s.type) {
+        case 'toggle':
+          html += '<div class="setting-toggle-row">' +
+            '<span class="setting-toggle-label">' + escHtml(s.label || s.key) + '</span>' +
+            '<label class="toggle">' +
+            '<input type="checkbox" data-key="' + escAttr(s.key) + '" data-type="toggle"' + (s.value ? ' checked' : '') + '>' +
+            '<div class="toggle-track"></div>' +
+            '<div class="toggle-thumb"></div>' +
+            '</label></div>';
+          break;
+
+        case 'text':
+          html += '<input class="setting-input" type="text" data-key="' + escAttr(s.key) + '" data-type="text" value="' + escAttr(s.value || '') + '" placeholder="Enter value...">';
+          break;
+
+        case 'select':
+          html += '<select class="setting-select" data-key="' + escAttr(s.key) + '" data-type="select">';
+          (s.options || []).forEach(opt => {
+            const optVal = typeof opt === 'object' ? opt.value : opt;
+            const optLabel = typeof opt === 'object' ? opt.label : opt;
+            html += '<option value="' + escAttr(optVal) + '"' + (optVal === s.value ? ' selected' : '') + '>' + escHtml(optLabel) + '</option>';
+          });
+          html += '</select>';
+          break;
+
+        case 'range':
+          const min = s.min !== undefined ? s.min : 0;
+          const max = s.max !== undefined ? s.max : 100;
+          const val = s.value !== undefined ? s.value : min;
+          html += '<div class="setting-range-row">' +
+            '<input class="setting-range" type="range" data-key="' + escAttr(s.key) + '" data-type="range" min="' + min + '" max="' + max + '" value="' + val + '">' +
+            '<span class="range-value" id="rv-' + escAttr(s.key) + '">' + val + '</span>' +
+            '</div>';
+          break;
+
+        default:
+          html += '<input class="setting-input" type="text" data-key="' + escAttr(s.key) + '" data-type="text" value="' + escAttr(String(s.value || '')) + '">';
+      }
+
+      html += '</div>';
+    });
+    modalBody.innerHTML = html;
+
+    // Bind range live-update
+    modalBody.querySelectorAll('input[type="range"]').forEach(r => {
+      r.addEventListener('input', function() {
+        const display = document.getElementById('rv-' + this.dataset.key);
+        if (display) display.textContent = this.value;
+      });
+    });
+  }
+
+  // --- Modal Controls ---
+  function openModal() {
+    modal.classList.add('open');
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    currentModuleName = null;
+  }
+
+  modalCancel.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
+  });
+
+  modalSave.addEventListener('click', async function() {
+    if (!currentModuleName) return;
+
+    const settings = {};
+    modalBody.querySelectorAll('[data-key]').forEach(el => {
+      const key = el.dataset.key;
+      const type = el.dataset.type;
+      switch (type) {
+        case 'toggle':
+          settings[key] = el.checked;
+          break;
+        case 'range':
+          settings[key] = parseFloat(el.value);
+          break;
+        default:
+          settings[key] = el.value;
+      }
+    });
+
+    const success = await postModuleSettings(currentModuleName, settings);
+    if (success) {
+      showToast('Settings saved', 'success');
+      closeModal();
+    }
+  });
+
+  // --- Category Tabs ---
+  document.querySelectorAll('.cat-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      activeCategory = this.dataset.cat;
+      renderModules();
+    });
+  });
+
+  // --- Search ---
+  let searchDebounce;
+  searchInput.addEventListener('input', function() {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      renderModules();
+    }, 200);
+  });
+
+  // --- Keyboard ---
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('open')) {
+      closeModal();
+    }
+  });
+
+  // --- Utilities ---
+  function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function escAttr(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // --- Init ---
+  async function init() {
+    allModules = await fetchModules();
+    renderModules();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

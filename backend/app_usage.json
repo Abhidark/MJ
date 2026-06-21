@@ -1,0 +1,10 @@
+{
+  "date": "2026-06-21",
+  "apps": {
+    "uvicorn  main:app --host 0.0.0": 5.580001,
+    "Google Chrome": 28.878426,
+    "VS Code": 11.238638,
+    "Unknown": 5.663845
+  },
+  "session_start": "2026-06-21T13:46:21.576236"
+}

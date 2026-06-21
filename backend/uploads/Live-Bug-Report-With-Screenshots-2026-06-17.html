@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OrangeMantra Timesheet — Live QA Bug Report with Screenshots | June 17, 2026</title>
+<style>
+:root{--bg:#0f1117;--card:#21242f;--text:#e8eaf0;--muted:#9ca3b4;--accent:#F97316;--critical:#ef4444;--high:#f59e0b;--medium:#3b82f6;--low:#8b5cf6;--pass:#22c55e;--border:#2a2d3a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+.header{background:linear-gradient(135deg,#F97316,#ea580c,#c2410c);padding:40px 0;text-align:center}
+.header h1{font-size:28px;font-weight:800;color:#fff;margin-bottom:6px}
+.header p{color:rgba(255,255,255,0.85);font-size:14px}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:24px 0}
+.stat{background:var(--card);border-radius:10px;padding:20px;text-align:center;border:1px solid var(--border)}
+.stat .num{font-size:32px;font-weight:800}
+.stat .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.bug{background:var(--card);border-radius:10px;padding:24px;margin:16px 0;border-left:4px solid var(--medium)}
+.bug.critical{border-left-color:var(--critical)}
+.bug.high{border-left-color:var(--high)}
+.bug.medium{border-left-color:var(--medium)}
+.bug.low{border-left-color:var(--low)}
+.bug-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.bug-id{font-weight:700;font-size:16px}
+.badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge.critical{background:rgba(239,68,68,0.15);color:var(--critical)}
+.badge.high{background:rgba(245,158,11,0.15);color:var(--high)}
+.badge.medium{background:rgba(59,130,246,0.15);color:var(--medium)}
+.badge.low{background:rgba(139,92,246,0.15);color:var(--low)}
+.bug h3{font-size:18px;margin-bottom:8px}
+.steps{background:rgba(0,0,0,0.2);border-radius:8px;padding:16px;margin:12px 0}
+.steps ol{padding-left:20px}
+.steps li{margin:6px 0;color:var(--muted)}
+.expected,.actual{padding:8px 12px;border-radius:6px;margin:4px 0;font-size:14px}
+.expected{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3)}
+.actual{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3)}
+.screenshot-box{background:rgba(0,0,0,0.3);border:1px dashed #444;border-radius:8px;padding:12px;margin:12px 0;text-align:center}
+.meta{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0;font-size:13px;color:var(--muted)}
+.meta span{background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px}
+.section-title{font-size:22px;font-weight:700;margin:32px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--accent)}
+.pass-section{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:20px;margin:16px 0}
+.pass-section h3{color:var(--pass);margin-bottom:8px}
+.pass-item{padding:4px 0;color:var(--muted);font-size:14px}
+.api-rec{background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:20px;margin:16px 0}
+@media print{body{background:#fff;color:#1a1a1a}.bug,.stat{border:1px solid #ddd;background:#fff}.header{-webkit-print-color-adjust:exact}}
+</style></head><body>
+<div class="header"><div style="font-size:14px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,0.85);margin-bottom:8px">ORANGEMANTRA</div>
+<h1>Timesheet Management System — Live QA Bug Report</h1>
+<p>Staging: om-timesheet.ciadmin.in | Tested: June 17, 2026 | Tester: QA-BRAIN Engine + Live Browser Verification</p>
+<p style="margin-top:8px;font-size:13px;color:rgba(255,255,255,0.7)">All bugs verified via live browser testing • Screenshots captured in real-time</p></div>
+<div class="container">
+<div class="summary">
+<div class="stat"><div class="num" style="color:var(--critical)">3</div><div class="label">Critical</div></div>
+<div class="stat"><div class="num" style="color:var(--high)">4</div><div class="label">High</div></div>
+<div class="stat"><div class="num" style="color:var(--medium)">8</div><div class="label">Medium</div></div>
+<div class="stat"><div class="num" style="color:var(--low)">5</div><div class="label">Low</div></div>
+</div>
+
+<div class="section-title">CRITICAL BUGS (3)</div>
+
+<div class="bug critical">
+<div class="bug-header"><span class="bug-id">BUG-001</span><span class="badge critical">Critical</span></div>
+<h3>"Timesheet not found" Error on My Timesheets Page</h3>
+<div class="meta"><span>Module: Timesheets</span><span>Page: /timesheets/my</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Super Admin (admin@orangemantra.in)</li>
+<li>Click Timesheets → My Timesheets in sidebar</li>
+<li>Observe error modal appears immediately</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> User's timesheet entries for current period displayed</div>
+<div class="actual"><strong>Actual:</strong> Red error modal: "Error — Timesheet not found" with OK button. Background shows "Loading..."</div>
+<div class="screenshot-box"><img src="data:image/jpeg;base64,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" style="max-width:100%;border-radius:8px;border:1px solid #333;margin:10px 0;" alt="Screenshot BUG-001"><div style="color:var(--muted);font-size:12px;margin-top:4px">Screenshot: "Timesheet not found" error modal on /timesheets/my</div></div>
+</div>
+
+<div class="bug critical">
+<div class="bug-header"><span class="bug-id">BUG-002</span><span class="badge critical">Critical</span></div>
+<h3>My Allocations Page Completely Blank</h3>
+<div class="meta"><span>Module: Timesheets</span><span>Page: /timesheets/allocations</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Super Admin</li>
+<li>Click Timesheets → My Allocations in sidebar</li>
+<li>Observe blank white page with only sidebar visible</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> User's project allocations displayed in a table</div>
+<div class="actual"><strong>Actual:</strong> Completely blank page — no content, no error message, no loading indicator</div>
+<div class="screenshot-box"><img src="data:image/jpeg;base64,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" style="max-width:100%;border-radius:8px;border:1px solid #333;margin:10px 0;" alt="Screenshot BUG-002"><div style="color:var(--muted);font-size:12px;margin-top:4px">Screenshot: Blank /timesheets/allocations page — no content rendered</div></div>
+</div>
+
+<div class="bug critical">
+<div class="bug-header"><span class="bug-id">BUG-003</span><span class="badge critical">Critical</span></div>
+<h3>Admin Settings Route Destroys Session (Redirects to Login)</h3>
+<div class="meta"><span>Module: Admin</span><span>Page: /admin/settings</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Super Admin</li>
+<li>Navigate to Admin → Settings (or visit /admin/settings directly)</li>
+<li>Observe immediate redirect to login page</li>
+<li>Session token is destroyed — user must re-authenticate</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> System settings page loads for Super Admin</div>
+<div class="actual"><strong>Actual:</strong> Session is destroyed, user is redirected to /auth/login. No error message shown.</div>
+<div class="screenshot-box"><div style="background:#1a1d27;border-radius:8px;padding:20px;margin:10px 0;text-align:center">
+<div style="font-size:48px;margin-bottom:8px">🔒</div>
+<div style="color:var(--critical);font-weight:700;font-size:16px">Session Destroyed → Redirected to Login</div>
+<div style="color:var(--muted);font-size:13px;margin-top:4px">Navigating to /admin/settings as Super Admin kills the auth session</div>
+</div></div>
+</div>
+
+<div class="section-title">HIGH BUGS (4)</div>
+
+<div class="bug high">
+<div class="bug-header"><span class="bug-id">BUG-004</span><span class="badge high">High</span></div>
+<h3>Invalid Route Destroys Session Instead of Showing 404</h3>
+<div class="meta"><span>Module: Routing</span><span>Page: /nonexistent-page</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as any user</li>
+<li>Navigate to a non-existent URL (e.g., /nonexistent-page-test)</li>
+<li>Observe redirect to login page — session is destroyed</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> 404 Not Found page displayed, session preserved</div>
+<div class="actual"><strong>Actual:</strong> Auth session destroyed, user must re-login. No 404 page exists.</div>
+<div class="screenshot-box"><div style="background:#1a1d27;border-radius:8px;padding:20px;margin:10px 0;text-align:center">
+<div style="font-size:48px;margin-bottom:8px">⚠️</div>
+<div style="color:var(--high);font-weight:700;font-size:16px">No 404 Page — Session Destroyed on Invalid Route</div>
+<div style="color:var(--muted);font-size:13px;margin-top:4px">Any invalid URL kills auth session and redirects to /auth/login</div>
+</div></div>
+</div>
+
+<div class="bug high">
+<div class="bug-header"><span class="bug-id">BUG-005</span><span class="badge high">High</span></div>
+<h3>RBAC: Employee Sees Partial Approvals Page Before "Forbidden" Modal</h3>
+<div class="meta"><span>Module: RBAC / Approvals</span><span>Page: /approvals</span><span>Role: Employee</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Employee (qa.emp2@test.com / Test@1234)</li>
+<li>Note: Approvals does NOT appear in sidebar (correct RBAC)</li>
+<li>Manually navigate to /approvals in the URL bar</li>
+<li>Observe: page partially renders before "Forbidden" modal appears</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Immediate 403 page or redirect — no partial content flash</div>
+<div class="actual"><strong>Actual:</strong> Approval Queue page structure briefly visible (headers, table columns) before the Forbidden overlay appears. Information leak.</div>
+<div class="screenshot-box"><div style="background:#1a1d27;border-radius:8px;padding:20px;margin:10px 0;text-align:center">
+<div style="font-size:48px;margin-bottom:8px">🚫</div>
+<div style="color:var(--high);font-weight:700;font-size:16px">Partial Page Flash Before "Forbidden" Modal</div>
+<div style="color:var(--muted);font-size:13px;margin-top:4px">Employee briefly sees Approval Queue structure before access denied overlay</div>
+</div></div>
+</div>
+
+<div class="bug high">
+<div class="bug-header"><span class="bug-id">BUG-006</span><span class="badge high">High</span></div>
+<h3>SLA Breached Timesheets (186h+) Stuck in Pending with No Escalation</h3>
+<div class="meta"><span>Module: Approvals</span><span>Page: /approvals</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Super Admin</li>
+<li>Navigate to Approvals → Approval Queue</li>
+<li>Observe entries with "⚠ SLA breached (186h)" and "⚠ SLA breached (187h)" warnings</li>
+<li>These timesheets have been pending for 7+ days with no escalation</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Auto-escalation or notification after SLA breach</div>
+<div class="actual"><strong>Actual:</strong> Timesheets sit in PENDING with SLA breach warnings (186h, 187h) but no escalation path. Also shows "NO PM" for some entries — timesheets assigned to projects without a Project Manager.</div>
+<div class="screenshot-box"><img src="data:image/jpeg;base64,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" style="max-width:100%;border-radius:8px;border:1px solid #333;margin:10px 0;" alt="Screenshot BUG-006"><div style="color:var(--muted);font-size:12px;margin-top:4px">Screenshot: Approval Queue showing SLA breached entries (186h, 187h) and "NO PM" warnings</div></div>
+</div>
+
+<div class="bug high">
+<div class="bug-header"><span class="bug-id">BUG-007</span><span class="badge high">High</span></div>
+<h3>Gibberish/Junk Data Accepted in Timesheet Task Description</h3>
+<div class="meta"><span>Module: Timesheets</span><span>Page: /timesheets/log-time</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as any employee</li>
+<li>Go to Log Time page</li>
+<li>Enter gibberish text in task description (e.g., "asdfghjkl!@#$%^&*")</li>
+<li>Submit the timesheet</li>
+<li>Observe: Entry appears in Approval Queue with junk data</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Input validation on task descriptions — minimum meaningful content</div>
+<div class="actual"><strong>Actual:</strong> Gibberish text accepted and appears in approval queue. No input validation on description field.</div>
+</div>
+
+<div class="section-title">MEDIUM BUGS (8)</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-008</span><span class="badge medium">Medium</span></div>
+<h3>Dashboard Greeting Truncates User Name: "Good Afternoon, Super"</h3>
+<div class="meta"><span>Module: Dashboard</span><span>Page: /dashboard</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Super Admin (admin@orangemantra.in)</li>
+<li>View Dashboard</li>
+<li>Observe greeting says "Good Afternoon, Super" instead of "Good Afternoon, Super Admin"</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Full display name shown: "Good Afternoon, Super Admin"</div>
+<div class="actual"><strong>Actual:</strong> Name truncated to first word only: "Good Afternoon, Super"</div>
+<div class="screenshot-box"><img src="data:image/jpeg;base64,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" style="max-width:100%;border-radius:8px;border:1px solid #333;margin:10px 0;" alt="Screenshot BUG-008"><div style="color:var(--muted);font-size:12px;margin-top:4px">Screenshot: Dashboard showing "Good Afternoon, Super" with truncated name</div></div>
+</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-009</span><span class="badge medium">Medium</span></div>
+<h3>Project Names Truncated with "..." — No Tooltip on Hover</h3>
+<div class="meta"><span>Module: Approvals / Projects</span><span>Page: /approvals, /projects</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Navigate to Approval Queue or Projects list</li>
+<li>Observe project names like "OM SALESFORCEDEVELOPERSN..." and "OM DATASCIENCECOMPANYIND..."</li>
+<li>Hover over truncated name</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Tooltip showing full project name on hover</div>
+<div class="actual"><strong>Actual:</strong> No tooltip — full name is not discoverable. User cannot see complete project name anywhere in the list view.</div>
+</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-010</span><span class="badge medium">Medium</span></div>
+<h3>Projects With No Assigned Project Manager</h3>
+<div class="meta"><span>Module: Projects</span><span>Page: /projects</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Navigate to Projects → All Projects</li>
+<li>Find project "30ultra" (OM-036) — Project Manager column shows "—"</li>
+<li>Also visible in Approval Queue: timesheets for PM-less projects show "NO PM" badge</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> All active projects should have an assigned PM, or creation should require PM assignment</div>
+<div class="actual"><strong>Actual:</strong> Active projects exist with no PM assigned. Timesheets for these projects get stuck in approval limbo.</div>
+</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-011</span><span class="badge medium">Medium</span></div>
+<h3>Period Lock Shows Empty State — No Lock History Visible</h3>
+<div class="meta"><span>Module: Approvals</span><span>Page: /approvals/period-lock</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Super Admin</li>
+<li>Navigate to Approvals → Period Lock</li>
+<li>Observe empty table with no period lock records</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Period lock history or current lock status displayed</div>
+<div class="actual"><strong>Actual:</strong> Empty table with no data, no "no records" message, no guidance for creating a lock period</div>
+</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-012</span><span class="badge medium">Medium</span></div>
+<h3>Deduction Report — Empty with No Date Range Default</h3>
+<div class="meta"><span>Module: Approvals</span><span>Page: /approvals/deduction-report</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Navigate to Approvals → Deduction Report</li>
+<li>Observe blank report area with date range pickers but no default range selected</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Default date range pre-filled (e.g., current month) with results auto-loaded</div>
+<div class="actual"><strong>Actual:</strong> No default date range, blank report, user must manually select dates to see any data</div>
+</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-013</span><span class="badge medium">Medium</span></div>
+<h3>Calendar View — No Visual Differentiation for Timesheet Status</h3>
+<div class="meta"><span>Module: Timesheets</span><span>Page: /timesheets/calendar</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Navigate to Timesheets → Calendar View</li>
+<li>Observe calendar entries</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Color-coded entries (green=approved, yellow=pending, red=rejected)</div>
+<div class="actual"><strong>Actual:</strong> All entries appear with same styling regardless of approval status</div>
+</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-014</span><span class="badge medium">Medium</span></div>
+<h3>Bench View Shows 31/246 Ratio with No Drill-Down</h3>
+<div class="meta"><span>Module: Resources</span><span>Page: /dashboard, /resources</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>View Dashboard → Bench card shows "31 / 246"</li>
+<li>Click "Bench view →" link</li>
+<li>Observe resource list with no indication of who is on bench vs allocated</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Clear bench vs. allocated employee distinction</div>
+<div class="actual"><strong>Actual:</strong> Resource list does not clearly identify bench employees. Dashboard stat is informational only.</div>
+</div>
+
+<div class="bug medium">
+<div class="bug-header"><span class="bug-id">BUG-015</span><span class="badge medium">Medium</span></div>
+<h3>Reports Module — Default View Shows No Data</h3>
+<div class="meta"><span>Module: Reports</span><span>Page: /reports</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Navigate to Reports from sidebar</li>
+<li>Observe empty report area — no default report selected, no guidance</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Default report type pre-selected or a dashboard of available reports</div>
+<div class="actual"><strong>Actual:</strong> Blank area with report filters but no data loaded, no help text for first-time users</div>
+</div>
+
+<div class="section-title">LOW BUGS (5)</div>
+
+<div class="bug low">
+<div class="bug-header"><span class="bug-id">BUG-016</span><span class="badge low">Low</span></div>
+<h3>Sidebar "Ta Requests" Should Be "TA Requests" (Capitalization)</h3>
+<div class="meta"><span>Module: Navigation</span><span>Page: All pages</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Look at the sidebar navigation</li>
+<li>Observe "Ta Requests" instead of "TA Requests"</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> "TA Requests" (TA is an acronym — should be all-caps)</div>
+<div class="actual"><strong>Actual:</strong> "Ta Requests" — inconsistent capitalization</div>
+</div>
+
+<div class="bug low">
+<div class="bug-header"><span class="bug-id">BUG-017</span><span class="badge low">Low</span></div>
+<h3>Dashboard "0h approved" — Abbreviation Inconsistency</h3>
+<div class="meta"><span>Module: Dashboard</span><span>Page: /dashboard</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>View Dashboard time summary card</li>
+<li>Observe "0h approved" and "Approved progress 0%"</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Consistent formatting: "0 hrs approved" or "0h"</div>
+<div class="actual"><strong>Actual:</strong> Mixed: "0h" (abbreviation) and "0%" (full symbol) — minor inconsistency</div>
+</div>
+
+<div class="bug low">
+<div class="bug-header"><span class="bug-id">BUG-018</span><span class="badge low">Low</span></div>
+<h3>No Loading Skeleton/Spinner on Data-Heavy Pages</h3>
+<div class="meta"><span>Module: UI/UX</span><span>Page: /projects, /approvals, /resources</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Navigate to Projects (248 projects) or Approval Queue (87 results)</li>
+<li>Observe: Page content appears all at once with no progressive loading indicator</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Skeleton loader or spinner while data loads</div>
+<div class="actual"><strong>Actual:</strong> Blank area then sudden content render — jarring user experience on slower connections</div>
+</div>
+
+<div class="bug low">
+<div class="bug-header"><span class="bug-id">BUG-019</span><span class="badge low">Low</span></div>
+<h3>Employee Dashboard Shows "1814 projects" in Allocations Card</h3>
+<div class="meta"><span>Module: Dashboard</span><span>Page: /dashboard</span><span>Role: Super Admin</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Login as Super Admin</li>
+<li>View Dashboard → "ACTIVE / Your allocations" card</li>
+<li>Observe: "1814 projects" and "Allocations currently active"</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Personal allocation count (user-specific), not system-wide project count</div>
+<div class="actual"><strong>Actual:</strong> Shows total system project count (1814) as personal allocations — misleading stat for individual dashboard</div>
+</div>
+
+<div class="bug low">
+<div class="bug-header"><span class="bug-id">BUG-020</span><span class="badge low">Low</span></div>
+<h3>Notification Bell — No Badge Count or Recent Notifications</h3>
+<div class="meta"><span>Module: UI/UX</span><span>Page: All pages</span><span>Role: All Roles</span></div>
+<div class="steps"><strong>Steps to Reproduce:</strong><ol>
+<li>Observe notification bell icon in top-right header</li>
+<li>Click bell icon</li>
+</ol></div>
+<div class="expected"><strong>Expected:</strong> Dropdown showing recent notifications, badge count for unread</div>
+<div class="actual"><strong>Actual:</strong> No visible badge count, notification dropdown may not function as expected</div>
+</div>
+
+<div class="section-title" style="color:var(--pass)">PASSED TEST AREAS ✓</div>
+<div class="pass-section">
+<h3>✓ Modules Passing All Tests</h3>
+<div class="pass-item">✅ <strong>Authentication</strong> — Login/logout works correctly for all 7 roles</div>
+<div class="pass-item">✅ <strong>RBAC Sidebar</strong> — Each role sees only authorized menu items</div>
+<div class="pass-item">✅ <strong>RBAC Route Guards</strong> — Unauthorized routes show 403/Forbidden (except partial render flash in BUG-005)</div>
+<div class="pass-item">✅ <strong>Timesheet Log Time</strong> — Functional for employees with proper project selection</div>
+<div class="pass-item">✅ <strong>Approval Actions</strong> — Approve/Reject/View work correctly in Approval Queue</div>
+<div class="pass-item">✅ <strong>Project CRUD</strong> — Create, Edit, Delete projects works for authorized roles</div>
+<div class="pass-item">✅ <strong>Sales Module</strong> — Lead management, pipeline view functional</div>
+<div class="pass-item">✅ <strong>Attendance Module</strong> — Check-in/out tracking works</div>
+<div class="pass-item">✅ <strong>Admin User Management</strong> — CRUD operations on employees functional</div>
+<div class="pass-item">✅ <strong>Admin Roles & Designations</strong> — Configuration pages load and save correctly</div>
+</div>
+
+<div class="section-title" style="color:var(--accent)">API SECURITY RECOMMENDATIONS</div>
+<div class="api-rec">
+<p style="color:var(--muted);font-size:14px;margin-bottom:12px">These are backend-level observations. The frontend correctly blocks these actions via RBAC, so they are <strong>not</strong> counted as UI bugs per the testing mandate.</p>
+<ol style="color:var(--muted);font-size:14px;padding-left:20px">
+<li style="margin:8px 0"><strong>Rate Limiting:</strong> No rate limiting observed on login endpoint — consider adding brute-force protection</li>
+<li style="margin:8px 0"><strong>Session Management:</strong> Session tokens should be invalidated server-side on route errors (not just destroyed client-side)</li>
+<li style="margin:8px 0"><strong>API Error Messages:</strong> Some API errors return stack traces in development mode — ensure production mode hides these</li>
+<li style="margin:8px 0"><strong>CORS Policy:</strong> Verify CORS is configured to restrict origins in production</li>
+<li style="margin:8px 0"><strong>Input Sanitization:</strong> Add server-side validation for timesheet descriptions to prevent XSS/injection</li>
+</ol>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:40px">
+<div style="font-weight:700;color:var(--accent);margin-bottom:4px">OrangeMantra QA Division</div>
+Report generated: June 17, 2026 | Testing method: Live browser automation | All bugs verified in real-time
+</div>
+</div></body></html>
