@@ -68,7 +68,21 @@ def create_alert(
 ) -> dict:
     """
     Create a new alert and broadcast to all connected clients.
+    Deduplicates: skips if same title+severity is already active within last 5 minutes.
     """
+    # Dedup — don't spam same alert
+    for existing in alerts[:20]:
+        if (not existing.get("resolved")
+            and existing["title"] == title
+            and existing["severity"] == severity):
+            # Same active alert exists — skip
+            try:
+                age = (datetime.now() - datetime.fromisoformat(existing["timestamp"])).total_seconds()
+                if age < 300:  # Within 5 minutes
+                    return existing
+            except Exception:
+                pass
+
     alert = {
         "id": f"alert_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
         "timestamp": datetime.now().isoformat(),
@@ -284,7 +298,6 @@ def check_system_warnings(stats: dict):
         if not _has_recent_alert("Battery Low", 300):
             create_alert(
                 title="Battery Low",
-                message=f"Battery at {battery}%. Plug in charger soon.",
                 severity=SEVERITY_WARNING,
                 category=CAT_SYSTEM,
                 source="system_monitor",

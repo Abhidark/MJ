@@ -1063,6 +1063,10 @@ async def ollama_status():
             if resp.status_code == 200:
                 models = resp.json().get("models", [])
                 model_names = [m["name"] for m in models]
+                # Auto-resolve any old Ollama/Health alerts
+                for a in get_active_alerts():
+                    if "Ollama" in a.get("title", "") or "Ollama" in a.get("message", ""):
+                        resolve_alert(a["id"], "Ollama is back online")
                 return {
                     "status": "online",
                     "models": model_names,
@@ -1131,6 +1135,7 @@ AUDIO_DIR = Path(__file__).parent / "audio_cache"
 AUDIO_DIR.mkdir(exist_ok=True)
 app.mount("/audio", StaticFiles(directory=str(AUDIO_DIR)), name="audio")
 
+# Serve generated images
 # Serve generated images
 GEN_IMAGES_DIR = Path(__file__).parent / "generated_images"
 GEN_IMAGES_DIR.mkdir(exist_ok=True)
