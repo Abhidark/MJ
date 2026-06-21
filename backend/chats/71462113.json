@@ -4,14 +4,6 @@
   "messages": [
     {
       "role": "user",
-      "content": "MJ i am tired today"
-    },
-    {
-      "role": "assistant",
-      "content": "Haan Abhi, kya tu tere mein samajh na raha hai? Kuch bhi doob dien, tumne pehle lagte hain ki to iske baad aap yeh feeling banaye... Yeh mood nahi parwana sakte ho. Tumse pata chuke hue kya tare kar rahi ho iski baar? Yeh time par hai jisme hum aise bhi kar rahi ho, tum aaj pe hi kuch doob dien! Abhii se kaha dekhte hain... Isko samajhne ka nishaan banaye. Yahan se kamse batao ki toh is baar hi apna time par hai."
-    },
-    {
-      "role": "user",
       "content": "hlw"
     },
     {
@@ -185,6 +177,14 @@
     {
       "role": "assistant",
       "content": "Vs Code open kar diya."
+    },
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": ""
     },
     {
       "role": "user",

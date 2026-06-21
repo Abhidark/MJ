@@ -660,6 +660,49 @@
     backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
     z-index: 1;
     position: relative;
+    transition: margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  }
+  #chat-panel.hidden {
+    margin-right: -440px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Chat toggle button */
+  .chat-toggle-btn {
+    position: fixed;
+    right: 440px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 22px; height: 56px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(20px);
+  }
+  .chat-toggle-btn:hover {
+    background: rgba(255,26,26,0.1);
+    color: var(--primary);
+    border-color: var(--primary);
+    width: 26px;
+  }
+  .chat-toggle-btn.panel-hidden {
+    right: 0;
+    background: rgba(255,26,26,0.12);
+    border-color: var(--primary);
+    color: var(--primary);
+    animation: togglePulse 2s ease-in-out infinite;
+  }
+  @keyframes togglePulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(255,26,26,0.2); }
+    50% { box-shadow: 0 0 15px rgba(255,26,26,0.4); }
   }
 
   .chat-header {
@@ -1122,6 +1165,9 @@
   </div>
 </div>
 
+<!-- Chat Panel Toggle Button -->
+<button class="chat-toggle-btn" id="chat-toggle-btn" title="Hide/Show Chat">&#9654;</button>
+
 <!-- ===== RIGHT: CHAT PANEL ===== -->
 <div id="chat-panel">
   <div class="chat-header">
@@ -1450,6 +1496,8 @@ async function send() {
     typing.textContent = ""; typing.classList.remove("typing");
     const reader = res.body.getReader(); const decoder = new TextDecoder();
     let detectedEmotion = "neutral";
+    let insideThink = false;
+    let rawBuffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
@@ -1459,7 +1507,22 @@ async function send() {
         if (line.startsWith("data: ") && line !== "data: [DONE]") {
           try {
             const data = JSON.parse(line.slice(6));
-            if (data.token) { typing.textContent += data.token; chatBox.scrollTop = chatBox.scrollHeight; }
+            if (data.token) {
+              rawBuffer += data.token;
+              // Filter out <think>...</think> blocks from Qwen3 models
+              if (rawBuffer.includes("<think>")) insideThink = true;
+              if (insideThink) {
+                if (rawBuffer.includes("</think>")) {
+                  insideThink = false;
+                  rawBuffer = rawBuffer.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+                  typing.textContent = rawBuffer;
+                }
+                // Don't show thinking tokens — skip to next
+              } else {
+                typing.textContent = rawBuffer;
+              }
+              chatBox.scrollTop = chatBox.scrollHeight;
+            }
             if (data.emotion) detectedEmotion = data.emotion;
             if (data.image_url) {
               const imgEl = document.createElement("img");
@@ -1515,6 +1578,26 @@ document.querySelectorAll(".qa-btn").forEach(btn => {
 document.getElementById("fullscreen-btn").addEventListener("click", () => {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen();
   else document.exitFullscreen();
+});
+
+// Chat panel slide toggle
+const chatToggleBtn = document.getElementById('chat-toggle-btn');
+const chatPanelEl = document.getElementById('chat-panel');
+let chatPanelVisible = true;
+
+chatToggleBtn.addEventListener('click', () => {
+  chatPanelVisible = !chatPanelVisible;
+  if (chatPanelVisible) {
+    chatPanelEl.classList.remove('hidden');
+    chatToggleBtn.classList.remove('panel-hidden');
+    chatToggleBtn.innerHTML = '&#9654;'; // ►
+    chatToggleBtn.title = 'Hide Chat';
+  } else {
+    chatPanelEl.classList.add('hidden');
+    chatToggleBtn.classList.add('panel-hidden');
+    chatToggleBtn.innerHTML = '&#9664;'; // ◄
+    chatToggleBtn.title = 'Show Chat';
+  }
 });
 
 document.getElementById("orb-container").addEventListener("click", () => {

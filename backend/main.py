@@ -951,6 +951,9 @@ async def chat(
         display_msg = message + file_label
         chat_data["messages"].append({"role": "user", "content": display_msg})
         reply_text = "".join(full_reply)
+        # Strip <think>...</think> blocks from Qwen3 models before saving
+        import re as _re
+        reply_text = _re.sub(r'<think>[\s\S]*?</think>', '', reply_text).strip()
         chat_data["messages"].append({"role": "assistant", "content": reply_text})
 
         if chat_data["title"] == "New Chat":
