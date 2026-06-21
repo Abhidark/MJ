@@ -192,17 +192,17 @@
 
   .orb-container {
     position: relative;
-    width: 240px;
-    height: 240px;
+    width: 320px;
+    height: 320px;
     cursor: pointer;
   }
 
   .orb-ring {
     position: absolute;
     top: -20px; left: -20px;
-    width: 280px; height: 280px;
+    width: 360px; height: 360px;
     border-radius: 50%;
-    border: 1px solid rgba(230,57,70,0.15);
+    border: 1px solid rgba(5,244,112,0.12);
     animation: ring-rotate 25s linear infinite;
   }
 
@@ -211,41 +211,39 @@
     position: absolute;
     top: 0; left: 50%;
     width: 8px; height: 8px;
-    background: var(--primary);
+    background: rgba(5,244,112,0.8);
     border-radius: 50%;
     transform: translateX(-50%);
-    box-shadow: 0 0 15px var(--primary), 0 0 30px rgba(230,57,70,0.3);
+    box-shadow: 0 0 15px rgba(5,244,112,0.6), 0 0 30px rgba(5,244,112,0.3);
   }
 
   .orb-ring-2 {
     position: absolute;
     top: -35px; left: -35px;
-    width: 310px; height: 310px;
+    width: 390px; height: 390px;
     border-radius: 50%;
-    border: 1px dashed rgba(255,107,53,0.08);
+    border: 1px dashed rgba(5,244,112,0.06);
     animation: ring-rotate 35s linear infinite reverse;
   }
 
   @keyframes ring-rotate { to { transform: rotate(360deg); } }
 
   .orb {
-    width: 240px;
-    height: 240px;
+    width: 320px;
+    height: 320px;
     border-radius: 50%;
     background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   #orb-canvas {
     position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     border-radius: 50%;
-    pointer-events: none;
   }
 
   .orb-label {
@@ -966,7 +964,7 @@
       <div class="orb-ring"></div>
       <div class="orb-ring-2"></div>
       <div class="orb" id="orb">
-        <canvas id="orb-canvas" width="300" height="300"></canvas>
+        <canvas id="orb-canvas" width="320" height="320"></canvas>
         <span class="orb-label">MJ</span>
       </div>
     </div>
@@ -1211,50 +1209,160 @@ function drawParticles() {
 }
 drawParticles();
 
-// ===== 3D PARTICLE SPHERE ORB =====
+// ===== 3D INTERACTIVE PARTICLE SPHERE ORB (Full Physics Engine) =====
 (function() {
   const oc = document.getElementById("orb-canvas");
   const octx = oc.getContext("2d");
-  const SIZE = 300;
-  const PARTICLE_COUNT = 2000;
-  const RADIUS = 110;
+  const SIZE = 320;
+  const PARTICLE_COUNT = 3500;
+  const ORB_RADIUS = 120;
+  const FOV = 350;
   oc.width = SIZE; oc.height = SIZE;
 
-  // State colors: { r, g, b }
-  const stateColors = {
-    idle:      { r: 80, g: 220, b: 100 },
-    listening: { r: 46, g: 204, b: 113 },
-    thinking:  { r: 243, g: 156, b: 18 },
-    speaking:  { r: 155, g: 89, b: 182 },
-    error:     { r: 231, g: 76, b: 60 },
+  // State color presets (hex primary)
+  const statePresets = {
+    idle:      { primary: "#05f470", glow: "#10b981" },
+    listening: { primary: "#05f470", glow: "#10b981" },
+    thinking:  { primary: "#ffd900", glow: "#eab308" },
+    speaking:  { primary: "#b92eff", glow: "#8b5cf6" },
+    error:     { primary: "#ff3b30", glow: "#f97316" },
   };
 
-  let currentColor = { ...stateColors.idle };
-  let targetColor = { ...stateColors.idle };
   let orbState = "idle";
-  let rotX = 0, rotY = 0;
+  let currentPrimary = statePresets.idle.primary;
+  let targetPrimary = statePresets.idle.primary;
+  let currentGlow = statePresets.idle.glow;
+  let targetGlow = statePresets.idle.glow;
   let speedMultiplier = 1;
-  let pulsePhase = 0;
 
-  // Generate sphere points using fibonacci sphere
-  const points = [];
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  // Hex to RGB helper
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return {r,g,b};
+  }
+  let curRgb = hexToRgb(currentPrimary);
+  let tarRgb = hexToRgb(targetPrimary);
+
+  // Particle class with spring physics
+  function Particle(bx, by, bz) {
+    this.bx = bx; this.by = by; this.bz = bz;
+    this.px = bx + (Math.random()-0.5)*10;
+    this.py = by + (Math.random()-0.5)*10;
+    this.pz = bz + (Math.random()-0.5)*10;
+    this.vx = 0; this.vy = 0; this.vz = 0;
+    this.twinkleOffset = Math.random() * Math.PI * 2;
+    this.sizeMultiplier = 0.5 + Math.random() * 0.8;
+  }
+  Particle.prototype.rotate = function(ax, ay) {
+    if (ay !== 0) {
+      const c = Math.cos(ay), s = Math.sin(ay);
+      const x2 = this.bx*c + this.bz*s, z2 = -this.bx*s + this.bz*c;
+      this.bx = x2; this.bz = z2;
+    }
+    if (ax !== 0) {
+      const c = Math.cos(ax), s = Math.sin(ax);
+      const y2 = this.by*c - this.bz*s, z2 = this.by*s + this.bz*c;
+      this.by = y2; this.bz = z2;
+    }
+  };
+
+  // Generate particles on spherical shell
+  const particles = [];
   for (let i = 0; i < PARTICLE_COUNT; i++) {
-    const y = 1 - (i / (PARTICLE_COUNT - 1)) * 2;
-    const radiusAtY = Math.sqrt(1 - y * y);
-    const theta = goldenAngle * i;
-    points.push({
-      x: Math.cos(theta) * radiusAtY,
-      y: y,
-      z: Math.sin(theta) * radiusAtY,
-      size: 0.6 + Math.random() * 0.9,
-      flicker: Math.random() * Math.PI * 2,
-    });
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = ORB_RADIUS + (Math.random()-0.5) * (ORB_RADIUS*0.04);
+    particles.push(new Particle(
+      r * Math.sin(phi) * Math.cos(theta),
+      r * Math.sin(phi) * Math.sin(theta),
+      r * Math.cos(phi)
+    ));
   }
 
+  // Mouse interaction state
+  const mouse = { x: -1000, y: -1000, hovering: false };
+  const drag = { active: false, sx: 0, sy: 0, vx: 0, vy: 0 };
+  const ripples = [];
+  let pulsePhase = 0, clickReaction = 0;
+
+  // Mouse/touch handlers on the orb container (not canvas, so click handler still works)
+  const orbEl = document.getElementById("orb");
+  orbEl.addEventListener("mousemove", function(e) {
+    const rect = oc.getBoundingClientRect();
+    mouse.x = (e.clientX - rect.left) - SIZE/2;
+    mouse.y = (e.clientY - rect.top) - SIZE/2;
+    mouse.hovering = true;
+    if (drag.active) {
+      drag.vx = ((e.clientX - rect.left) - drag.sx) * 0.005;
+      drag.vy = ((e.clientY - rect.top) - drag.sy) * 0.005;
+      drag.sx = e.clientX - rect.left;
+      drag.sy = e.clientY - rect.top;
+    }
+  });
+  orbEl.addEventListener("mousedown", function(e) {
+    const rect = oc.getBoundingClientRect();
+    drag.active = true;
+    drag.sx = e.clientX - rect.left;
+    drag.sy = e.clientY - rect.top;
+    drag.vx = 0; drag.vy = 0;
+  });
+  window.addEventListener("mouseup", function(e) {
+    if (drag.active) {
+      drag.active = false;
+      const rect = oc.getBoundingClientRect();
+      const rx = (e.clientX - rect.left) - SIZE/2;
+      const ry = (e.clientY - rect.top) - SIZE/2;
+      ripples.push({ x: rx, y: ry, radius: 5, maxR: ORB_RADIUS*1.8, strength: 0.75 });
+      clickReaction = 0.5;
+    }
+  });
+  orbEl.addEventListener("mouseleave", function() {
+    mouse.hovering = false; mouse.x = -1000; mouse.y = -1000;
+    drag.active = false;
+  });
+  // Touch support
+  orbEl.addEventListener("touchstart", function(e) {
+    if (!e.touches.length) return;
+    const rect = oc.getBoundingClientRect();
+    mouse.x = (e.touches[0].clientX - rect.left) - SIZE/2;
+    mouse.y = (e.touches[0].clientY - rect.top) - SIZE/2;
+    mouse.hovering = true;
+    drag.active = true;
+    drag.sx = e.touches[0].clientX - rect.left;
+    drag.sy = e.touches[0].clientY - rect.top;
+  }, {passive: true});
+  orbEl.addEventListener("touchmove", function(e) {
+    if (!e.touches.length) return;
+    const rect = oc.getBoundingClientRect();
+    mouse.x = (e.touches[0].clientX - rect.left) - SIZE/2;
+    mouse.y = (e.touches[0].clientY - rect.top) - SIZE/2;
+    if (drag.active) {
+      drag.vx = ((e.touches[0].clientX - rect.left) - drag.sx) * 0.005;
+      drag.vy = ((e.touches[0].clientY - rect.top) - drag.sy) * 0.005;
+      drag.sx = e.touches[0].clientX - rect.left;
+      drag.sy = e.touches[0].clientY - rect.top;
+    }
+  }, {passive: true});
+  orbEl.addEventListener("touchend", function(e) {
+    drag.active = false; mouse.hovering = false;
+    if (e.changedTouches.length) {
+      const rect = oc.getBoundingClientRect();
+      ripples.push({
+        x: (e.changedTouches[0].clientX - rect.left) - SIZE/2,
+        y: (e.changedTouches[0].clientY - rect.top) - SIZE/2,
+        radius: 5, maxR: ORB_RADIUS*1.5, strength: 0.6
+      });
+      clickReaction = 0.4;
+    }
+  });
+
+  // State change handler
   function setOrbParticleState(state) {
     orbState = state;
-    targetColor = { ...(stateColors[state] || stateColors.idle) };
+    const preset = statePresets[state] || statePresets.idle;
+    targetPrimary = preset.primary;
+    targetGlow = preset.glow;
+    tarRgb = hexToRgb(targetPrimary);
     switch(state) {
       case "idle": speedMultiplier = 1; break;
       case "listening": speedMultiplier = 1.5; break;
@@ -1266,69 +1374,132 @@ drawParticles();
   }
   window._setOrbParticleState = setOrbParticleState;
 
-  function lerpColor() {
-    currentColor.r += (targetColor.r - currentColor.r) * 0.03;
-    currentColor.g += (targetColor.g - currentColor.g) * 0.03;
-    currentColor.b += (targetColor.b - currentColor.b) * 0.03;
-  }
-
+  // Main render loop
   function renderOrb() {
     octx.clearRect(0, 0, SIZE, SIZE);
-    lerpColor();
 
-    rotY += 0.004 * speedMultiplier;
-    rotX += 0.001 * speedMultiplier;
-    pulsePhase += 0.02 * speedMultiplier;
+    // Lerp color
+    curRgb.r += (tarRgb.r - curRgb.r) * 0.04;
+    curRgb.g += (tarRgb.g - curRgb.g) * 0.04;
+    curRgb.b += (tarRgb.b - curRgb.b) * 0.04;
+    const cr = Math.round(curRgb.r), cg = Math.round(curRgb.g), cb = Math.round(curRgb.b);
 
-    const pulse = orbState === "thinking" ? 1 + Math.sin(pulsePhase) * 0.08 :
-                  orbState === "speaking" ? 1 + Math.sin(pulsePhase * 1.5) * 0.05 :
-                  orbState === "error" ? 1 + Math.sin(pulsePhase * 3) * 0.06 : 1;
+    const cx = SIZE/2, cy = SIZE/2;
 
-    const cosRY = Math.cos(rotY), sinRY = Math.sin(rotY);
-    const cosRX = Math.cos(rotX), sinRX = Math.sin(rotX);
+    // Ambient glow
+    const ambGlow = octx.createRadialGradient(cx, cy, 10, cx, cy, ORB_RADIUS*1.6);
+    ambGlow.addColorStop(0, `rgba(${cr},${cg},${cb},0.06)`);
+    ambGlow.addColorStop(0.5, `rgba(${cr},${cg},${cb},0.02)`);
+    ambGlow.addColorStop(1, "rgba(0,0,0,0)");
+    octx.fillStyle = ambGlow;
+    octx.beginPath();
+    octx.arc(cx, cy, ORB_RADIUS*1.6, 0, Math.PI*2);
+    octx.fill();
 
-    const projected = [];
-    for (const p of points) {
-      // Rotate Y
-      let x1 = p.x * cosRY - p.z * sinRY;
-      let z1 = p.x * sinRY + p.z * cosRY;
-      let y1 = p.y;
-      // Rotate X
-      let y2 = y1 * cosRX - z1 * sinRX;
-      let z2 = y1 * sinRX + z1 * cosRX;
+    // Pulse
+    const pSpeed = orbState === "thinking" ? 0.04 : orbState === "speaking" ? 0.03 : orbState === "error" ? 0.06 : 0.02;
+    const pIntensity = orbState === "thinking" ? 0.08 : orbState === "speaking" ? 0.06 : orbState === "error" ? 0.07 : 0.05;
+    pulsePhase += pSpeed * speedMultiplier;
+    clickReaction *= 0.94;
+    const combinedScale = 1.0 + Math.sin(pulsePhase) * pIntensity + clickReaction;
 
-      const r = RADIUS * pulse;
-      const screenX = SIZE / 2 + x1 * r;
-      const screenY = SIZE / 2 + y2 * r;
-
-      // Depth-based alpha and size
-      const depth = (z2 + 1) / 2; // 0 (back) to 1 (front)
-      const flickerVal = Math.sin(pulsePhase * 2 + p.flicker) * 0.2;
-      const alpha = 0.15 + depth * 0.65 + flickerVal;
-      const size = p.size * (0.5 + depth * 0.8);
-
-      projected.push({ x: screenX, y: screenY, z: z2, alpha: Math.max(0.05, Math.min(1, alpha)), size });
+    // Rotation
+    let rotX = 0.002 * speedMultiplier;
+    let rotY = 0.005 * speedMultiplier;
+    if (drag.active) {
+      rotX = drag.vy; rotY = drag.vx;
+    } else {
+      drag.vx *= 0.95; drag.vy *= 0.95;
+      rotX += drag.vy; rotY += drag.vx;
     }
 
-    // Sort back-to-front
-    projected.sort((a, b) => a.z - b.z);
+    // Update ripples
+    for (let i = ripples.length-1; i >= 0; i--) {
+      ripples[i].radius += 5;
+      if (ripples[i].radius >= ripples[i].maxR) ripples.splice(i, 1);
+    }
 
-    // Draw glow behind sphere
-    const glowGrad = octx.createRadialGradient(SIZE/2, SIZE/2, RADIUS*0.3, SIZE/2, SIZE/2, RADIUS*1.3);
-    glowGrad.addColorStop(0, `rgba(${Math.round(currentColor.r)},${Math.round(currentColor.g)},${Math.round(currentColor.b)},0.03)`);
-    glowGrad.addColorStop(1, 'transparent');
-    octx.fillStyle = glowGrad;
-    octx.fillRect(0, 0, SIZE, SIZE);
-
-    // Draw particles
-    const cr = Math.round(currentColor.r), cg = Math.round(currentColor.g), cb = Math.round(currentColor.b);
-    for (const p of projected) {
+    // Draw ripple rings
+    for (const rp of ripples) {
+      const progress = rp.radius / rp.maxR;
+      octx.strokeStyle = `rgba(${cr},${cg},${cb},${(0.15*(1-progress)).toFixed(2)})`;
+      octx.lineWidth = 8 * (1 - progress);
       octx.beginPath();
-      octx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      octx.fillStyle = `rgba(${cr},${cg},${cb},${p.alpha.toFixed(2)})`;
+      octx.arc(cx + rp.x, cy + rp.y, rp.radius, 0, Math.PI*2);
+      octx.stroke();
+    }
+
+    // Physics — spring + interaction
+    const springK = 0.08, damping = 0.88;
+    const interRadius = 110, interStrength = 0.5;
+    const now = performance.now();
+
+    for (const p of particles) {
+      p.rotate(rotX, rotY);
+      const tx = p.bx * combinedScale, ty = p.by * combinedScale, tz = p.bz * combinedScale;
+      p.vx += (tx - p.px) * springK;
+      p.vy += (ty - p.py) * springK;
+      p.vz += (tz - p.pz) * springK;
+
+      // Mouse repel
+      if (mouse.hovering) {
+        const zd = FOV / (FOV + p.pz);
+        const sx = p.px * zd, sy = p.py * zd;
+        const dx = sx - mouse.x, dy = sy - mouse.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < interRadius) {
+          const norm = dist / interRadius;
+          const inf = Math.pow(1-norm, 1.5) * interStrength;
+          const ang = Math.atan2(dy, dx);
+          p.vx += Math.cos(ang) * inf * 8;
+          p.vy += Math.sin(ang) * inf * 8;
+          p.vz += (Math.random()-0.5) * inf * 12;
+        }
+      }
+
+      // Ripple shockwave forces
+      for (const rp of ripples) {
+        const zd = FOV / (FOV + p.pz);
+        const sx = p.px * zd, sy = p.py * zd;
+        const dx = sx - rp.x, dy = sy - rp.y;
+        const dist = Math.hypot(dx, dy);
+        const waveDist = Math.abs(dist - rp.radius);
+        if (waveDist < 25) {
+          const push = (1 - waveDist/25) * rp.strength * 4;
+          const ang = Math.atan2(dy, dx);
+          p.vx += Math.cos(ang) * push;
+          p.vy += Math.sin(ang) * push;
+          p.vz += (Math.random()-0.5) * push * 3;
+        }
+      }
+
+      p.px += p.vx; p.py += p.vy; p.pz += p.vz;
+      p.vx *= damping; p.vy *= damping; p.vz *= damping;
+    }
+
+    // Sort back-to-front (painter's algorithm)
+    const sorted = particles.slice().sort((a,b) => b.pz - a.pz);
+
+    // Additive blend for luminous glow
+    octx.globalCompositeOperation = "lighter";
+
+    for (const p of sorted) {
+      const zd = FOV / (FOV + p.pz);
+      const dx = p.px * zd + cx, dy = p.py * zd + cy;
+      if (dx < -10 || dx > SIZE+10 || dy < -10 || dy > SIZE+10) continue;
+
+      const twinkle = Math.sin(now * 0.003 + p.twinkleOffset) * 0.15 + 0.85;
+      const sz = Math.max(0.4, 1.2 * zd * p.sizeMultiplier * twinkle);
+      const normZ = (p.pz + ORB_RADIUS) / (2 * ORB_RADIUS);
+      const alpha = Math.max(0.08, Math.min(1.0, (1.1 - normZ*0.7) * twinkle));
+
+      octx.fillStyle = `rgba(${cr},${cg},${cb},${alpha.toFixed(2)})`;
+      octx.beginPath();
+      octx.arc(dx, dy, sz, 0, Math.PI*2);
       octx.fill();
     }
 
+    octx.globalCompositeOperation = "source-over";
     requestAnimationFrame(renderOrb);
   }
   renderOrb();
