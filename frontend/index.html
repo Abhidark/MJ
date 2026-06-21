@@ -407,28 +407,29 @@
   }
 
   .orb-settings-panel {
-    position: fixed;
-    top: 50%;
+    position: absolute;
+    top: 100%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(0.95);
+    transform: translateX(-50%) scale(0.95);
     width: 380px;
-    max-height: 85vh;
+    max-height: 50vh;
     overflow-y: auto;
-    background: rgba(17,17,21,0.92);
+    background: rgba(10,14,24,0.95);
     backdrop-filter: blur(24px);
-    border: 1px solid rgba(0,212,255,0.1);
-    border-radius: 16px;
-    padding: 20px;
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 12px;
+    padding: 16px;
     z-index: 1000;
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
-    box-shadow: 0 0 60px rgba(0,0,0,0.6), 0 0 30px rgba(0,212,255,0.05);
+    box-shadow: 0 0 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.08);
+    margin-top: 8px;
   }
   .orb-settings-panel.open {
     opacity: 1;
     pointer-events: all;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateX(-50%) scale(1);
   }
   .orb-settings-panel::-webkit-scrollbar { width: 4px; }
   .orb-settings-panel::-webkit-scrollbar-track { background: transparent; }
@@ -1452,6 +1453,67 @@
     border: 1px solid rgba(0,150,255,0.2);
     font-size: 11px; color: #00aaff; margin-top: 8px; font-weight: 500;
   }
+
+  /* ===== DASHBOARD EDITOR MODE ===== */
+  .dash-edit-btn { color: #00d4ff !important; }
+  .dash-save-btn { color: #00ff88 !important; border-color: rgba(0,255,136,0.3) !important; font-size: 11px !important; }
+  .dash-cancel-btn { color: #ff4444 !important; border-color: rgba(255,60,60,0.3) !important; }
+
+  body.dash-editing .dash-grid {
+    gap: 14px;
+  }
+  body.dash-editing .dash-card {
+    outline: 2px dashed rgba(0,212,255,0.3);
+    cursor: grab;
+    transition: outline 0.2s, box-shadow 0.2s;
+  }
+  body.dash-editing .dash-card:hover {
+    outline-color: rgba(0,212,255,0.6);
+    box-shadow: 0 0 20px rgba(0,212,255,0.15);
+  }
+  body.dash-editing .dash-card.dragging {
+    opacity: 0.5;
+    outline-color: #ffd900;
+  }
+  body.dash-editing .dash-card .card-edit-toolbar {
+    display: flex !important;
+  }
+  .card-edit-toolbar {
+    display: none;
+    position: absolute; top: 4px; right: 4px;
+    gap: 4px; z-index: 50;
+    align-items: center;
+  }
+  .card-edit-toolbar button {
+    width: 26px; height: 26px;
+    border-radius: 6px; border: 1px solid rgba(0,180,255,0.2);
+    background: rgba(0,10,30,0.9); color: #00d4ff;
+    font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .card-edit-toolbar button:hover { background: rgba(0,180,255,0.15); border-color: rgba(0,180,255,0.4); }
+  .card-edit-toolbar input[type="color"] {
+    width: 26px; height: 26px; border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 6px; background: rgba(0,10,30,0.9); cursor: pointer;
+    padding: 2px;
+  }
+
+  /* Resize handle */
+  .card-resize-handle {
+    display: none;
+    position: absolute; bottom: 2px; right: 2px;
+    width: 16px; height: 16px; cursor: nwse-resize;
+    color: rgba(0,212,255,0.4); font-size: 12px; line-height: 16px; text-align: center;
+  }
+  body.dash-editing .card-resize-handle { display: block; }
+
+  .drag-placeholder {
+    background: rgba(0,212,255,0.08);
+    border: 2px dashed rgba(0,212,255,0.3);
+    border-radius: 12px;
+    min-height: 60px;
+  }
 </style>
 </head>
 <body>
@@ -1625,6 +1687,9 @@
       </div>
     </div>
     <div class="top-bar-actions">
+      <button class="icon-btn dash-edit-btn" id="dash-edit-btn" title="Edit Dashboard">&#9998;</button>
+      <button class="icon-btn dash-save-btn" id="dash-save-btn" title="Save Layout" style="display:none;">&#128190; Save</button>
+      <button class="icon-btn dash-cancel-btn" id="dash-cancel-btn" title="Cancel Edit" style="display:none;">&#10005;</button>
       <a href="/static/dashboard.html" class="icon-btn" title="System Dashboard">&#128202;</a>
       <a href="/static/settings.html" class="icon-btn" title="Voice Settings">&#9881;</a>
       <button class="icon-btn" id="fullscreen-btn" title="Fullscreen">&#9974;</button>
@@ -1715,7 +1780,7 @@
     </div>
 
     <!-- Center: Orb Section (all IDs preserved, now spans center+right) -->
-    <div class="dash-card card-span-2" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;background:transparent;border-color:transparent;">
+    <div class="dash-card card-span-2" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;background:transparent;border-color:transparent;overflow:visible;position:relative;">
       <div class="orb-section">
         <div class="orb-container" id="orb-container">
           <div class="orb-ring"></div>
@@ -1731,6 +1796,110 @@
           <span id="state-text">IDLE</span>
         </div>
         <div class="orb-mic-status" id="mic-status">Initializing...</div>
+      </div>
+      <!-- Orb Settings Panel (positioned below orb) -->
+      <div class="orb-settings-panel" id="orb-settings-panel">
+        <div class="os-header">
+          <div class="os-header-left">
+            <span style="color:#00d4ff;">&#9881;</span>
+            <span>Orb Parameters</span>
+          </div>
+          <button class="os-close" id="os-close">&#10005;</button>
+        </div>
+        <div class="os-section-label">Energy Core Preset</div>
+        <div class="os-presets" id="os-presets">
+          <button class="os-preset-btn active" data-preset="emerald">
+            <div class="os-preset-dot" style="background:#00d4ff;box-shadow:0 0 10px rgba(0,212,255,0.6)"></div>
+            <span class="os-preset-name">JARVIS</span>
+          </button>
+          <button class="os-preset-btn" data-preset="cyan">
+            <div class="os-preset-dot" style="background:#00f0ff;box-shadow:0 0 10px rgba(0,240,255,0.6)"></div>
+            <span class="os-preset-name">Cyan</span>
+          </button>
+          <button class="os-preset-btn" data-preset="violet">
+            <div class="os-preset-dot" style="background:#b92eff;box-shadow:0 0 10px rgba(185,46,255,0.6)"></div>
+            <span class="os-preset-name">Violet</span>
+          </button>
+          <button class="os-preset-btn" data-preset="solar">
+            <div class="os-preset-dot" style="background:#ff5900;box-shadow:0 0 10px rgba(255,89,0,0.6)"></div>
+            <span class="os-preset-name">Solar</span>
+          </button>
+          <button class="os-preset-btn" data-preset="gold">
+            <div class="os-preset-dot" style="background:#ffd900;box-shadow:0 0 10px rgba(255,217,0,0.6)"></div>
+            <span class="os-preset-name">Gold</span>
+          </button>
+        </div>
+        <div class="os-section-label">Interaction Mode</div>
+        <div class="os-modes" id="os-modes">
+          <button class="os-mode-btn active" data-mode="repel">
+            <div class="mode-label">Repel</div>
+            <div class="mode-desc">Disperses particles</div>
+          </button>
+          <button class="os-mode-btn" data-mode="attract">
+            <div class="mode-label">Attract</div>
+            <div class="mode-desc">Pulls to cursor</div>
+          </button>
+          <button class="os-mode-btn" data-mode="vortex">
+            <div class="mode-label">Vortex</div>
+            <div class="mode-desc">Orbital swirl</div>
+          </button>
+          <button class="os-mode-btn" data-mode="ripple">
+            <div class="mode-label">Ripple</div>
+            <div class="mode-desc">Elastic wave</div>
+          </button>
+        </div>
+        <div class="os-section-label">Fine Tuning</div>
+        <div class="os-slider-group">
+          <div class="os-slider-header">
+            <span class="os-slider-label">Particle Count</span>
+            <span class="os-slider-value" id="osv-count">3,500</span>
+          </div>
+          <input type="range" class="os-slider" id="os-count" min="500" max="8000" step="250" value="3500">
+        </div>
+        <div class="os-slider-group">
+          <div class="os-slider-header">
+            <span class="os-slider-label">Dot Size</span>
+            <span class="os-slider-value" id="osv-size">1.2 px</span>
+          </div>
+          <input type="range" class="os-slider" id="os-size" min="0.3" max="3.5" step="0.1" value="1.2">
+        </div>
+        <div class="os-slider-group">
+          <div class="os-slider-header">
+            <span class="os-slider-label">Pulse Speed</span>
+            <span class="os-slider-value" id="osv-pulse">2</span>
+          </div>
+          <input type="range" class="os-slider" id="os-pulse" min="0.5" max="6" step="0.2" value="2">
+        </div>
+        <div class="os-slider-group">
+          <div class="os-slider-header">
+            <span class="os-slider-label">Rotation Speed</span>
+            <span class="os-slider-value" id="osv-rot">5</span>
+          </div>
+          <input type="range" class="os-slider" id="os-rot" min="1" max="20" step="1" value="5">
+        </div>
+        <div class="os-toggles">
+          <div class="os-toggle-card">
+            <div class="os-toggle-info">
+              <div class="os-toggle-title">Volume Fill</div>
+              <div class="os-toggle-desc">Solid inner core</div>
+            </div>
+            <button class="os-toggle-switch" id="os-vol-toggle">
+              <div class="os-toggle-knob"></div>
+            </button>
+          </div>
+          <div class="os-toggle-card">
+            <div class="os-toggle-info">
+              <div class="os-toggle-title">Hyper Glow</div>
+              <div class="os-toggle-desc">Max bloom</div>
+            </div>
+            <button class="os-toggle-switch" id="os-glow-toggle">
+              <div class="os-toggle-knob"></div>
+            </button>
+          </div>
+        </div>
+        <div class="os-tip">
+          <strong>Tip:</strong> Drag the orb to rotate manually. Click inside the sphere to trigger shockwave ripples. Settings persist per state.
+        </div>
       </div>
     </div>
 
@@ -1895,115 +2064,7 @@
 
   </div>
 
-  <!-- Orb Settings Panel (unchanged) -->
-  <div class="orb-settings-panel" id="orb-settings-panel">
-    <div class="os-header">
-      <div class="os-header-left">
-        <span style="color:#00d4ff;">&#9881;</span>
-        <span>Orb Parameters</span>
-      </div>
-      <button class="os-close" id="os-close">&#10005;</button>
-    </div>
-
-    <div class="os-section-label">Energy Core Preset</div>
-    <div class="os-presets" id="os-presets">
-      <button class="os-preset-btn active" data-preset="emerald">
-        <div class="os-preset-dot" style="background:#00d4ff;box-shadow:0 0 10px rgba(0,212,255,0.6)"></div>
-        <span class="os-preset-name">JARVIS</span>
-      </button>
-      <button class="os-preset-btn" data-preset="cyan">
-        <div class="os-preset-dot" style="background:#00f0ff;box-shadow:0 0 10px rgba(0,240,255,0.6)"></div>
-        <span class="os-preset-name">Cyan</span>
-      </button>
-      <button class="os-preset-btn" data-preset="violet">
-        <div class="os-preset-dot" style="background:#b92eff;box-shadow:0 0 10px rgba(185,46,255,0.6)"></div>
-        <span class="os-preset-name">Violet</span>
-      </button>
-      <button class="os-preset-btn" data-preset="solar">
-        <div class="os-preset-dot" style="background:#ff5900;box-shadow:0 0 10px rgba(255,89,0,0.6)"></div>
-        <span class="os-preset-name">Solar</span>
-      </button>
-      <button class="os-preset-btn" data-preset="gold">
-        <div class="os-preset-dot" style="background:#ffd900;box-shadow:0 0 10px rgba(255,217,0,0.6)"></div>
-        <span class="os-preset-name">Gold</span>
-      </button>
-    </div>
-
-    <div class="os-section-label">Interaction Mode</div>
-    <div class="os-modes" id="os-modes">
-      <button class="os-mode-btn active" data-mode="repel">
-        <div class="mode-label">Repel</div>
-        <div class="mode-desc">Disperses particles</div>
-      </button>
-      <button class="os-mode-btn" data-mode="attract">
-        <div class="mode-label">Attract</div>
-        <div class="mode-desc">Pulls to cursor</div>
-      </button>
-      <button class="os-mode-btn" data-mode="vortex">
-        <div class="mode-label">Vortex</div>
-        <div class="mode-desc">Orbital swirl</div>
-      </button>
-      <button class="os-mode-btn" data-mode="ripple">
-        <div class="mode-label">Ripple</div>
-        <div class="mode-desc">Elastic wave</div>
-      </button>
-    </div>
-
-    <div class="os-section-label">Fine Tuning</div>
-    <div class="os-slider-group">
-      <div class="os-slider-header">
-        <span class="os-slider-label">Particle Count</span>
-        <span class="os-slider-value" id="osv-count">3,500</span>
-      </div>
-      <input type="range" class="os-slider" id="os-count" min="500" max="8000" step="250" value="3500">
-    </div>
-    <div class="os-slider-group">
-      <div class="os-slider-header">
-        <span class="os-slider-label">Dot Size</span>
-        <span class="os-slider-value" id="osv-size">1.2 px</span>
-      </div>
-      <input type="range" class="os-slider" id="os-size" min="0.3" max="3.5" step="0.1" value="1.2">
-    </div>
-    <div class="os-slider-group">
-      <div class="os-slider-header">
-        <span class="os-slider-label">Pulse Speed</span>
-        <span class="os-slider-value" id="osv-pulse">2</span>
-      </div>
-      <input type="range" class="os-slider" id="os-pulse" min="0.5" max="6" step="0.2" value="2">
-    </div>
-    <div class="os-slider-group">
-      <div class="os-slider-header">
-        <span class="os-slider-label">Rotation Speed</span>
-        <span class="os-slider-value" id="osv-rot">5</span>
-      </div>
-      <input type="range" class="os-slider" id="os-rot" min="1" max="20" step="1" value="5">
-    </div>
-
-    <div class="os-toggles">
-      <div class="os-toggle-card">
-        <div class="os-toggle-info">
-          <div class="os-toggle-title">Volume Fill</div>
-          <div class="os-toggle-desc">Solid inner core</div>
-        </div>
-        <button class="os-toggle-switch" id="os-vol-toggle">
-          <div class="os-toggle-knob"></div>
-        </button>
-      </div>
-      <div class="os-toggle-card">
-        <div class="os-toggle-info">
-          <div class="os-toggle-title">Hyper Glow</div>
-          <div class="os-toggle-desc">Max bloom</div>
-        </div>
-        <button class="os-toggle-switch" id="os-glow-toggle">
-          <div class="os-toggle-knob"></div>
-        </button>
-      </div>
-    </div>
-
-    <div class="os-tip">
-      <strong>Tip:</strong> Drag the orb to rotate manually. Click inside the sphere to trigger shockwave ripples. Settings persist per state.
-    </div>
-  </div>
+  <!-- Orb Settings Panel moved inside orb dash-card above -->
 
   <div class="alert-toast-container" id="alert-toast-box"></div>
 
@@ -3731,6 +3792,199 @@ function connectAlertStream() {
 connectAlertStream();
 
 input.focus();
+
+// ===== DASHBOARD EDITOR =====
+(function(){
+  const editBtn = document.getElementById("dash-edit-btn");
+  const saveBtn = document.getElementById("dash-save-btn");
+  const cancelBtn = document.getElementById("dash-cancel-btn");
+  const grid = document.querySelector(".dash-grid");
+  if (!editBtn || !grid) return;
+
+  let editing = false;
+  let savedLayout = null;
+  let toolbars = [];
+
+  function getCards() {
+    return Array.from(grid.children).filter(el => el.classList.contains("dash-card") || el.style.display !== undefined);
+  }
+
+  function enterEditMode() {
+    editing = true;
+    document.body.classList.add("dash-editing");
+    editBtn.style.display = "none";
+    saveBtn.style.display = "inline-flex";
+    cancelBtn.style.display = "inline-flex";
+
+    // Save current state
+    savedLayout = grid.innerHTML;
+
+    // Add toolbars to each dash-card
+    grid.querySelectorAll(".dash-card").forEach((card, i) => {
+      if (card.querySelector(".card-edit-toolbar")) return;
+      card.style.position = "relative";
+      card.setAttribute("data-card-id", "card-" + i);
+
+      // Toolbar: color picker + size buttons
+      const toolbar = document.createElement("div");
+      toolbar.className = "card-edit-toolbar";
+      toolbar.innerHTML = `
+        <input type="color" value="#020c19" title="Card Color" class="card-color-pick">
+        <button title="Wider" class="card-wider">&#8644;</button>
+        <button title="Taller" class="card-taller">&#8645;</button>
+        <button title="Reset Size" class="card-reset-size">&#8634;</button>
+      `;
+      card.appendChild(toolbar);
+
+      // Resize handle
+      const handle = document.createElement("div");
+      handle.className = "card-resize-handle";
+      handle.textContent = "⤡";
+      card.appendChild(handle);
+
+      // Color picker
+      toolbar.querySelector(".card-color-pick").addEventListener("input", function(e) {
+        card.style.background = e.target.value;
+      });
+
+      // Wider
+      toolbar.querySelector(".card-wider").addEventListener("click", function() {
+        if (!card.classList.contains("card-span-2") && !card.classList.contains("card-span-row")) {
+          card.classList.add("card-span-2");
+        } else if (card.classList.contains("card-span-2")) {
+          card.classList.remove("card-span-2");
+          card.classList.add("card-span-row");
+        }
+      });
+
+      // Taller
+      toolbar.querySelector(".card-taller").addEventListener("click", function() {
+        const h = card.offsetHeight;
+        card.style.minHeight = (h + 50) + "px";
+      });
+
+      // Reset
+      toolbar.querySelector(".card-reset-size").addEventListener("click", function() {
+        card.style.minHeight = "";
+        card.classList.remove("card-span-2", "card-span-row");
+      });
+
+      // Drag-drop reorder
+      card.setAttribute("draggable", "true");
+      card.addEventListener("dragstart", function(e) {
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", card.getAttribute("data-card-id"));
+      });
+      card.addEventListener("dragend", function() {
+        card.classList.remove("dragging");
+        grid.querySelectorAll(".drag-placeholder").forEach(p => p.remove());
+      });
+      card.addEventListener("dragover", function(e) {
+        e.preventDefault();
+        const dragging = grid.querySelector(".dragging");
+        if (dragging && dragging !== card) {
+          const rect = card.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+          if (e.clientY < mid) {
+            grid.insertBefore(dragging, card);
+          } else {
+            grid.insertBefore(dragging, card.nextSibling);
+          }
+        }
+      });
+
+      // Free resize via handle
+      let resizing = false, startX, startY, startW, startH;
+      handle.addEventListener("mousedown", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        resizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startW = card.offsetWidth;
+        startH = card.offsetHeight;
+        card.setAttribute("draggable", "false");
+
+        function onMove(ev) {
+          if (!resizing) return;
+          card.style.width = Math.max(150, startW + (ev.clientX - startX)) + "px";
+          card.style.minHeight = Math.max(80, startH + (ev.clientY - startY)) + "px";
+        }
+        function onUp() {
+          resizing = false;
+          card.setAttribute("draggable", "true");
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+
+      toolbars.push(toolbar);
+      toolbars.push(handle);
+    });
+  }
+
+  function exitEditMode(save) {
+    editing = false;
+    document.body.classList.remove("dash-editing");
+    editBtn.style.display = "";
+    saveBtn.style.display = "none";
+    cancelBtn.style.display = "none";
+
+    if (save) {
+      // Save layout to localStorage
+      const layout = [];
+      grid.querySelectorAll(".dash-card").forEach((card) => {
+        layout.push({
+          id: card.getAttribute("data-card-id"),
+          bg: card.style.background || "",
+          minH: card.style.minHeight || "",
+          w: card.style.width || "",
+          span2: card.classList.contains("card-span-2"),
+          spanRow: card.classList.contains("card-span-row")
+        });
+      });
+      localStorage.setItem("mj-dash-layout", JSON.stringify(layout));
+    } else {
+      // Restore saved layout
+      if (savedLayout) grid.innerHTML = savedLayout;
+    }
+
+    // Remove toolbars and handles
+    grid.querySelectorAll(".card-edit-toolbar, .card-resize-handle").forEach(el => el.remove());
+    grid.querySelectorAll(".dash-card").forEach(card => {
+      card.removeAttribute("draggable");
+      card.removeAttribute("data-card-id");
+    });
+    toolbars = [];
+  }
+
+  // Load saved layout on page load
+  function loadSavedLayout() {
+    const data = localStorage.getItem("mj-dash-layout");
+    if (!data) return;
+    try {
+      const layout = JSON.parse(data);
+      const cards = grid.querySelectorAll(".dash-card");
+      layout.forEach((item, i) => {
+        if (cards[i]) {
+          if (item.bg) cards[i].style.background = item.bg;
+          if (item.minH) cards[i].style.minHeight = item.minH;
+          if (item.w) cards[i].style.width = item.w;
+          if (item.span2 && !cards[i].classList.contains("card-span-2")) cards[i].classList.add("card-span-2");
+          if (item.spanRow && !cards[i].classList.contains("card-span-row")) cards[i].classList.add("card-span-row");
+        }
+      });
+    } catch(e) {}
+  }
+  loadSavedLayout();
+
+  editBtn.addEventListener("click", enterEditMode);
+  saveBtn.addEventListener("click", () => exitEditMode(true));
+  cancelBtn.addEventListener("click", () => exitEditMode(false));
+})();
 </script>
 </body>
 </html>
