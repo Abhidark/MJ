@@ -1813,6 +1813,11 @@
           <div class="sysmon-val" id="sg-disk-val">0%</div>
           <div class="sysmon-label">Disk</div>
         </div>
+        <div class="sysmon-gauge">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="35" fill="none" stroke="rgba(0,180,255,0.1)" stroke-width="4"/><circle class="sysmon-ring" id="sg-gpu-ring" cx="40" cy="40" r="35" fill="none" stroke="#00ffaa" stroke-width="4" stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" transform="rotate(-90 40 40)"/></svg>
+          <div class="sysmon-val" id="sg-gpu-val">N/A</div>
+          <div class="sysmon-label">GPU</div>
+        </div>
       </div>
     </div>
 
@@ -3149,9 +3154,13 @@ async function updateRealStats() {
       setHudBar(document.getElementById("hud-gpu-bar"), document.getElementById("hud-gpu-dot"), s.gpu_util, 70, 90);
       var lfGpu = document.getElementById("lf-gpu"); if (lfGpu) lfGpu.textContent = s.gpu_util + "%";
       var lfGpuT = document.getElementById("lf-gpu-temp"); if (lfGpuT) lfGpuT.textContent = s.gpu_temp + " °C";
+      // GPU gauge ring
+      var sgGpu = document.getElementById("sg-gpu-ring"); if (sgGpu) sgGpu.setAttribute("stroke-dashoffset", 220 - (220 * s.gpu_util / 100));
+      var sgGpuV = document.getElementById("sg-gpu-val"); if (sgGpuV) sgGpuV.textContent = s.gpu_util + "%";
     } else {
       document.getElementById("hud-gpu-val").textContent = "N/A";
       var lfGpu2 = document.getElementById("lf-gpu"); if (lfGpu2) lfGpu2.textContent = "N/A";
+      var sgGpuV2 = document.getElementById("sg-gpu-val"); if (sgGpuV2) sgGpuV2.textContent = "N/A";
     }
     // Disk
     if (s.disk_percent >= 0) {

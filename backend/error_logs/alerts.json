@@ -1,5 +1,19 @@
 [
   {
+    "id": "alert_20260621_193921_601297",
+    "timestamp": "2026-06-21T19:39:21.601297",
+    "time_display": "07:39:21 PM",
+    "title": "CPU Critical",
+    "message": "CPU usage is at 100%! System may freeze or crash.",
+    "severity": "critical",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
     "id": "alert_20260621_193447_799879",
     "timestamp": "2026-06-21T19:34:47.799879",
     "time_display": "07:34:47 PM",
