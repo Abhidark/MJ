@@ -1460,10 +1460,16 @@ async function loadModelConfig() {
 }
 loadModelConfig();
 
+let isVoiceCommand = false;
+
 async function send() {
   const text = input.value.trim();
   if (!text && !pendingFile) return;
   if (!text) { input.focus(); return; }
+
+  // Auto-show chat panel only for manual typing (not voice)
+  if (!isVoiceCommand && !chatManuallyHidden) showChatPanel();
+  isVoiceCommand = false;
 
   if (text.startsWith("/remember ")) {
     const fact = text.slice(10).trim();
@@ -1583,21 +1589,49 @@ document.getElementById("fullscreen-btn").addEventListener("click", () => {
 // Chat panel slide toggle
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
 const chatPanelEl = document.getElementById('chat-panel');
-let chatPanelVisible = true;
+let chatPanelVisible = false;
+let chatManuallyHidden = false;
+
+// Start hidden by default
+chatPanelEl.classList.add('hidden');
+chatToggleBtn.classList.add('panel-hidden');
+chatToggleBtn.innerHTML = '&#9664;';
+chatToggleBtn.title = 'Show Chat';
+
+function showChatPanel() {
+  if (chatPanelVisible) return;
+  chatPanelVisible = true;
+  chatPanelEl.classList.remove('hidden');
+  chatToggleBtn.classList.remove('panel-hidden');
+  chatToggleBtn.innerHTML = '&#9654;';
+  chatToggleBtn.title = 'Hide Chat';
+}
+
+function hideChatPanel() {
+  if (!chatPanelVisible) return;
+  chatPanelVisible = false;
+  chatPanelEl.classList.add('hidden');
+  chatToggleBtn.classList.add('panel-hidden');
+  chatToggleBtn.innerHTML = '&#9664;';
+  chatToggleBtn.title = 'Show Chat';
+}
 
 chatToggleBtn.addEventListener('click', () => {
-  chatPanelVisible = !chatPanelVisible;
   if (chatPanelVisible) {
-    chatPanelEl.classList.remove('hidden');
-    chatToggleBtn.classList.remove('panel-hidden');
-    chatToggleBtn.innerHTML = '&#9654;'; // ►
-    chatToggleBtn.title = 'Hide Chat';
+    hideChatPanel();
+    chatManuallyHidden = true;
   } else {
-    chatPanelEl.classList.add('hidden');
-    chatToggleBtn.classList.add('panel-hidden');
-    chatToggleBtn.innerHTML = '&#9664;'; // ◄
-    chatToggleBtn.title = 'Show Chat';
+    showChatPanel();
+    chatManuallyHidden = false;
   }
+});
+
+// Auto-show chat when user clicks input or starts typing
+input.addEventListener('focus', () => {
+  if (!chatManuallyHidden) showChatPanel();
+});
+input.addEventListener('input', () => {
+  if (input.value.length > 0 && !chatManuallyHidden) showChatPanel();
 });
 
 document.getElementById("orb-container").addEventListener("click", () => {
@@ -1652,9 +1686,9 @@ if (SpeechRecognition) {
       for (const w of ["MJ", "mj", "M.J", "m.j", "em j", "hey MJ", "ok MJ", "emj", "Hey MJ", "OK MJ"]) {
         command = command.replace(new RegExp(w, "gi"), "").trim();
       }
-      if (command.length > 1) { input.value = command; send(); }
+      if (command.length > 1) { input.value = command; isVoiceCommand = true; send(); }
       else { wakeDetected = true; setMicStatus("MJ activated! Speak your command..."); }
-    } else if (wakeDetected) { input.value = transcript.trim(); wakeDetected = false; send(); }
+    } else if (wakeDetected) { input.value = transcript.trim(); wakeDetected = false; isVoiceCommand = true; send(); }
   };
 
   recognition.onend = () => {
