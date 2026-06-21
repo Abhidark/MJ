@@ -12,23 +12,23 @@ from datetime import datetime
 from typing import Optional
 
 
-async def deep_search(query: str, max_results: int = 5) -> dict:
+async def deep_search(query: str, max_results: int = 3) -> dict:
     """
-    Perform deep web search — fetch results + scrape top pages for full content.
-    Returns structured data for LLM context.
+    Perform web search — fetch results + scrape top page for context.
+    Optimized: only scrape 1 page, reduced timeout.
     """
     results = await _ddg_search(query, max_results)
 
-    # Scrape top 2 results for detailed content
+    # Scrape only top 1 result for speed (saves 1-3 seconds)
     detailed = []
-    for r in results[:2]:
+    if results:
         try:
-            content = await scrape_page(r["url"])
+            content = await scrape_page(results[0]["url"], timeout=5)
             if content and len(content) > 100:
                 detailed.append({
-                    "title": r["title"],
-                    "url": r["url"],
-                    "content": content[:2000]  # Cap at 2000 chars per page
+                    "title": results[0]["title"],
+                    "url": results[0]["url"],
+                    "content": content[:1500]  # Cap at 1500 chars
                 })
         except Exception:
             pass
@@ -50,7 +50,7 @@ async def _ddg_search(query: str, max_results: int = 5) -> list:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
             resp = await client.post(url, data={"q": query}, headers=headers)
             html = resp.text
 
@@ -86,7 +86,7 @@ async def _ddg_search(query: str, max_results: int = 5) -> list:
         return [{"title": "Search Error", "snippet": str(e), "url": ""}]
 
 
-async def scrape_page(url: str, max_chars: int = 3000) -> Optional[str]:
+async def scrape_page(url: str, max_chars: int = 3000, timeout: int = 8) -> Optional[str]:
     """
     Scrape a web page and extract clean text content.
     Removes scripts, styles, nav, ads etc.
@@ -98,7 +98,7 @@ async def scrape_page(url: str, max_chars: int = 3000) -> Optional[str]:
             "Accept-Language": "en-US,en;q=0.9"
         }
 
-        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
             resp = await client.get(url, headers=headers)
             if resp.status_code != 200:
                 return None

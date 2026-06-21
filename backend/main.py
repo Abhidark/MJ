@@ -811,31 +811,36 @@ async def chat(
     if core_facts:
         memory_context = "User facts: " + ", ".join(core_facts)
 
-    # === INTELLIGENCE LAYER ===
+    # === INTELLIGENCE LAYER (Optimized — parallel where possible) ===
+    import asyncio as _aio
 
-    # 1. Advanced Web Search (upgraded from basic)
+    # Quick regex checks first (instant)
     search_query = needs_web_search_v2(message)
-    search_context = ""
-    if search_query:
-        search_data = await deep_search(search_query)
-        search_context = format_search_for_llm(search_data)
-
-    # 2. RAG Knowledge Base search
-    kb_context = ""
-    if needs_kb_search(message):
-        kb_results = search_knowledge(message, top_k=3)
-        kb_context = format_kb_context(kb_results)
-    elif not search_query:
-        # Also try KB for general questions (lower priority)
-        kb_results = search_knowledge(message, top_k=2)
-        if kb_results and kb_results[0]["score"] > 0.1:
-            kb_context = format_kb_context(kb_results)
-
-    # 3. Context Memory — get learned preferences
+    kb_needed = needs_kb_search(message)
+    reasoning_type = needs_deep_reasoning(message)
     context_memory_prompt = get_context_prompt()
 
-    # 4. Multi-Model Reasoning — detect if needed
-    reasoning_type = needs_deep_reasoning(message)
+    # Run web search + KB search in parallel (if both needed)
+    search_context = ""
+    kb_context = ""
+
+    async def _do_search():
+        if search_query:
+            data = await deep_search(search_query, max_results=3)  # Reduced from 5
+            return format_search_for_llm(data)
+        return ""
+
+    async def _do_kb():
+        if kb_needed:
+            results = search_knowledge(message, top_k=2)  # Reduced from 3
+            return format_kb_context(results)
+        elif not search_query:
+            results = search_knowledge(message, top_k=1)  # Reduced from 2
+            if results and results[0]["score"] > 0.15:  # Stricter threshold
+                return format_kb_context(results)
+        return ""
+
+    search_context, kb_context = await _aio.gather(_do_search(), _do_kb())
 
     # Process through Human Brain
     brain_result = mj_brain.process(
@@ -876,29 +881,24 @@ async def chat(
     selected_model = get_model_for_task(message, has_image=has_image)
     routing = get_routing_info(message, has_image=has_image)
 
-    # If deep reasoning is needed, run chain-of-thought and inject result
-    reasoning_context = ""
+    # Deep reasoning — SKIP for speed. The main model handles reasoning via system prompt.
+    # Only trigger for explicit "analyze deeply" / "think step by step" requests.
+    # Previously this ran 3-4 EXTRA LLM calls before the actual response — massive delay.
     if reasoning_type and not file_context:
-        try:
-            if reasoning_type == "chain":
-                cot_result = await chain_of_thought(message, selected_model, context=kb_context or search_context)
-            else:
-                cot_result = await multi_perspective(message, selected_model, context=kb_context or search_context)
-
-            if cot_result.get("answer"):
-                reasoning_context = f"\n\nDEEP ANALYSIS (pre-computed for you — use this to give a better answer):\n{cot_result['answer']}"
-                if cot_result.get("verification"):
-                    reasoning_context += f"\n\nVerification notes: {cot_result['verification'][:300]}"
-        except Exception:
-            pass  # Fall through to normal response
-
-    if reasoning_context:
-        system_content += reasoning_context
+        system_content += f"\n\nDEEP REASONING MODE: Use step-by-step {reasoning_type} reasoning. Think carefully before answering."
 
     # Rebuild messages with updated system content
+    # Limit chat history to last 10 messages for speed (long history = slow inference)
+    recent_history = chat_data["messages"][-10:] if len(chat_data["messages"]) > 10 else chat_data["messages"]
     messages = [{"role": "system", "content": system_content}]
-    messages.extend(chat_data["messages"])
-    user_msg_entry = {"role": "user", "content": user_prompt}
+    messages.extend(recent_history)
+    # For Qwen3 models: append /no_think to skip internal thinking (huge speed boost)
+    # Only use thinking for deep reasoning requests
+    final_user_prompt = user_prompt
+    if "qwen3" in selected_model.lower() and not reasoning_type:
+        final_user_prompt = user_prompt + " /no_think"
+
+    user_msg_entry = {"role": "user", "content": final_user_prompt}
     if images:
         user_msg_entry["images"] = images
     messages.append(user_msg_entry)
@@ -907,13 +907,21 @@ async def chat(
         "model": selected_model,
         "messages": messages,
         "stream": True,
+        "options": {
+            "num_ctx": 4096,         # Smaller context = faster (was default 8192)
+            "temperature": 0.7,
+            "repeat_penalty": 1.1,
+            "num_predict": 1024,     # Max tokens to generate (prevents endless responses)
+            "top_k": 40,
+            "top_p": 0.9,
+        },
     }
 
     full_reply = []
 
     async def stream_response():
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
+            async with httpx.AsyncClient(timeout=60) as client:
                 async with client.stream("POST", OLLAMA_URL, json=payload) as resp:
                     async for line in resp.aiter_lines():
                         if line:
