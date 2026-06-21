@@ -4066,29 +4066,37 @@ input.focus();
 
   function startDrag(item, e) {
     dragCard = item;
-    dragCard.classList.add("dragging");
-    let lastSwap = null;
+    const rect = item.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    // Create ghost clone that follows mouse
+    var ghost = item.cloneNode(true);
+    ghost.id = "drag-ghost";
+    ghost.style.cssText = "position:fixed;pointer-events:none;z-index:99999;opacity:0.75;width:" + rect.width + "px;height:" + rect.height + "px;left:" + rect.left + "px;top:" + rect.top + "px;border:2px solid #ffd900;border-radius:12px;box-shadow:0 0 30px rgba(255,217,0,0.3);transition:none;";
+    document.body.appendChild(ghost);
+
+    // Dim original in grid
+    dragCard.style.opacity = "0.3";
+    dragCard.style.outline = "2px dashed #ffd900";
 
     function onMove(ev) {
-      // Find which grid item mouse is over (not the dragged one)
+      // Move ghost with mouse
+      ghost.style.left = (ev.clientX - offsetX) + "px";
+      ghost.style.top = (ev.clientY - offsetY) + "px";
+
+      // Find which grid item mouse is over
       const items = Array.from(grid.children).filter(el => el !== dragCard);
       for (const target of items) {
         const r = target.getBoundingClientRect();
         if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
-          if (target !== lastSwap) {
-            // Swap positions in DOM
-            const dragIdx = Array.from(grid.children).indexOf(dragCard);
-            const targetIdx = Array.from(grid.children).indexOf(target);
-            if (dragIdx < targetIdx) {
-              grid.insertBefore(dragCard, target.nextSibling);
-            } else {
-              grid.insertBefore(dragCard, target);
-            }
-            lastSwap = target;
-            // Flash effect on swapped card
-            target.style.transition = "transform 0.3s ease";
-            target.style.transform = "scale(0.95)";
-            setTimeout(() => { target.style.transform = ""; }, 300);
+          // Swap in DOM
+          const dragIdx = Array.from(grid.children).indexOf(dragCard);
+          const targetIdx = Array.from(grid.children).indexOf(target);
+          if (dragIdx < targetIdx) {
+            grid.insertBefore(dragCard, target.nextSibling);
+          } else {
+            grid.insertBefore(dragCard, target);
           }
           break;
         }
@@ -4098,9 +4106,12 @@ input.focus();
     function onUp() {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      dragCard.classList.remove("dragging");
+      // Remove ghost
+      if (ghost.parentElement) ghost.remove();
+      // Restore original
+      dragCard.style.opacity = "";
+      dragCard.style.outline = "";
       dragCard = null;
-      lastSwap = null;
     }
 
     document.addEventListener("mousemove", onMove);
