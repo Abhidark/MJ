@@ -28,46 +28,39 @@ async def get_live_cricket_scores() -> str:
             )
             html = resp.text
 
+        # Clean HTML first
+        clean_html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
+        clean_html = re.sub(r'<style[^>]*>.*?</style>', '', clean_html, flags=re.DOTALL)
+
         # Extract match cards from Cricbuzz HTML
         matches = []
 
-        # Find match blocks - look for score patterns
-        # Cricbuzz uses specific HTML structure for live scores
+        # Find match blocks
         match_blocks = re.findall(
             r'<div[^>]*class="[^"]*cb-mtch-lst[^"]*"[^>]*>(.*?)</div>\s*</div>\s*</div>',
-            html, re.DOTALL | re.IGNORECASE
+            clean_html, re.DOTALL | re.IGNORECASE
         )
 
         if not match_blocks:
-            # Alternative pattern
             match_blocks = re.findall(
                 r'<div[^>]*class="[^"]*cb-lv-main[^"]*"[^>]*>(.*?)</div>\s*</div>',
-                html, re.DOTALL | re.IGNORECASE
+                clean_html, re.DOTALL | re.IGNORECASE
             )
 
-        # Extract text from each block
         for block in match_blocks[:8]:
-            text = re.sub(r'<[^>]+>', ' ', block)
-            text = re.sub(r'\s+', ' ', text).strip()
+            text = _strip_html(block)
             if len(text) > 15 and any(w in text.lower() for w in ['vs', 'v ', 'won', 'lead', 'trail', 'need', 'score', '/', 'overs']):
                 matches.append(text[:200])
 
-        # If HTML parsing failed, try a simpler scrape
+        # Fallback: find "vs" patterns in clean text
         if not matches:
-            # Extract all visible text between score-related elements
-            clean_html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
-            clean_html = re.sub(r'<style[^>]*>.*?</style>', '', clean_html, flags=re.DOTALL)
-
-            # Look for score-like patterns: "Team 123/4 (20.0)"
-            score_pattern = r'([A-Z][a-zA-Z\s]+(?:\d+[-/]\d+|\d+)\s*(?:\([^)]*\))?)'
-            found_scores = re.findall(score_pattern, clean_html)
-
-            # Look for "vs" patterns
-            vs_matches = re.findall(r'([^<>]{10,60}\s+(?:vs?|VS)\s+[^<>]{10,60})', clean_html)
-            for m in vs_matches[:5]:
-                clean = re.sub(r'\s+', ' ', m).strip()
-                if clean and len(clean) > 15:
-                    matches.append(clean[:200])
+            full_text = _strip_html(clean_html)
+            lines = full_text.split('\n')
+            for line in lines:
+                line = line.strip()
+                if len(line) > 15 and any(w in line.lower() for w in ['vs', 'won by', '/', 'need', 'trail', 'lead']):
+                    if not any(skip in line.lower() for skip in ['cookie', 'privacy', 'download', 'app', 'sign']):
+                        matches.append(line[:200])
 
         if not matches:
             # Fallback: try ESPN Cricinfo
@@ -86,7 +79,7 @@ async def get_live_cricket_scores() -> str:
 
 
 async def _try_espn_scores() -> str:
-    """Fallback: try ESPN Cricinfo for scores."""
+    """Fallback: try Cricbuzz mobile for scores."""
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
@@ -103,10 +96,9 @@ async def _try_espn_scores() -> str:
         # Mobile site is simpler to parse
         clean = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
         clean = re.sub(r'<style[^>]*>.*?</style>', '', clean, flags=re.DOTALL)
-        clean = re.sub(r'<[^>]+>', '\n', clean)
-        clean = re.sub(r'\n\s*\n+', '\n', clean).strip()
+        clean = _strip_html(clean)
 
-        # Find lines with scores (contain / or "won" or "vs")
+        # Find lines with scores
         lines = clean.split('\n')
         score_lines = []
         for line in lines:
@@ -124,13 +116,29 @@ async def _try_espn_scores() -> str:
                     seen.add(line)
                     count += 1
                     result += f"{count}. {line}\n\n"
-            result += "Source: Cricbuzz Mobile"
+            result += "Source: Cricbuzz"
             return result
 
         return "🏏 Abhi koi live match nahi chal raha, ya scores fetch nahi ho paye. Cricbuzz.com pe check karo."
 
     except Exception as e:
         return f"🏏 Live scores fetch nahi ho paye: {str(e)[:100]}. Check cricbuzz.com manually."
+
+
+def _strip_html(text: str) -> str:
+    """Aggressively strip ALL HTML tags, attributes, entities from text."""
+    # Remove all HTML tags completely
+    text = re.sub(r'<[^>]+>', ' ', text)
+    # Decode common HTML entities
+    text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+    text = text.replace('&quot;', '"').replace('&#39;', "'").replace('&nbsp;', ' ')
+    # Remove any remaining HTML-like artifacts
+    text = re.sub(r'(?:href|class|title|id|style|data-\w+)\s*=\s*["\'][^"\']*["\']', '', text)
+    text = re.sub(r'(?:href|class|title|id|style)\s*=\s*\S+', '', text)
+    # Clean whitespace
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'\n\s*\n+', '\n', text)
+    return text.strip()
 
 
 async def get_live_weather(city: str = "Delhi") -> str:

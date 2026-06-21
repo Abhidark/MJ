@@ -32,9 +32,9 @@ DEFAULT_CONFIG = {
     "auto_select": True,
     "model_map": {
         "chat":        "qwen3:8b",
-        "coding":      "qwen3:14b",
-        "creative":    "qwen3:14b",
-        "analysis":    "qwen3:14b",
+        "coding":      "qwen3:8b",
+        "creative":    "qwen3:8b",
+        "analysis":    "qwen3:8b",
         "reasoning":   "deepseek-r1:8b",
         "vision":      "moondream",
         "translation": "qwen3:8b",
