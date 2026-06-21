@@ -1,5 +1,11 @@
 [
   {
+    "content": "git add .\ngit commit -m \"Fix card drag with pointer-events + add AI flow panel resize\"\ngit push",
+    "time": "08:15 PM",
+    "timestamp": "2026-06-21T20:15:33.411457",
+    "preview": "git add . git commit -m \"Fix card drag with pointer-events + add AI flow panel r"
+  },
+  {
     "content": "git add .\ngit commit -m \"Shrink left panel, expand AI flow, move orb settings to HUD\"\ngit push",
     "time": "07:53 PM",
     "timestamp": "2026-06-21T19:53:43.578841",

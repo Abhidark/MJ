@@ -2,19 +2,19 @@
   "date": "2026-06-21",
   "apps": {
     "uvicorn  main:app --host 0.0.0": 23.052722,
-    "Google Chrome": 432.586293,
+    "Google Chrome": 520.100373,
     "VS Code": 27.998561000000002,
     "Unknown": 11.488512,
     "http://localhost:8000 wants to": 57.792553999999996,
     "localhost:8000": 5.7814,
     "Snipping Tool Overlay": 34.925505,
     "Quick settings": 44.652824,
-    "MJ Assistant Control Panel": 35.162087,
+    "MJ Assistant Control Panel": 40.929054,
     "New notification": 5.892126,
-    "Snipping Tool": 52.339869,
-    "Claude": 536.299849,
+    "Snipping Tool": 69.452135,
+    "Claude": 689.945789,
     "Task Switching": 16.769896000000003,
     "Select an account": 6.235755
   },
-  "session_start": "2026-06-21T20:06:24.869955"
+  "session_start": "2026-06-21T20:11:08.502893"
 }
