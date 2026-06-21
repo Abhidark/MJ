@@ -4,22 +4,6 @@
   "messages": [
     {
       "role": "user",
-      "content": "today"
-    },
-    {
-      "role": "assistant",
-      "content": "Haan Abhi, samajh gayi. Kaise karte ho today? Lagte hain ki iske baad pe kar diya ho."
-    },
-    {
-      "role": "user",
-      "content": "i am tired today"
-    },
-    {
-      "role": "assistant",
-      "content": "Tumhara samajh gayi, kya tum aapne jana ki hoon? Kaise karte ho yeh time par? Mere jaane se sab tare kar rahi ho iski baat par. Yeh dil ke pukar dekha tha, lagte hain ki tum zamaan se hi hoti ho... Tumhe nae aur ekta hai toh aapke pradeep mein samajh karta hai. Kaise karte ho yaari?"
-    },
-    {
-      "role": "user",
       "content": "MJ i am tired today"
     },
     {
@@ -201,6 +185,22 @@
     {
       "role": "assistant",
       "content": "Vs Code open kar diya."
+    },
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": ""
+    },
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": ""
     }
   ]
 }

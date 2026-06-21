@@ -922,8 +922,30 @@ async def chat(
                             if token:
                                 full_reply.append(token)
                                 yield f"data: {json.dumps({'token': token})}\n\n"
+        except httpx.ConnectError:
+            error_msg = "⚠️ Boss, Ollama chal nahi raha! Terminal me `ollama serve` run karo, phir dubara try karo."
+            full_reply.append(error_msg)
+            yield f"data: {json.dumps({'token': error_msg})}\n\n"
+        except httpx.ReadTimeout:
+            error_msg = "⏳ Ollama response dene me bahut time le raha hai. Model busy hai ya bahut bada question hai. Thoda wait karo ya chhota question pucho."
+            full_reply.append(error_msg)
+            yield f"data: {json.dumps({'token': error_msg})}\n\n"
+        except httpx.ConnectTimeout:
+            error_msg = "⚠️ Ollama se connect nahi ho pa raha. Check karo ki `ollama serve` chal raha hai aur port 11434 free hai."
+            full_reply.append(error_msg)
+            yield f"data: {json.dumps({'token': error_msg})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'token': f'Error: {str(e)}'})}\n\n"
+            error_str = str(e).lower()
+            if "connect" in error_str or "refused" in error_str or "connection" in error_str:
+                error_msg = "⚠️ Ollama se connection fail ho gaya. `ollama serve` run karo terminal me!"
+            elif "timeout" in error_str:
+                error_msg = "⏳ Request timeout ho gaya. Ollama slow hai ya model load ho raha hai."
+            elif "model" in error_str and "not found" in error_str:
+                error_msg = f"❌ Model '{selected_model}' nahi mila. `ollama pull {selected_model}` run karo pehle."
+            else:
+                error_msg = f"❌ Kuch gadbad ho gayi: {str(e)[:200]}"
+            full_reply.append(error_msg)
+            yield f"data: {json.dumps({'token': error_msg})}\n\n"
 
         # Save to chat (show file label in history)
         display_msg = message + file_label
@@ -1025,6 +1047,33 @@ async def intelligence_status():
         },
         "multi_model_reasoning": "active"
     }
+
+
+# ===== OLLAMA STATUS (Proactive Health) =====
+
+@app.get("/ollama-status")
+async def ollama_status():
+    """Check if Ollama is running and which models are available."""
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get("http://localhost:11434/api/tags")
+            if resp.status_code == 200:
+                models = resp.json().get("models", [])
+                model_names = [m["name"] for m in models]
+                return {
+                    "status": "online",
+                    "models": model_names,
+                    "model_count": len(model_names),
+                    "active_model": MODEL if MODEL in model_names else (model_names[0] if model_names else None),
+                    "message": f"Ollama ready — {len(model_names)} models loaded"
+                }
+            return {"status": "error", "message": "Ollama responded but with an error", "models": []}
+    except httpx.ConnectError:
+        return {"status": "offline", "message": "Ollama chal nahi raha. Terminal me 'ollama serve' run karo.", "models": []}
+    except httpx.ConnectTimeout:
+        return {"status": "offline", "message": "Ollama se connect nahi ho pa raha. Port 11434 check karo.", "models": []}
+    except Exception as e:
+        return {"status": "error", "message": f"Ollama check failed: {str(e)[:100]}", "models": []}
 
 
 class SpeakRequest(BaseModel):

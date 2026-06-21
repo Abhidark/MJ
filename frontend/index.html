@@ -782,6 +782,62 @@
   }
   .speak-btn:hover { color: var(--primary); }
 
+  /* Model badge on assistant messages */
+  .model-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; padding: 1px 7px;
+    border-radius: 4px;
+    background: rgba(255,102,0,0.08);
+    border: 1px solid rgba(255,102,0,0.15);
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 0.5px;
+    margin-left: 4px;
+    opacity: 0;
+    animation: badgeFadeIn 0.5s ease forwards;
+    animation-delay: 0.3s;
+  }
+  @keyframes badgeFadeIn {
+    to { opacity: 1; }
+  }
+  .model-badge .mb-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Zeus thinking scan animation */
+  .zeus-model.scanning {
+    border-color: rgba(255,102,0,0.4);
+    background: rgba(255,102,0,0.06);
+  }
+  .zeus-model.scanning .zm-dot {
+    background: var(--accent);
+    animation: zmScan 0.4s ease-in-out infinite alternate;
+  }
+  @keyframes zmScan {
+    0% { opacity: 0.3; box-shadow: none; }
+    100% { opacity: 1; box-shadow: 0 0 8px var(--accent); }
+  }
+
+  /* Chat header model indicator */
+  .chat-header-model {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 1px;
+  }
+  .chat-header-model .chm-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+  }
+  .chat-header-model .chm-name {
+    color: var(--accent);
+  }
+
   /* ===== INPUT BAR ===== */
   #input-bar {
     display: flex; gap: 8px; padding: 14px 18px;
@@ -1069,7 +1125,14 @@
 <!-- ===== RIGHT: CHAT PANEL ===== -->
 <div id="chat-panel">
   <div class="chat-header">
-    <h2>COMM CHANNEL</h2>
+    <div>
+      <h2 style="margin:0;">COMM CHANNEL</h2>
+      <div class="chat-header-model" id="chat-header-model">
+        <div class="chm-dot"></div>
+        <span>MODEL:</span>
+        <span class="chm-name" id="chm-name">WAITING</span>
+      </div>
+    </div>
     <div class="chat-header-btns">
       <button id="toggle-history">History</button>
       <button id="new-chat-btn">+ New</button>
@@ -1254,9 +1317,20 @@ const taskIcons = {
   reasoning: '🧩', vision: '👁', translation: '🌐',
 };
 
+let lastModelUsed = '';
+let lastTaskType = '';
+
 function updateZeusPanel(modelUsed, taskType) {
-  // Clear all active states
-  document.querySelectorAll('.zeus-model').forEach(el => el.classList.remove('active'));
+  lastModelUsed = modelUsed;
+  lastTaskType = taskType;
+
+  // Stop scanning animation
+  stopZeusScanning();
+
+  // Clear all states
+  document.querySelectorAll('.zeus-model').forEach(el => {
+    el.classList.remove('active', 'scanning');
+  });
 
   // Find and activate the used model
   for (const [model, elId] of Object.entries(zeusModelMap)) {
@@ -1269,11 +1343,9 @@ function updateZeusPanel(modelUsed, taskType) {
 
   // Update last-used bar
   const lastUsed = document.getElementById('zeus-last-used');
-  const zluModel = document.getElementById('zlu-model');
-  const zluTask = document.getElementById('zlu-task');
   lastUsed.style.display = 'flex';
-  zluModel.textContent = modelUsed;
-  zluTask.textContent = (taskIcons[taskType] || '') + ' ' + (taskType || 'chat').toUpperCase();
+  document.getElementById('zlu-model').textContent = modelUsed;
+  document.getElementById('zlu-task').textContent = (taskIcons[taskType] || '') + ' ' + (taskType || 'chat').toUpperCase();
 
   // Update model widget card
   const wcModel = document.getElementById('wc-model-val');
@@ -1281,11 +1353,49 @@ function updateZeusPanel(modelUsed, taskType) {
     const shortName = modelUsed.split(':')[0];
     wcModel.textContent = shortName.charAt(0).toUpperCase() + shortName.slice(1);
   }
+
+  // Update chat header model indicator
+  const chmName = document.getElementById('chm-name');
+  if (chmName) chmName.textContent = modelUsed.toUpperCase();
+
+  // Add model badge to the current assistant message
+  addModelBadgeToLastMsg(modelUsed, taskType);
 }
 
-// Set model to "thinking" state while waiting for response
+function addModelBadgeToLastMsg(model, task) {
+  const rows = document.querySelectorAll('.msg-row.assistant');
+  if (rows.length === 0) return;
+  const lastRow = rows[rows.length - 1];
+  const footer = lastRow.querySelector('.timestamp');
+  if (!footer || footer.querySelector('.model-badge')) return;
+  const badge = document.createElement('span');
+  badge.className = 'model-badge';
+  const icon = taskIcons[task] || '🤖';
+  badge.innerHTML = '<span class="mb-dot"></span>' + icon + ' ' + model;
+  footer.appendChild(badge);
+}
+
+// Scanning animation while Zeus is routing
+let scanInterval = null;
 function setZeusThinking() {
   document.querySelectorAll('.zeus-model').forEach(el => el.classList.remove('active'));
+  const chmName = document.getElementById('chm-name');
+  if (chmName) chmName.textContent = 'ROUTING...';
+
+  // Cycle through models with scanning effect
+  const models = document.querySelectorAll('.zeus-model');
+  let idx = 0;
+  if (scanInterval) clearInterval(scanInterval);
+  scanInterval = setInterval(() => {
+    models.forEach(el => el.classList.remove('scanning'));
+    models[idx % models.length].classList.add('scanning');
+    idx++;
+  }, 200);
+}
+
+function stopZeusScanning() {
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  document.querySelectorAll('.zeus-model').forEach(el => el.classList.remove('scanning'));
 }
 
 // Load initial model config
@@ -1380,7 +1490,7 @@ async function send() {
   } catch (err) {
     typing.textContent = `Error: ${err.message}`;
     typing.classList.remove("typing");
-    setOrbState("error"); setTimeout(() => setOrbState("idle"), 3000);
+    setOrbState("error"); stopZeusScanning(); setTimeout(() => setOrbState("idle"), 3000);
   }
 
   sendBtn.disabled = false; input.focus();
@@ -1643,12 +1753,52 @@ document.getElementById("err-fix-all").addEventListener("click", async () => {
 });
 checkErrors(); setInterval(checkErrors, 10000);
 
+// ===== OLLAMA STATUS MONITOR =====
+let ollamaOnline = false;
+let ollamaLastNotified = 0;
+
+async function checkOllamaStatus(showMsg = false) {
+  const statusEl = document.getElementById("w-status");
+  const statusLabel = statusEl?.parentElement?.querySelector("div:last-child");
+  try {
+    const res = await fetch(API + "/ollama-status");
+    const data = await res.json();
+    if (data.status === "online") {
+      if (!ollamaOnline && ollamaLastNotified > 0) {
+        // Was offline, now back online — notify
+        addMsg("✅ Ollama wapas online aa gaya! Ab baat kar sakte ho.", "assistant");
+        setOrbState("listening");
+      }
+      ollamaOnline = true;
+      if (statusEl) { statusEl.textContent = "ONLINE"; statusEl.style.color = "var(--success)"; }
+      if (statusLabel) statusLabel.textContent = "SYSTEM";
+    } else {
+      ollamaOnline = false;
+      if (statusEl) { statusEl.textContent = "OFFLINE"; statusEl.style.color = "var(--error)"; }
+      if (statusLabel) statusLabel.textContent = "OLLAMA";
+      if (showMsg || (Date.now() - ollamaLastNotified > 60000)) {
+        addMsg("⚠️ " + (data.message || "Ollama chal nahi raha. 'ollama serve' run karo."), "assistant");
+        ollamaLastNotified = Date.now();
+        setOrbState("error");
+      }
+    }
+  } catch(e) {
+    // Backend itself is down
+    if (statusEl) { statusEl.textContent = "DOWN"; statusEl.style.color = "var(--error)"; }
+    if (statusLabel) statusLabel.textContent = "SERVER";
+    ollamaOnline = false;
+  }
+}
+
+// Check on load (with message) and then every 30s (silent unless state changes)
+checkOllamaStatus(true);
+setInterval(() => checkOllamaStatus(false), 30000);
+
 // ===== HEALTH CHECK ON LOAD =====
 async function healthCheck() {
   try {
     const res = await fetch(API + "/health"); const data = await res.json();
     if (data.status === "unhealthy" || data.status === "critical") sendNotification("MJ Health Warning", data.issues.join(", "));
-    if (!data.ollama) addMsg("⚠️ Ollama chal nahi raha! 'ollama serve' run karo.", "assistant");
   } catch(e) {}
 }
 healthCheck();
