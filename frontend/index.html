@@ -3226,7 +3226,14 @@ async function send() {
   }
 
   input.value = ""; sendBtn.disabled = true; setOrbState("thinking"); setZeusThinking();
-  const typing = addMsg("Thinking...", "assistant typing");
+  const typing = addMsg("Loading model & thinking...", "assistant typing");
+  // Timeout safety — if no response in 120s, show alert
+  let responseStarted = false;
+  const stuckTimer = setTimeout(() => {
+    if (!responseStarted) {
+      showOrbAlert("MODEL LOADING — 14B model swap takes time, please wait...", "error", 30000);
+    }
+  }, 15000);
 
   try {
     const formData = new FormData();
@@ -3252,6 +3259,7 @@ async function send() {
           try {
             const data = JSON.parse(line.slice(6));
             if (data.token) {
+              if (!responseStarted) { responseStarted = true; clearTimeout(stuckTimer); }
               rawBuffer += data.token;
               // Filter out <think>...</think> blocks from Qwen3 models
               if (rawBuffer.includes("<think>")) insideThink = true;
@@ -3295,6 +3303,7 @@ async function send() {
     loadChatList();
 
   } catch (err) {
+    clearTimeout(stuckTimer);
     typing.textContent = "";
     typing.classList.remove("typing");
     showOrbAlert("SEND FAILED — " + err.message, "error", 8000);

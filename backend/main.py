@@ -947,7 +947,7 @@ async def chat(
 
     async def stream_response():
         try:
-            async with httpx.AsyncClient(timeout=60) as client:
+            async with httpx.AsyncClient(timeout=180) as client:
                 async with client.stream("POST", OLLAMA_URL, json=payload) as resp:
                     async for line in resp.aiter_lines():
                         if line:
