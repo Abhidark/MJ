@@ -1,5 +1,11 @@
 [
   {
+    "content": "git add .\ngit commit -m \"Fix orb settings overlap + add drag handle bar for reliable card move\"\ngit push",
+    "time": "08:24 PM",
+    "timestamp": "2026-06-21T20:24:22.385486",
+    "preview": "git add . git commit -m \"Fix orb settings overlap + add drag handle bar for reli"
+  },
+  {
     "content": "git add .\ngit commit -m \"Fix card drag with pointer-events + add AI flow panel resize\"\ngit push",
     "time": "08:15 PM",
     "timestamp": "2026-06-21T20:15:33.411457",

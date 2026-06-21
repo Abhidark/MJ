@@ -407,29 +407,28 @@
   }
 
   .orb-settings-panel {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%) scale(0.95);
-    width: 380px;
-    max-height: 50vh;
+    position: fixed;
+    top: 60px;
+    right: 50%;
+    transform: translateX(50%) scale(0.95);
+    width: 400px;
+    max-height: 80vh;
     overflow-y: auto;
-    background: rgba(10,14,24,0.95);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(0,212,255,0.15);
-    border-radius: 12px;
-    padding: 16px;
-    z-index: 1000;
+    background: rgba(5,8,18,0.97);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 14px;
+    padding: 18px;
+    z-index: 9999;
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
-    box-shadow: 0 0 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.08);
-    margin-top: 8px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 30px rgba(0,212,255,0.1);
   }
   .orb-settings-panel.open {
     opacity: 1;
     pointer-events: all;
-    transform: translateX(-50%) scale(1);
+    transform: translateX(50%) scale(1);
   }
   .orb-settings-panel::-webkit-scrollbar { width: 4px; }
   .orb-settings-panel::-webkit-scrollbar-track { background: transparent; }
@@ -1472,14 +1471,25 @@
     outline-color: rgba(0,212,255,0.6);
     box-shadow: 0 0 20px rgba(0,212,255,0.15);
   }
-  /* Prevent inner elements from blocking drag in edit mode */
-  body.dash-editing .dash-card > *:not(.card-edit-toolbar):not(.card-resize-handle):not(.orb-settings-panel) {
-    pointer-events: none;
-  }
-  body.dash-editing .card-edit-toolbar, body.dash-editing .card-resize-handle {
-    pointer-events: all;
-  }
   body.dash-editing { user-select: none; }
+
+  /* Drag handle bar at top of each card */
+  .card-drag-handle {
+    display: none;
+    position: absolute; top: 0; left: 0; right: 0; height: 28px;
+    cursor: grab; z-index: 40;
+    background: linear-gradient(180deg, rgba(0,180,255,0.12) 0%, transparent 100%);
+    border-radius: 12px 12px 0 0;
+    align-items: center; justify-content: center;
+  }
+  .card-drag-handle::after {
+    content: "⠿ DRAG";
+    font-family: 'Orbitron', monospace; font-size: 8px;
+    letter-spacing: 2px; color: rgba(0,212,255,0.5);
+  }
+  .card-drag-handle:hover { background: linear-gradient(180deg, rgba(0,180,255,0.25) 0%, transparent 100%); }
+  .card-drag-handle:active { cursor: grabbing; }
+  body.dash-editing .card-drag-handle { display: flex; }
 
   /* AI Flow panel resize handle */
   .aifp-resize-handle {
@@ -3848,10 +3858,26 @@ input.focus();
     cancelBtn.style.display = "inline-flex";
     savedHTML = grid.innerHTML;
 
-    // Tag each grid item + add toolbars
+    // Tag each grid item + add toolbars + drag handles
     getGridItems().forEach((item, i) => {
       item.setAttribute("data-grid-idx", i);
-      // Only add toolbar to visible dash-cards (not wrapper divs' inner cards)
+      item.style.position = "relative";
+
+      // Add drag handle to each grid item (top bar)
+      if (!item.querySelector(".card-drag-handle")) {
+        const dragH = document.createElement("div");
+        dragH.className = "card-drag-handle";
+        item.insertBefore(dragH, item.firstChild);
+
+        // Drag logic on handle
+        dragH.addEventListener("mousedown", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          startDrag(item, e);
+        });
+      }
+
+      // Add toolbar to dash-cards inside
       const cards = item.classList.contains("dash-card") ? [item] : item.querySelectorAll(".dash-card");
       cards.forEach(card => {
         if (card.querySelector(".card-edit-toolbar")) return;
@@ -3916,60 +3942,45 @@ input.focus();
         });
       });
     });
-
-    // Mouse-based drag reorder on grid
-    grid.addEventListener("mousedown", onDragStart);
   }
 
-  function onDragStart(e) {
-    if (!editing) return;
-    // Don't drag if clicking toolbar, handle, color picker, button, input, slider
-    if (e.target.closest(".card-edit-toolbar, .card-resize-handle, button, input, select, .os-slider, .orb-settings-panel")) return;
-
-    const item = closestGridItem(e.target);
-    if (!item) return;
-
-    e.preventDefault();
+  function startDrag(item, e) {
     dragCard = item;
     const rect = dragCard.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
+    const w = rect.width;
 
     // Create placeholder
     placeholder = document.createElement("div");
     placeholder.className = "drag-placeholder";
     placeholder.style.minHeight = rect.height + "px";
-    // Copy grid span classes
     if (dragCard.classList.contains("card-span-2")) placeholder.classList.add("card-span-2");
     if (dragCard.classList.contains("card-span-row")) placeholder.classList.add("card-span-row");
 
-    // Make card floating
+    // Float the card
+    grid.insertBefore(placeholder, dragCard);
     dragCard.style.position = "fixed";
     dragCard.style.left = rect.left + "px";
     dragCard.style.top = rect.top + "px";
-    dragCard.style.width = rect.width + "px";
-    dragCard.style.zIndex = "9999";
-    dragCard.style.opacity = "0.85";
-    dragCard.style.pointerEvents = "none";
+    dragCard.style.width = w + "px";
+    dragCard.style.zIndex = "9998";
+    dragCard.style.opacity = "0.9";
     dragCard.classList.add("dragging");
-
-    // Insert placeholder where card was
-    dragCard.parentElement.insertBefore(placeholder, dragCard);
 
     function onMove(ev) {
       dragCard.style.left = (ev.clientX - offsetX) + "px";
       dragCard.style.top = (ev.clientY - offsetY) + "px";
 
-      // Find which grid item we're hovering over
+      // Find drop target
       const items = getGridItems().filter(el => el !== dragCard && el !== placeholder);
       for (const target of items) {
         const r = target.getBoundingClientRect();
-        const cx = ev.clientX, cy = ev.clientY;
-        if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
+        if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
           const midY = r.top + r.height / 2;
-          if (cy < midY) {
+          if (ev.clientY < midY) {
             grid.insertBefore(placeholder, target);
-          } else {
+          } else if (target.nextSibling !== placeholder) {
             grid.insertBefore(placeholder, target.nextSibling);
           }
           break;
@@ -3980,16 +3991,13 @@ input.focus();
     function onUp() {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      // Drop card at placeholder position
       dragCard.style.position = "";
       dragCard.style.left = "";
       dragCard.style.top = "";
       dragCard.style.width = "";
       dragCard.style.zIndex = "";
       dragCard.style.opacity = "";
-      dragCard.style.pointerEvents = "";
       dragCard.classList.remove("dragging");
-
       if (placeholder && placeholder.parentElement) {
         grid.insertBefore(dragCard, placeholder);
         placeholder.remove();
@@ -4008,7 +4016,7 @@ input.focus();
     editBtn.style.display = "";
     saveBtn.style.display = "none";
     cancelBtn.style.display = "none";
-    grid.removeEventListener("mousedown", onDragStart);
+    // drag handles removed in cleanup below
 
     if (save) {
       // Save: card order (by data-grid-idx), colors, sizes
@@ -4032,7 +4040,7 @@ input.focus();
     }
 
     // Cleanup
-    grid.querySelectorAll(".card-edit-toolbar, .card-resize-handle, .drag-placeholder").forEach(el => el.remove());
+    grid.querySelectorAll(".card-edit-toolbar, .card-resize-handle, .card-drag-handle, .drag-placeholder").forEach(el => el.remove());
     grid.querySelectorAll("[data-grid-idx]").forEach(el => el.removeAttribute("data-grid-idx"));
   }
 
