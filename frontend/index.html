@@ -1463,7 +1463,7 @@
   }
   body.dash-editing .dash-grid > * {
     outline: 2px dashed rgba(0,212,255,0.3);
-    cursor: grab;
+    cursor: default;
     transition: outline 0.2s, box-shadow 0.2s;
     border-radius: 12px;
   }
@@ -1473,22 +1473,29 @@
   }
   body.dash-editing { user-select: none; }
 
-  /* Drag handle bar at top of each card */
+  /* Drag handle bar at top of each grid item */
   .card-drag-handle {
     display: none;
-    position: absolute; top: 0; left: 0; right: 0; height: 28px;
-    cursor: grab; z-index: 40;
-    background: linear-gradient(180deg, rgba(0,180,255,0.12) 0%, transparent 100%);
-    border-radius: 12px 12px 0 0;
+    width: 100%; height: 32px;
+    cursor: grab;
+    background: linear-gradient(180deg, rgba(0,180,255,0.15) 0%, rgba(0,100,200,0.05) 100%);
+    border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 8px;
     align-items: center; justify-content: center;
+    margin-bottom: 6px;
+    flex-shrink: 0;
   }
   .card-drag-handle::after {
-    content: "⠿ DRAG";
-    font-family: 'Orbitron', monospace; font-size: 8px;
-    letter-spacing: 2px; color: rgba(0,212,255,0.5);
+    content: "⠿ DRAG TO MOVE";
+    font-family: 'Orbitron', monospace; font-size: 9px;
+    letter-spacing: 3px; color: rgba(0,212,255,0.6); font-weight: 600;
   }
-  .card-drag-handle:hover { background: linear-gradient(180deg, rgba(0,180,255,0.25) 0%, transparent 100%); }
-  .card-drag-handle:active { cursor: grabbing; }
+  .card-drag-handle:hover {
+    background: linear-gradient(180deg, rgba(0,180,255,0.3) 0%, rgba(0,100,200,0.1) 100%);
+    border-color: rgba(0,212,255,0.4);
+  }
+  .card-drag-handle:hover::after { color: rgba(0,212,255,0.9); }
+  .card-drag-handle:active { cursor: grabbing; background: rgba(0,180,255,0.25); }
   body.dash-editing .card-drag-handle { display: flex; }
 
   /* AI Flow panel resize handle */
@@ -3950,30 +3957,36 @@ input.focus();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
     const w = rect.width;
+    const h = rect.height;
 
-    // Create placeholder
+    // Create placeholder in grid where card was
     placeholder = document.createElement("div");
     placeholder.className = "drag-placeholder";
-    placeholder.style.minHeight = rect.height + "px";
+    placeholder.style.minHeight = h + "px";
     if (dragCard.classList.contains("card-span-2")) placeholder.classList.add("card-span-2");
     if (dragCard.classList.contains("card-span-row")) placeholder.classList.add("card-span-row");
-
-    // Float the card
     grid.insertBefore(placeholder, dragCard);
+
+    // Move card to body so position:fixed works properly
+    document.body.appendChild(dragCard);
     dragCard.style.position = "fixed";
     dragCard.style.left = rect.left + "px";
     dragCard.style.top = rect.top + "px";
     dragCard.style.width = w + "px";
-    dragCard.style.zIndex = "9998";
+    dragCard.style.height = h + "px";
+    dragCard.style.zIndex = "99999";
     dragCard.style.opacity = "0.9";
+    dragCard.style.margin = "0";
+    dragCard.style.boxSizing = "border-box";
     dragCard.classList.add("dragging");
 
     function onMove(ev) {
       dragCard.style.left = (ev.clientX - offsetX) + "px";
       dragCard.style.top = (ev.clientY - offsetY) + "px";
 
-      // Find drop target
-      const items = getGridItems().filter(el => el !== dragCard && el !== placeholder);
+      // Find drop target among grid items (not including our placeholder)
+      const items = Array.from(grid.children).filter(el => el !== placeholder);
+      let inserted = false;
       for (const target of items) {
         const r = target.getBoundingClientRect();
         if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
@@ -3983,6 +3996,7 @@ input.focus();
           } else if (target.nextSibling !== placeholder) {
             grid.insertBefore(placeholder, target.nextSibling);
           }
+          inserted = true;
           break;
         }
       }
@@ -3991,16 +4005,25 @@ input.focus();
     function onUp() {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
+
+      // Reset styles
       dragCard.style.position = "";
       dragCard.style.left = "";
       dragCard.style.top = "";
       dragCard.style.width = "";
+      dragCard.style.height = "";
       dragCard.style.zIndex = "";
       dragCard.style.opacity = "";
+      dragCard.style.margin = "";
+      dragCard.style.boxSizing = "";
       dragCard.classList.remove("dragging");
+
+      // Put card back into grid at placeholder position
       if (placeholder && placeholder.parentElement) {
         grid.insertBefore(dragCard, placeholder);
         placeholder.remove();
+      } else {
+        grid.appendChild(dragCard);
       }
       dragCard = null;
       placeholder = null;
