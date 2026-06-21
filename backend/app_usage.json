@@ -1,14 +1,14 @@
 {
   "date": "2026-06-21",
   "apps": {
-    "uvicorn  main:app --host 0.0.0": 17.293364,
+    "uvicorn  main:app --host 0.0.0": 23.052722,
     "Google Chrome": 131.08793500000002,
     "VS Code": 11.238638,
     "Unknown": 5.663845,
-    "http://localhost:8000 wants to": 23.202885000000002,
+    "http://localhost:8000 wants to": 28.675612,
     "localhost:8000": 5.7814,
     "Snipping Tool Overlay": 5.445387,
     "Quick settings": 44.652824
   },
-  "session_start": "2026-06-21T16:14:21.912422"
+  "session_start": "2026-06-21T16:33:45.282061"
 }
