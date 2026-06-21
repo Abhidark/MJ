@@ -426,7 +426,7 @@
   .hud-sidebar {
     position: fixed;
     left: 0; top: 0;
-    width: 68px;
+    width: 210px;
     height: 100vh;
     z-index: 50;
     display: flex;
@@ -434,17 +434,14 @@
     align-items: center;
     padding: 16px 0;
     gap: 6px;
-    background: linear-gradient(180deg, rgba(6,6,11,0.85) 0%, rgba(6,6,11,0.7) 100%);
+    background: linear-gradient(180deg, rgba(6,6,11,0.92) 0%, rgba(6,6,11,0.85) 100%);
     border-right: 1px solid rgba(0,200,255,0.06);
     backdrop-filter: blur(12px);
-    transition: width 0.3s;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
-  .hud-sidebar:hover {
-    width: 210px;
-  }
-  .hud-sidebar:hover .hud-detail { opacity: 1; max-width: 140px; margin-left: 8px; }
-  .hud-sidebar:hover .hud-item { justify-content: flex-start; padding-left: 14px; }
+  .hud-sidebar .hud-detail { opacity: 1; max-width: 140px; margin-left: 8px; }
+  .hud-sidebar .hud-item { justify-content: flex-start; padding-left: 14px; }
 
   .hud-corner-tl {
     position: absolute; top: 0; left: 0;
@@ -498,11 +495,11 @@
   .hud-hex-dot.crit { background: #e74c3c; box-shadow: 0 0 6px rgba(231,76,60,0.5); }
 
   .hud-detail {
-    opacity: 0;
-    max-width: 0;
+    opacity: 1;
+    max-width: 140px;
     overflow: hidden;
-    transition: all 0.3s;
     white-space: nowrap;
+    margin-left: 8px;
   }
   .hud-detail-label {
     font-family: 'JetBrains Mono', monospace;
@@ -542,7 +539,7 @@
   }
 
   /* Push dashboard content to make room for sidebar */
-  #dashboard { margin-left: 68px; }
+  #dashboard { margin-left: 210px; }
 
   .orb-status {
     margin-top: 24px;
