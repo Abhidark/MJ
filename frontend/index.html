@@ -1623,50 +1623,88 @@
   <!-- JARVIS Dashboard Grid -->
   <div class="dash-grid">
 
-    <!-- AI Core Overview Card -->
-    <div class="dash-card">
-      <div class="dash-card-title">AI Core Overview</div>
-      <div class="core-status-list">
-        <div class="core-status-item">
-          <span class="csi-icon">&#128172;</span>
-          <div class="csi-info">
-            <div class="csi-name">AI Core</div>
-            <div class="csi-state online">Online</div>
+    <!-- Left Column: AI Core + Live Intelligence stacked -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <!-- AI Core Overview Card -->
+      <div class="dash-card" style="margin:0;">
+        <div class="dash-card-title">AI Core Overview</div>
+        <div class="core-status-list">
+          <div class="core-status-item">
+            <span class="csi-icon">&#128172;</span>
+            <div class="csi-info">
+              <div class="csi-name">AI Core</div>
+              <div class="csi-state online">Online</div>
+            </div>
+          </div>
+          <div class="core-status-item">
+            <span class="csi-icon">&#129504;</span>
+            <div class="csi-info">
+              <div class="csi-name">Memory</div>
+              <div class="csi-state" id="core-memory-state">Standby</div>
+            </div>
+          </div>
+          <div class="core-status-item">
+            <span class="csi-icon">&#127908;</span>
+            <div class="csi-info">
+              <div class="csi-name">Voice</div>
+              <div class="csi-state" id="core-voice-state">Online</div>
+            </div>
+          </div>
+          <div class="core-status-item">
+            <span class="csi-icon">&#9889;</span>
+            <div class="csi-info">
+              <div class="csi-name">Modules</div>
+              <div class="csi-state online" id="core-modules-state">21 Active</div>
+            </div>
+          </div>
+          <div class="core-status-item">
+            <span class="csi-icon">&#128187;</span>
+            <div class="csi-info">
+              <div class="csi-name">System</div>
+              <div class="csi-state online" id="core-system-state">Normal</div>
+            </div>
           </div>
         </div>
-        <div class="core-status-item">
-          <span class="csi-icon">&#129504;</span>
-          <div class="csi-info">
-            <div class="csi-name">Memory</div>
-            <div class="csi-state" id="core-memory-state">Standby</div>
+      </div>
+
+      <!-- Live Intelligence Feed Card (moved below AI Core) -->
+      <div class="dash-card" style="margin:0;">
+        <div class="dash-card-title">Live Intelligence <span class="live-dot"></span></div>
+        <div class="live-feed-list" id="live-feed-list">
+          <div class="lf-item">
+            <span class="lf-icon">&#128200;</span>
+            <div class="lf-info">
+              <div class="lf-text">CPU usage at <span id="lf-cpu">--%</span></div>
+              <div class="lf-sub">System load nominal</div>
+            </div>
           </div>
-        </div>
-        <div class="core-status-item">
-          <span class="csi-icon">&#127908;</span>
-          <div class="csi-info">
-            <div class="csi-name">Voice</div>
-            <div class="csi-state" id="core-voice-state">Online</div>
+          <div class="lf-item">
+            <span class="lf-icon">&#128190;</span>
+            <div class="lf-info">
+              <div class="lf-text">RAM: <span id="lf-ram">--%</span></div>
+              <div class="lf-sub">Memory allocation stable</div>
+            </div>
           </div>
-        </div>
-        <div class="core-status-item">
-          <span class="csi-icon">&#9889;</span>
-          <div class="csi-info">
-            <div class="csi-name">Modules</div>
-            <div class="csi-state online" id="core-modules-state">21 Active</div>
+          <div class="lf-item">
+            <span class="lf-icon">&#127757;</span>
+            <div class="lf-info">
+              <div class="lf-text">Network: <span id="lf-net">Active</span></div>
+              <div class="lf-sub" id="lf-net-speed">--</div>
+            </div>
           </div>
-        </div>
-        <div class="core-status-item">
-          <span class="csi-icon">&#128187;</span>
-          <div class="csi-info">
-            <div class="csi-name">System</div>
-            <div class="csi-state online" id="core-system-state">Normal</div>
+          <div class="lf-item">
+            <span class="lf-icon">&#128296;</span>
+            <div class="lf-info">
+              <div class="lf-text">GPU: <span id="lf-gpu">--%</span></div>
+              <div class="lf-sub" id="lf-gpu-temp">-- °C</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Center: Orb Section (all IDs preserved) -->
-    <div class="dash-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;background:transparent;border-color:transparent;">
+    <!-- Center: Orb Section (all IDs preserved, now spans center+right) -->
+    <div class="dash-card card-span-2" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;background:transparent;border-color:transparent;">
       <div class="orb-section">
         <div class="orb-container" id="orb-container">
           <div class="orb-ring"></div>
@@ -1682,41 +1720,6 @@
           <span id="state-text">IDLE</span>
         </div>
         <div class="orb-mic-status" id="mic-status">Initializing...</div>
-      </div>
-    </div>
-
-    <!-- Live Intelligence Feed Card -->
-    <div class="dash-card">
-      <div class="dash-card-title">Live Intelligence <span class="live-dot"></span></div>
-      <div class="live-feed-list" id="live-feed-list">
-        <div class="lf-item">
-          <span class="lf-icon">&#128200;</span>
-          <div class="lf-info">
-            <div class="lf-text">CPU usage at <span id="lf-cpu">--%</span></div>
-            <div class="lf-sub">System load nominal</div>
-          </div>
-        </div>
-        <div class="lf-item">
-          <span class="lf-icon">&#128190;</span>
-          <div class="lf-info">
-            <div class="lf-text">RAM: <span id="lf-ram">--%</span></div>
-            <div class="lf-sub">Memory allocation stable</div>
-          </div>
-        </div>
-        <div class="lf-item">
-          <span class="lf-icon">&#127757;</span>
-          <div class="lf-info">
-            <div class="lf-text">Network: <span id="lf-net">Active</span></div>
-            <div class="lf-sub" id="lf-net-speed">--</div>
-          </div>
-        </div>
-        <div class="lf-item">
-          <span class="lf-icon">&#128296;</span>
-          <div class="lf-info">
-            <div class="lf-text">GPU: <span id="lf-gpu">--%</span></div>
-            <div class="lf-sub" id="lf-gpu-temp">-- °C</div>
-          </div>
-        </div>
       </div>
     </div>
 
