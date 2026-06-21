@@ -538,6 +538,83 @@
     text-overflow: ellipsis; white-space: nowrap;
   }
 
+  /* Process List Panel */
+  .proc-panel {
+    position: fixed;
+    left: 220px; top: 50%;
+    transform: translateY(-50%) scale(0.95);
+    width: 420px; max-height: 75vh;
+    background: rgba(10,10,16,0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0,200,255,0.1);
+    border-radius: 14px;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: all 0.25s ease;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,200,255,0.03);
+  }
+  .proc-panel.open { opacity: 1; pointer-events: all; transform: translateY(-50%) scale(1); }
+
+  .proc-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .proc-panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(0,220,255,0.9);
+  }
+  .proc-panel-close {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03); color: #888;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: all 0.2s;
+  }
+  .proc-panel-close:hover { background: rgba(231,76,60,0.15); color: #e74c3c; }
+
+  .proc-table-head {
+    display: grid; grid-template-columns: 2fr 0.8fr 1fr 1fr;
+    padding: 8px 18px; gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; text-transform: uppercase;
+    letter-spacing: 1px; color: rgba(255,255,255,0.25);
+  }
+
+  .proc-list {
+    flex: 1; overflow-y: auto; padding: 4px 0;
+  }
+  .proc-list::-webkit-scrollbar { width: 4px; }
+  .proc-list::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.15); border-radius: 4px; }
+
+  .proc-row {
+    display: grid; grid-template-columns: 2fr 0.8fr 1fr 1fr;
+    padding: 7px 18px; gap: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    transition: background 0.15s;
+  }
+  .proc-row:hover { background: rgba(0,200,255,0.04); }
+  .proc-name { color: #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .proc-pid { color: rgba(255,255,255,0.3); }
+  .proc-cpu { color: rgba(5,244,112,0.8); }
+  .proc-ram { color: rgba(0,220,255,0.8); }
+  .proc-cpu.high { color: #f39c12; }
+  .proc-cpu.crit { color: #e74c3c; }
+  .proc-ram.high { color: #f39c12; }
+
+  .proc-loading {
+    padding: 30px; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: rgba(255,255,255,0.3);
+  }
+
+  .hud-item.clickable { cursor: pointer; }
+  .hud-item.clickable:hover { background: rgba(0,200,255,0.04); border-radius: 8px; }
+
   /* Push dashboard content to make room for sidebar */
   #dashboard { margin-left: 210px; }
 
@@ -1285,8 +1362,8 @@
 
   <div class="hud-divider"></div>
 
-  <!-- Processes -->
-  <div class="hud-item">
+  <!-- Processes (clickable) -->
+  <div class="hud-item clickable" id="hud-proc-click" title="Click to view processes">
     <div class="hud-hex">
       <span class="hud-hex-icon">&#9638;</span>
       <span class="hud-hex-dot" id="hud-proc-dot"></span>
@@ -1318,6 +1395,23 @@
       <div class="hud-detail-label">UPTIME</div>
       <div class="hud-detail-value" id="hud-uptime-val" style="font-size:10px;">--</div>
     </div>
+  </div>
+</div>
+
+<!-- Process List Panel -->
+<div class="proc-panel" id="proc-panel">
+  <div class="proc-panel-header">
+    <span class="proc-panel-title">&#9638; Running Processes</span>
+    <button class="proc-panel-close" id="proc-panel-close">&#10005;</button>
+  </div>
+  <div class="proc-table-head">
+    <span>Name</span>
+    <span>PID</span>
+    <span>CPU (s)</span>
+    <span>RAM (MB)</span>
+  </div>
+  <div class="proc-list" id="proc-list">
+    <div class="proc-loading">Loading processes...</div>
   </div>
 </div>
 
@@ -2671,6 +2765,43 @@ updateRealStats(); setInterval(updateRealStats, 5000);
     if (taskEl) taskEl.textContent = labels[state] || "IDLE";
     if (taskDot) taskDot.className = "hud-hex-dot" + (state === "error" ? " crit" : state === "thinking" ? " warn" : "");
   };
+})();
+
+// ===== PROCESS LIST PANEL =====
+(function() {
+  const procPanel = document.getElementById("proc-panel");
+  const procList = document.getElementById("proc-list");
+  const procClick = document.getElementById("hud-proc-click");
+  const procClose = document.getElementById("proc-panel-close");
+
+  let procOpen = false;
+
+  procClick.addEventListener("click", async function() {
+    if (procOpen) { procPanel.classList.remove("open"); procOpen = false; return; }
+    procPanel.classList.add("open"); procOpen = true;
+    procList.innerHTML = '<div class="proc-loading">Loading processes...</div>';
+    try {
+      const res = await fetch(API + "/top-processes");
+      const data = await res.json();
+      const procs = data.processes || [];
+      if (procs.length === 0) { procList.innerHTML = '<div class="proc-loading">No processes found</div>'; return; }
+      procList.innerHTML = procs.map(p => {
+        const cpuCls = p.cpu > 300 ? "crit" : p.cpu > 60 ? "high" : "";
+        const ramCls = p.ram_mb > 1000 ? "high" : "";
+        return `<div class="proc-row">
+          <span class="proc-name" title="${p.name} (${p.status})">${p.name}</span>
+          <span class="proc-pid">${p.pid}</span>
+          <span class="proc-cpu ${cpuCls}">${p.cpu}s</span>
+          <span class="proc-ram ${ramCls}">${p.ram_mb} MB</span>
+        </div>`;
+      }).join("");
+    } catch(e) { procList.innerHTML = '<div class="proc-loading">Error loading processes</div>'; }
+  });
+
+  procClose.addEventListener("click", function() { procPanel.classList.remove("open"); procOpen = false; });
+
+  // Close on Escape
+  document.addEventListener("keydown", function(e) { if (e.key === "Escape" && procOpen) { procPanel.classList.remove("open"); procOpen = false; } });
 })();
 
 // ===== DESKTOP NOTIFICATIONS =====

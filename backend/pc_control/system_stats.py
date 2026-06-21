@@ -103,3 +103,32 @@ $result | ConvertTo-Json -Compress
         "gpu_mem_used": 0, "gpu_mem_total": 0, "gpu_mem_percent": -1,
         "net_down_kbs": 0, "net_up_kbs": 0
     }
+
+
+def get_top_processes(limit: int = 25) -> list:
+    """Get top processes sorted by RAM usage using PowerShell."""
+    ps_script = f'''
+$procs = Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First {limit} | ForEach-Object {{
+    [PSCustomObject]@{{
+        name = $_.ProcessName
+        pid = $_.Id
+        cpu = [math]::Round($_.CPU, 1)
+        ram_mb = [math]::Round($_.WorkingSet64 / 1MB, 1)
+        status = if ($_.Responding) {{ "Running" }} else {{ "Not Responding" }}
+    }}
+}}
+$procs | ConvertTo-Json -Compress
+'''
+    try:
+        r = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", ps_script],
+            capture_output=True, text=True, timeout=10
+        )
+        if r.stdout.strip():
+            data = json.loads(r.stdout.strip())
+            if isinstance(data, dict):
+                data = [data]
+            return data
+    except Exception:
+        pass
+    return []

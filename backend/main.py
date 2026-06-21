@@ -259,6 +259,13 @@ async def system_stats():
     return stats
 
 
+@app.get("/top-processes")
+async def top_processes():
+    """Get top processes sorted by CPU/RAM usage."""
+    from pc_control.system_stats import get_top_processes
+    return {"processes": get_top_processes()}
+
+
 @app.get("/reminders")
 async def list_reminders():
     """Get active reminders."""
