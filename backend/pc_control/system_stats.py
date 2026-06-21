@@ -31,6 +31,33 @@ $charging = if ($battery) { $battery.BatteryStatus -eq 2 } else { $false }
 $uptime = (Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
 $uptimeStr = "{0}d {1}h {2}m" -f $uptime.Days, $uptime.Hours, $uptime.Minutes
 
+$processCount = (Get-Process).Count
+
+# GPU stats via nvidia-smi (works for NVIDIA GPUs)
+$gpuName = "N/A"
+$gpuUtil = -1
+$gpuTemp = -1
+$gpuMemUsed = 0
+$gpuMemTotal = 0
+$gpuMemPercent = -1
+try {
+    $nvOut = & "nvidia-smi" --query-gpu=name,utilization.gpu,temperature.gpu,memory.used,memory.total --format=csv,noheader,nounits 2>$null
+    if ($nvOut) {
+        $parts = $nvOut.Split(",") | ForEach-Object { $_.Trim() }
+        $gpuName = $parts[0]
+        $gpuUtil = [int]$parts[1]
+        $gpuTemp = [int]$parts[2]
+        $gpuMemUsed = [int]$parts[3]
+        $gpuMemTotal = [int]$parts[4]
+        if ($gpuMemTotal -gt 0) { $gpuMemPercent = [math]::Round(($gpuMemUsed / $gpuMemTotal) * 100, 0) }
+    }
+} catch {}
+
+# Network speed (bytes sent/received)
+$net = Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface | Select-Object -First 1
+$netDown = if ($net) { [math]::Round($net.BytesReceivedPerSec / 1KB, 0) } else { 0 }
+$netUp = if ($net) { [math]::Round($net.BytesSentPerSec / 1KB, 0) } else { 0 }
+
 $result = @{
     cpu = [int]$cpu
     ram_percent = [int]$ramPercent
@@ -43,6 +70,15 @@ $result = @{
     battery = [int]$batteryPercent
     charging = [bool]$charging
     uptime = $uptimeStr
+    process_count = $processCount
+    gpu_name = $gpuName
+    gpu_util = [int]$gpuUtil
+    gpu_temp = [int]$gpuTemp
+    gpu_mem_used = $gpuMemUsed
+    gpu_mem_total = $gpuMemTotal
+    gpu_mem_percent = [int]$gpuMemPercent
+    net_down_kbs = $netDown
+    net_up_kbs = $netUp
 }
 
 $result | ConvertTo-Json -Compress
@@ -62,5 +98,8 @@ $result | ConvertTo-Json -Compress
     return {
         "cpu": -1, "ram_percent": -1, "ram_used": 0, "ram_total": 0,
         "disk_percent": -1, "disk_used": 0, "disk_total": 0, "disk_free": 0,
-        "battery": -1, "charging": False, "uptime": "unknown"
+        "battery": -1, "charging": False, "uptime": "unknown",
+        "process_count": 0, "gpu_name": "N/A", "gpu_util": -1, "gpu_temp": -1,
+        "gpu_mem_used": 0, "gpu_mem_total": 0, "gpu_mem_percent": -1,
+        "net_down_kbs": 0, "net_up_kbs": 0
     }

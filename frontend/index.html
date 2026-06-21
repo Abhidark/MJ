@@ -252,9 +252,297 @@
     font-weight: 900;
     color: rgba(255,255,255,0.9);
     text-shadow: 0 0 30px rgba(255,255,255,0.4);
-    z-index: 1;
+    z-index: 2;
     letter-spacing: 4px;
+    pointer-events: none;
   }
+
+  /* Orb Settings */
+  .orb-settings-btn {
+    position: absolute;
+    bottom: -50px;
+    right: -10px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(5,244,112,0.2);
+    background: rgba(17,17,21,0.7);
+    backdrop-filter: blur(12px);
+    color: rgba(5,244,112,0.6);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+    z-index: 10;
+  }
+  .orb-settings-btn:hover {
+    border-color: rgba(5,244,112,0.5);
+    color: rgba(5,244,112,1);
+    box-shadow: 0 0 15px rgba(5,244,112,0.15);
+  }
+  .orb-settings-btn.active {
+    background: rgba(5,244,112,0.1);
+    border-color: rgba(5,244,112,0.5);
+    color: #05f470;
+  }
+
+  .orb-settings-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: 380px;
+    max-height: 85vh;
+    overflow-y: auto;
+    background: rgba(17,17,21,0.92);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(5,244,112,0.1);
+    border-radius: 16px;
+    padding: 20px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+    box-shadow: 0 0 60px rgba(0,0,0,0.6), 0 0 30px rgba(5,244,112,0.05);
+  }
+  .orb-settings-panel.open {
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .orb-settings-panel::-webkit-scrollbar { width: 4px; }
+  .orb-settings-panel::-webkit-scrollbar-track { background: transparent; }
+  .orb-settings-panel::-webkit-scrollbar-thumb { background: rgba(5,244,112,0.2); border-radius: 4px; }
+
+  .os-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 14px; margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .os-header-left { display: flex; align-items: center; gap: 8px; }
+  .os-header-left span { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #eee; }
+  .os-close {
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04); color: #aaa; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    transition: all 0.2s;
+  }
+  .os-close:hover { background: rgba(231,76,60,0.15); color: #e74c3c; border-color: rgba(231,76,60,0.3); }
+
+  .os-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; text-transform: uppercase; letter-spacing: 2px;
+    color: rgba(255,255,255,0.35); margin-bottom: 10px;
+  }
+
+  .os-presets {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px;
+  }
+  .os-preset-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 4px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .os-preset-btn:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); }
+  .os-preset-btn.active { border-color: rgba(5,244,112,0.4); background: rgba(5,244,112,0.08); }
+  .os-preset-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .os-preset-btn:hover .os-preset-dot { transform: scale(1.15); }
+  .os-preset-name {
+    font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .os-modes {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;
+  }
+  .os-mode-btn {
+    padding: 8px 10px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer; transition: all 0.2s; text-align: left;
+  }
+  .os-mode-btn:hover { border-color: rgba(255,255,255,0.12); }
+  .os-mode-btn.active { border-color: rgba(5,244,112,0.4); background: rgba(5,244,112,0.08); }
+  .os-mode-btn .mode-label {
+    font-size: 11px; font-weight: 600; color: #ddd;
+  }
+  .os-mode-btn.active .mode-label { color: #05f470; }
+  .os-mode-btn .mode-desc {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px;
+  }
+
+  .os-slider-group { margin-bottom: 14px; }
+  .os-slider-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+  }
+  .os-slider-label { font-size: 11px; color: rgba(255,255,255,0.55); }
+  .os-slider-value { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #05f470; }
+  .os-slider {
+    width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+    background: rgba(255,255,255,0.06); border-radius: 4px; outline: none; cursor: pointer;
+  }
+  .os-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: #05f470; border: 2px solid rgba(0,0,0,0.3);
+    box-shadow: 0 0 8px rgba(5,244,112,0.4); cursor: pointer;
+  }
+
+  .os-toggles {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px;
+  }
+  .os-toggle-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .os-toggle-info .os-toggle-title { font-size: 11px; color: #ddd; font-weight: 500; }
+  .os-toggle-info .os-toggle-desc { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: rgba(255,255,255,0.3); }
+  .os-toggle-switch {
+    width: 36px; height: 20px; border-radius: 10px;
+    background: rgba(255,255,255,0.1); cursor: pointer; position: relative;
+    border: none; padding: 2px; transition: background 0.3s;
+  }
+  .os-toggle-switch.on { background: rgba(5,244,112,0.6); }
+  .os-toggle-knob {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.3s; position: absolute; top: 2px; left: 2px;
+  }
+  .os-toggle-switch.on .os-toggle-knob { transform: translateX(16px); }
+
+  .os-tip {
+    margin-top: 16px; padding: 10px; border-radius: 10px;
+    background: rgba(5,244,112,0.04); border: 1px solid rgba(5,244,112,0.08);
+    font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.5;
+  }
+  .os-tip strong { color: rgba(5,244,112,0.7); }
+
+  /* ===== HUD LEFT SIDEBAR ===== */
+  .hud-sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 68px;
+    height: 100vh;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 6px;
+    background: linear-gradient(180deg, rgba(6,6,11,0.85) 0%, rgba(6,6,11,0.7) 100%);
+    border-right: 1px solid rgba(0,200,255,0.06);
+    backdrop-filter: blur(12px);
+    transition: width 0.3s;
+    overflow: hidden;
+  }
+  .hud-sidebar:hover {
+    width: 210px;
+  }
+  .hud-sidebar:hover .hud-detail { opacity: 1; max-width: 140px; margin-left: 8px; }
+  .hud-sidebar:hover .hud-item { justify-content: flex-start; padding-left: 14px; }
+
+  .hud-corner-tl {
+    position: absolute; top: 0; left: 0;
+    width: 20px; height: 20px;
+    border-top: 2px solid rgba(0,200,255,0.3);
+    border-left: 2px solid rgba(0,200,255,0.3);
+    pointer-events: none;
+  }
+  .hud-corner-bl {
+    position: absolute; bottom: 0; left: 0;
+    width: 20px; height: 20px;
+    border-bottom: 2px solid rgba(0,200,255,0.3);
+    border-left: 2px solid rgba(0,200,255,0.3);
+    pointer-events: none;
+  }
+
+  .hud-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+    cursor: default;
+    transition: all 0.3s;
+    position: relative;
+    min-height: 52px;
+  }
+  .hud-item:hover .hud-hex { border-color: rgba(0,220,255,0.5); box-shadow: 0 0 15px rgba(0,220,255,0.15); }
+
+  .hud-hex {
+    width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,200,255,0.04);
+    border: 1px solid rgba(0,200,255,0.12);
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    transition: all 0.3s;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .hud-hex-icon {
+    font-size: 16px;
+    filter: drop-shadow(0 0 4px rgba(0,200,255,0.3));
+  }
+  .hud-hex-dot {
+    position: absolute; bottom: 4px; right: 4px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #05f470;
+    box-shadow: 0 0 6px rgba(5,244,112,0.5);
+  }
+  .hud-hex-dot.warn { background: #f39c12; box-shadow: 0 0 6px rgba(243,156,18,0.5); }
+  .hud-hex-dot.crit { background: #e74c3c; box-shadow: 0 0 6px rgba(231,76,60,0.5); }
+
+  .hud-detail {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .hud-detail-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; text-transform: uppercase;
+    letter-spacing: 1.5px; color: rgba(255,255,255,0.3);
+  }
+  .hud-detail-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 600;
+    color: rgba(0,220,255,0.9);
+  }
+  .hud-detail-bar {
+    width: 100px; height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px; margin-top: 3px;
+    overflow: hidden;
+  }
+  .hud-detail-bar-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, rgba(0,200,255,0.6), rgba(5,244,112,0.8));
+    transition: width 0.8s ease;
+  }
+  .hud-detail-bar-fill.warn { background: linear-gradient(90deg, rgba(243,156,18,0.6), rgba(243,156,18,0.9)); }
+  .hud-detail-bar-fill.crit { background: linear-gradient(90deg, rgba(231,76,60,0.6), rgba(231,76,60,0.9)); }
+
+  .hud-divider {
+    width: 30px; height: 1px;
+    background: rgba(0,200,255,0.1);
+    margin: 4px 0;
+  }
+
+  .hud-task-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: rgba(0,220,255,0.6);
+    max-width: 100px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Push dashboard content to make room for sidebar */
+  #dashboard { margin-left: 68px; }
 
   .orb-status {
     margin-top: 24px;
@@ -926,6 +1214,116 @@
 <div class="hex-grid"></div>
 <div class="scanline"></div>
 
+<!-- ===== HUD LEFT SIDEBAR ===== -->
+<div class="hud-sidebar" id="hud-sidebar">
+  <div class="hud-corner-tl"></div>
+  <div class="hud-corner-bl"></div>
+
+  <!-- CPU -->
+  <div class="hud-item">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#9881;</span>
+      <span class="hud-hex-dot" id="hud-cpu-dot"></span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">CPU</div>
+      <div class="hud-detail-value" id="hud-cpu-val">--%</div>
+      <div class="hud-detail-bar"><div class="hud-detail-bar-fill" id="hud-cpu-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- RAM -->
+  <div class="hud-item">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#128203;</span>
+      <span class="hud-hex-dot" id="hud-ram-dot"></span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">RAM</div>
+      <div class="hud-detail-value" id="hud-ram-val">--%</div>
+      <div class="hud-detail-bar"><div class="hud-detail-bar-fill" id="hud-ram-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- GPU -->
+  <div class="hud-item">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#127918;</span>
+      <span class="hud-hex-dot" id="hud-gpu-dot"></span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">GPU</div>
+      <div class="hud-detail-value" id="hud-gpu-val">--%</div>
+      <div class="hud-detail-bar"><div class="hud-detail-bar-fill" id="hud-gpu-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="hud-divider"></div>
+
+  <!-- Network -->
+  <div class="hud-item">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#128225;</span>
+      <span class="hud-hex-dot" id="hud-net-dot"></span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">NETWORK</div>
+      <div class="hud-detail-value" id="hud-net-val">0 KB/s</div>
+      <div class="hud-detail-bar"><div class="hud-detail-bar-fill" id="hud-net-bar" style="width:5%"></div></div>
+    </div>
+  </div>
+
+  <!-- Disk -->
+  <div class="hud-item">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#128190;</span>
+      <span class="hud-hex-dot" id="hud-disk-dot"></span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">DISK</div>
+      <div class="hud-detail-value" id="hud-disk-val">--%</div>
+      <div class="hud-detail-bar"><div class="hud-detail-bar-fill" id="hud-disk-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="hud-divider"></div>
+
+  <!-- Processes -->
+  <div class="hud-item">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#9638;</span>
+      <span class="hud-hex-dot" id="hud-proc-dot"></span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">PROCESSES</div>
+      <div class="hud-detail-value" id="hud-proc-val">--</div>
+    </div>
+  </div>
+
+  <!-- Current Task -->
+  <div class="hud-item">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#9889;</span>
+      <span class="hud-hex-dot" id="hud-task-dot"></span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">TASK</div>
+      <div class="hud-task-text" id="hud-task-val">IDLE</div>
+    </div>
+  </div>
+
+  <!-- Uptime -->
+  <div class="hud-item" style="margin-top:auto;">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#9200;</span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">UPTIME</div>
+      <div class="hud-detail-value" id="hud-uptime-val" style="font-size:10px;">--</div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== LEFT: DASHBOARD ===== -->
 <div id="dashboard">
   <div class="top-bar">
@@ -968,11 +1366,122 @@
         <span class="orb-label">MJ</span>
       </div>
     </div>
+    <button class="orb-settings-btn" id="orb-settings-btn" title="Orb Settings">&#9881;</button>
     <div class="orb-status" id="orb-status">
       <span class="state idle" id="state-dot"></span>
       <span id="state-text">IDLE</span>
     </div>
     <div class="orb-mic-status" id="mic-status">Initializing...</div>
+  </div>
+
+  <!-- Orb Settings Panel -->
+  <div class="orb-settings-panel" id="orb-settings-panel">
+    <div class="os-header">
+      <div class="os-header-left">
+        <span style="color:#05f470;">&#9881;</span>
+        <span>Orb Parameters</span>
+      </div>
+      <button class="os-close" id="os-close">&#10005;</button>
+    </div>
+
+    <div class="os-section-label">Energy Core Preset</div>
+    <div class="os-presets" id="os-presets">
+      <button class="os-preset-btn active" data-preset="emerald">
+        <div class="os-preset-dot" style="background:#05f470;box-shadow:0 0 10px rgba(5,244,112,0.6)"></div>
+        <span class="os-preset-name">Emerald</span>
+      </button>
+      <button class="os-preset-btn" data-preset="cyan">
+        <div class="os-preset-dot" style="background:#00f0ff;box-shadow:0 0 10px rgba(0,240,255,0.6)"></div>
+        <span class="os-preset-name">Cyan</span>
+      </button>
+      <button class="os-preset-btn" data-preset="violet">
+        <div class="os-preset-dot" style="background:#b92eff;box-shadow:0 0 10px rgba(185,46,255,0.6)"></div>
+        <span class="os-preset-name">Violet</span>
+      </button>
+      <button class="os-preset-btn" data-preset="solar">
+        <div class="os-preset-dot" style="background:#ff5900;box-shadow:0 0 10px rgba(255,89,0,0.6)"></div>
+        <span class="os-preset-name">Solar</span>
+      </button>
+      <button class="os-preset-btn" data-preset="gold">
+        <div class="os-preset-dot" style="background:#ffd900;box-shadow:0 0 10px rgba(255,217,0,0.6)"></div>
+        <span class="os-preset-name">Gold</span>
+      </button>
+    </div>
+
+    <div class="os-section-label">Interaction Mode</div>
+    <div class="os-modes" id="os-modes">
+      <button class="os-mode-btn active" data-mode="repel">
+        <div class="mode-label">Repel</div>
+        <div class="mode-desc">Disperses particles</div>
+      </button>
+      <button class="os-mode-btn" data-mode="attract">
+        <div class="mode-label">Attract</div>
+        <div class="mode-desc">Pulls to cursor</div>
+      </button>
+      <button class="os-mode-btn" data-mode="vortex">
+        <div class="mode-label">Vortex</div>
+        <div class="mode-desc">Orbital swirl</div>
+      </button>
+      <button class="os-mode-btn" data-mode="ripple">
+        <div class="mode-label">Ripple</div>
+        <div class="mode-desc">Elastic wave</div>
+      </button>
+    </div>
+
+    <div class="os-section-label">Fine Tuning</div>
+    <div class="os-slider-group">
+      <div class="os-slider-header">
+        <span class="os-slider-label">Particle Count</span>
+        <span class="os-slider-value" id="osv-count">3,500</span>
+      </div>
+      <input type="range" class="os-slider" id="os-count" min="500" max="8000" step="250" value="3500">
+    </div>
+    <div class="os-slider-group">
+      <div class="os-slider-header">
+        <span class="os-slider-label">Dot Size</span>
+        <span class="os-slider-value" id="osv-size">1.2 px</span>
+      </div>
+      <input type="range" class="os-slider" id="os-size" min="0.3" max="3.5" step="0.1" value="1.2">
+    </div>
+    <div class="os-slider-group">
+      <div class="os-slider-header">
+        <span class="os-slider-label">Pulse Speed</span>
+        <span class="os-slider-value" id="osv-pulse">2</span>
+      </div>
+      <input type="range" class="os-slider" id="os-pulse" min="0.5" max="6" step="0.2" value="2">
+    </div>
+    <div class="os-slider-group">
+      <div class="os-slider-header">
+        <span class="os-slider-label">Rotation Speed</span>
+        <span class="os-slider-value" id="osv-rot">5</span>
+      </div>
+      <input type="range" class="os-slider" id="os-rot" min="1" max="20" step="1" value="5">
+    </div>
+
+    <div class="os-toggles">
+      <div class="os-toggle-card">
+        <div class="os-toggle-info">
+          <div class="os-toggle-title">Volume Fill</div>
+          <div class="os-toggle-desc">Solid inner core</div>
+        </div>
+        <button class="os-toggle-switch" id="os-vol-toggle">
+          <div class="os-toggle-knob"></div>
+        </button>
+      </div>
+      <div class="os-toggle-card">
+        <div class="os-toggle-info">
+          <div class="os-toggle-title">Hyper Glow</div>
+          <div class="os-toggle-desc">Max bloom</div>
+        </div>
+        <button class="os-toggle-switch" id="os-glow-toggle">
+          <div class="os-toggle-knob"></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="os-tip">
+      <strong>Tip:</strong> Drag the orb to rotate manually. Click inside the sphere to trigger shockwave ripples. Settings persist per state.
+    </div>
   </div>
 
   <!-- Zeus Model Router Panel -->
@@ -1169,6 +1678,7 @@ function setOrbState(state) {
     case "error": orb.classList.add("error"); stateDot.classList.add("err"); stateText.textContent = "ERROR"; break;
   }
   if (window._setOrbParticleState) window._setOrbParticleState(state);
+  if (window._hudUpdateTask) window._hudUpdateTask(state);
 }
 
 function updateClock() {
@@ -1374,6 +1884,51 @@ drawParticles();
   }
   window._setOrbParticleState = setOrbParticleState;
 
+  // Exposed config for settings panel
+  const orbCfg = {
+    particleSize: 1.2,
+    basePulseSpeed: 0.02,
+    basePulseIntensity: 0.05,
+    baseRotX: 0.002,
+    baseRotY: 0.005,
+    interactionMode: "repel", // repel, attract, vortex, ripple
+    interactionRadius: 110,
+    interactionStrength: 0.5,
+    volumetric: false,
+    hyperGlow: false,
+  };
+  window._orbCfg = orbCfg;
+
+  // Rebuild particles (for count/volumetric changes)
+  window._orbRebuildParticles = function(count, volumetric) {
+    particles.length = 0;
+    for (let i = 0; i < count; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      let r;
+      if (volumetric) {
+        r = Math.cbrt(Math.random()) * ORB_RADIUS;
+      } else {
+        r = ORB_RADIUS + (Math.random()-0.5) * (ORB_RADIUS*0.04);
+      }
+      particles.push(new Particle(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta),
+        r * Math.cos(phi)
+      ));
+    }
+  };
+
+  // Set custom idle color from preset (only applies during idle state)
+  window._orbSetIdleColor = function(hex) {
+    statePresets.idle.primary = hex;
+    statePresets.listening.primary = hex;
+    if (orbState === "idle" || orbState === "listening") {
+      targetPrimary = hex;
+      tarRgb = hexToRgb(hex);
+    }
+  };
+
   // Main render loop
   function renderOrb() {
     octx.clearRect(0, 0, SIZE, SIZE);
@@ -1387,25 +1942,28 @@ drawParticles();
     const cx = SIZE/2, cy = SIZE/2;
 
     // Ambient glow
-    const ambGlow = octx.createRadialGradient(cx, cy, 10, cx, cy, ORB_RADIUS*1.6);
-    ambGlow.addColorStop(0, `rgba(${cr},${cg},${cb},0.06)`);
-    ambGlow.addColorStop(0.5, `rgba(${cr},${cg},${cb},0.02)`);
+    const glowMul = orbCfg.hyperGlow ? 2.2 : 1.6;
+    const glowA1 = orbCfg.hyperGlow ? 0.12 : 0.06;
+    const glowA2 = orbCfg.hyperGlow ? 0.06 : 0.02;
+    const ambGlow = octx.createRadialGradient(cx, cy, 10, cx, cy, ORB_RADIUS*glowMul);
+    ambGlow.addColorStop(0, `rgba(${cr},${cg},${cb},${glowA1})`);
+    ambGlow.addColorStop(0.5, `rgba(${cr},${cg},${cb},${glowA2})`);
     ambGlow.addColorStop(1, "rgba(0,0,0,0)");
     octx.fillStyle = ambGlow;
     octx.beginPath();
-    octx.arc(cx, cy, ORB_RADIUS*1.6, 0, Math.PI*2);
+    octx.arc(cx, cy, ORB_RADIUS*glowMul, 0, Math.PI*2);
     octx.fill();
 
     // Pulse
-    const pSpeed = orbState === "thinking" ? 0.04 : orbState === "speaking" ? 0.03 : orbState === "error" ? 0.06 : 0.02;
-    const pIntensity = orbState === "thinking" ? 0.08 : orbState === "speaking" ? 0.06 : orbState === "error" ? 0.07 : 0.05;
+    const pSpeed = orbState === "thinking" ? orbCfg.basePulseSpeed*2 : orbState === "speaking" ? orbCfg.basePulseSpeed*1.5 : orbState === "error" ? orbCfg.basePulseSpeed*3 : orbCfg.basePulseSpeed;
+    const pIntensity = orbState === "thinking" ? orbCfg.basePulseIntensity*1.6 : orbState === "speaking" ? orbCfg.basePulseIntensity*1.2 : orbState === "error" ? orbCfg.basePulseIntensity*1.4 : orbCfg.basePulseIntensity;
     pulsePhase += pSpeed * speedMultiplier;
     clickReaction *= 0.94;
     const combinedScale = 1.0 + Math.sin(pulsePhase) * pIntensity + clickReaction;
 
     // Rotation
-    let rotX = 0.002 * speedMultiplier;
-    let rotY = 0.005 * speedMultiplier;
+    let rotX = orbCfg.baseRotX * speedMultiplier;
+    let rotY = orbCfg.baseRotY * speedMultiplier;
     if (drag.active) {
       rotX = drag.vy; rotY = drag.vx;
     } else {
@@ -1431,7 +1989,8 @@ drawParticles();
 
     // Physics — spring + interaction
     const springK = 0.08, damping = 0.88;
-    const interRadius = 110, interStrength = 0.5;
+    const interRadius = orbCfg.interactionRadius, interStrength = orbCfg.interactionStrength;
+    const interMode = orbCfg.interactionMode;
     const now = performance.now();
 
     for (const p of particles) {
@@ -1441,7 +2000,7 @@ drawParticles();
       p.vy += (ty - p.py) * springK;
       p.vz += (tz - p.pz) * springK;
 
-      // Mouse repel
+      // Mouse interaction
       if (mouse.hovering) {
         const zd = FOV / (FOV + p.pz);
         const sx = p.px * zd, sy = p.py * zd;
@@ -1451,9 +2010,23 @@ drawParticles();
           const norm = dist / interRadius;
           const inf = Math.pow(1-norm, 1.5) * interStrength;
           const ang = Math.atan2(dy, dx);
-          p.vx += Math.cos(ang) * inf * 8;
-          p.vy += Math.sin(ang) * inf * 8;
-          p.vz += (Math.random()-0.5) * inf * 12;
+          if (interMode === "repel") {
+            p.vx += Math.cos(ang) * inf * 8;
+            p.vy += Math.sin(ang) * inf * 8;
+            p.vz += (Math.random()-0.5) * inf * 12;
+          } else if (interMode === "attract") {
+            p.vx += Math.cos(ang) * -inf * 6;
+            p.vy += Math.sin(ang) * -inf * 6;
+            p.vz += (Math.random()-0.5) * -inf * 8;
+          } else if (interMode === "vortex") {
+            p.vx += -Math.sin(ang) * inf * 7;
+            p.vy += Math.cos(ang) * inf * 7;
+            p.vz += (Math.random()-0.5) * inf * 4;
+          } else if (interMode === "ripple") {
+            const wave = Math.sin(dist * 0.1 - now * 0.01) * inf * 2;
+            p.vx += Math.cos(ang) * wave;
+            p.vy += Math.sin(ang) * wave;
+          }
         }
       }
 
@@ -1489,7 +2062,7 @@ drawParticles();
       if (dx < -10 || dx > SIZE+10 || dy < -10 || dy > SIZE+10) continue;
 
       const twinkle = Math.sin(now * 0.003 + p.twinkleOffset) * 0.15 + 0.85;
-      const sz = Math.max(0.4, 1.2 * zd * p.sizeMultiplier * twinkle);
+      const sz = Math.max(0.4, orbCfg.particleSize * zd * p.sizeMultiplier * twinkle);
       const normZ = (p.pz + ORB_RADIUS) / (2 * ORB_RADIUS);
       const alpha = Math.max(0.08, Math.min(1.0, (1.1 - normZ*0.7) * twinkle));
 
@@ -1503,6 +2076,93 @@ drawParticles();
     requestAnimationFrame(renderOrb);
   }
   renderOrb();
+})();
+
+// ===== ORB SETTINGS PANEL WIRING =====
+(function() {
+  const panel = document.getElementById("orb-settings-panel");
+  const btn = document.getElementById("orb-settings-btn");
+  const closeBtn = document.getElementById("os-close");
+
+  // Toggle panel
+  btn.addEventListener("click", function(e) {
+    e.stopPropagation();
+    const isOpen = panel.classList.toggle("open");
+    btn.classList.toggle("active", isOpen);
+  });
+  closeBtn.addEventListener("click", function() {
+    panel.classList.remove("open");
+    btn.classList.remove("active");
+  });
+
+  // Color presets
+  const presetColors = {
+    emerald: "#05f470", cyan: "#00f0ff", violet: "#b92eff", solar: "#ff5900", gold: "#ffd900"
+  };
+  document.getElementById("os-presets").addEventListener("click", function(e) {
+    const pbtn = e.target.closest("[data-preset]");
+    if (!pbtn) return;
+    document.querySelectorAll(".os-preset-btn").forEach(b => b.classList.remove("active"));
+    pbtn.classList.add("active");
+    const color = presetColors[pbtn.dataset.preset];
+    if (color && window._orbSetIdleColor) window._orbSetIdleColor(color);
+  });
+
+  // Interaction modes
+  document.getElementById("os-modes").addEventListener("click", function(e) {
+    const mbtn = e.target.closest("[data-mode]");
+    if (!mbtn) return;
+    document.querySelectorAll(".os-mode-btn").forEach(b => b.classList.remove("active"));
+    mbtn.classList.add("active");
+    if (window._orbCfg) window._orbCfg.interactionMode = mbtn.dataset.mode;
+  });
+
+  // Sliders
+  const countSlider = document.getElementById("os-count");
+  const sizeSlider = document.getElementById("os-size");
+  const pulseSlider = document.getElementById("os-pulse");
+  const rotSlider = document.getElementById("os-rot");
+
+  countSlider.addEventListener("input", function() {
+    document.getElementById("osv-count").textContent = parseInt(this.value).toLocaleString();
+    if (window._orbRebuildParticles) window._orbRebuildParticles(parseInt(this.value), window._orbCfg.volumetric);
+  });
+  sizeSlider.addEventListener("input", function() {
+    document.getElementById("osv-size").textContent = parseFloat(this.value).toFixed(1) + " px";
+    if (window._orbCfg) window._orbCfg.particleSize = parseFloat(this.value);
+  });
+  pulseSlider.addEventListener("input", function() {
+    document.getElementById("osv-pulse").textContent = parseFloat(this.value).toFixed(1);
+    if (window._orbCfg) window._orbCfg.basePulseSpeed = parseFloat(this.value) / 100;
+  });
+  rotSlider.addEventListener("input", function() {
+    document.getElementById("osv-rot").textContent = parseInt(this.value);
+    if (window._orbCfg) {
+      window._orbCfg.baseRotY = parseInt(this.value) / 1000;
+      window._orbCfg.baseRotX = parseInt(this.value) / 2500;
+    }
+  });
+
+  // Toggles
+  document.getElementById("os-vol-toggle").addEventListener("click", function() {
+    this.classList.toggle("on");
+    const isOn = this.classList.contains("on");
+    if (window._orbCfg) window._orbCfg.volumetric = isOn;
+    const count = parseInt(countSlider.value);
+    if (window._orbRebuildParticles) window._orbRebuildParticles(count, isOn);
+  });
+  document.getElementById("os-glow-toggle").addEventListener("click", function() {
+    this.classList.toggle("on");
+    if (window._orbCfg) window._orbCfg.hyperGlow = this.classList.contains("on");
+  });
+
+  // Close panel on outside click
+  document.addEventListener("click", function(e) {
+    if (panel.classList.contains("open") && !panel.contains(e.target) && e.target !== btn) {
+      panel.classList.remove("open");
+      btn.classList.remove("active");
+    }
+  });
 })();
 
 function addMsg(text, role, time) {
@@ -1952,20 +2612,69 @@ async function speakText(text, emotion) {
 }
 
 // ===== REAL SYSTEM STATS =====
+function hudDotClass(val, warn, crit) {
+  const dot = val > crit ? "crit" : val > warn ? "warn" : "";
+  return dot;
+}
+function setHudBar(barEl, dotEl, val, warnAt, critAt) {
+  barEl.style.width = Math.min(100, Math.max(0, val)) + "%";
+  barEl.className = "hud-detail-bar-fill" + (val > critAt ? " crit" : val > warnAt ? " warn" : "");
+  dotEl.className = "hud-hex-dot" + (val > critAt ? " crit" : val > warnAt ? " warn" : "");
+}
+
 async function updateRealStats() {
   try {
     const res = await fetch(API + "/system-stats"); const s = await res.json();
     if (s.cpu >= 0) {
       document.getElementById("w-cpu").textContent = s.cpu + "%";
       document.getElementById("w-cpu").style.color = s.cpu > 80 ? "var(--error)" : s.cpu > 50 ? "var(--warning)" : "var(--text)";
+      document.getElementById("hud-cpu-val").textContent = s.cpu + "%";
+      setHudBar(document.getElementById("hud-cpu-bar"), document.getElementById("hud-cpu-dot"), s.cpu, 60, 85);
     }
     if (s.ram_percent >= 0) {
       document.getElementById("w-ram").textContent = s.ram_percent + "%";
       document.getElementById("w-ram").style.color = s.ram_percent > 85 ? "var(--error)" : s.ram_percent > 60 ? "var(--warning)" : "var(--text)";
+      document.getElementById("hud-ram-val").textContent = s.ram_percent + "% (" + s.ram_used + "/" + s.ram_total + " GB)";
+      setHudBar(document.getElementById("hud-ram-bar"), document.getElementById("hud-ram-dot"), s.ram_percent, 70, 90);
     }
+    // GPU
+    if (s.gpu_util >= 0) {
+      document.getElementById("hud-gpu-val").textContent = s.gpu_util + "% | " + s.gpu_temp + "°C";
+      setHudBar(document.getElementById("hud-gpu-bar"), document.getElementById("hud-gpu-dot"), s.gpu_util, 70, 90);
+    } else {
+      document.getElementById("hud-gpu-val").textContent = "N/A";
+    }
+    // Disk
+    if (s.disk_percent >= 0) {
+      document.getElementById("hud-disk-val").textContent = s.disk_percent + "% (" + s.disk_free + " GB free)";
+      setHudBar(document.getElementById("hud-disk-bar"), document.getElementById("hud-disk-dot"), s.disk_percent, 75, 90);
+    }
+    // Network
+    const netTotal = (s.net_down_kbs || 0) + (s.net_up_kbs || 0);
+    document.getElementById("hud-net-val").textContent = "↓" + (s.net_down_kbs||0) + " ↑" + (s.net_up_kbs||0) + " KB/s";
+    const netBar = Math.min(100, netTotal / 10);
+    document.getElementById("hud-net-bar").style.width = Math.max(3, netBar) + "%";
+    document.getElementById("hud-net-dot").className = "hud-hex-dot" + (netTotal > 0 ? "" : " warn");
+    // Processes
+    if (s.process_count) document.getElementById("hud-proc-val").textContent = s.process_count;
+    // Uptime
+    if (s.uptime && s.uptime !== "unknown") document.getElementById("hud-uptime-val").textContent = s.uptime;
   } catch(e) {}
 }
 updateRealStats(); setInterval(updateRealStats, 5000);
+
+// HUD task tracker — updates when orb state changes
+(function() {
+  const origSetOrbState = window.setOrbState || function(){};
+  const taskEl = document.getElementById("hud-task-val");
+  const taskDot = document.getElementById("hud-task-dot");
+  const _origFn = setOrbState;
+  window._hudUpdateTask = function(state) {
+    const labels = { idle: "IDLE", listening: "LISTENING", thinking: "PROCESSING", speaking: "SPEAKING", error: "ERROR" };
+    if (taskEl) taskEl.textContent = labels[state] || "IDLE";
+    if (taskDot) taskDot.className = "hud-hex-dot" + (state === "error" ? " crit" : state === "thinking" ? " warn" : "");
+  };
+})();
 
 // ===== DESKTOP NOTIFICATIONS =====
 async function sendNotification(title, msg) {
