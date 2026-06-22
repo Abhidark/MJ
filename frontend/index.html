@@ -103,12 +103,12 @@
 
   .dash-grid {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 1fr;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(40px, auto);
     gap: 12px;
     padding: 12px 16px;
     flex: 1 0 auto;
     min-width: 0;
-    grid-auto-flow: dense;
   }
 
   .dash-card {
@@ -482,7 +482,17 @@
     animation: blink 2s ease-in-out infinite;
   }
 
-  .card-span-2 { grid-column: span 2; }
+  /* 12-col default card positions */
+  [data-card-id="ai-core"]     { grid-column: 1 / span 4;  grid-row: 1 / span 5; }
+  [data-card-id="live-intel"]  { grid-column: 5 / span 4;  grid-row: 1 / span 5; }
+  [data-card-id="quick-cmd"]   { grid-column: 9 / span 4;  grid-row: 1 / span 5; }
+  [data-card-id="sys-monitor"] { grid-column: 1 / span 3;  grid-row: 6 / span 3; }
+  [data-card-id="orb"]         { grid-column: 4 / span 6;  grid-row: 6 / span 6; }
+  [data-card-id="sys-stats"]   { grid-column: 10 / span 3; grid-row: 6 / span 3; }
+  [data-card-id="llm-status"]  { grid-column: 1 / span 12; grid-row: 12 / span 3; }
+  [data-card-id="smart-suggest"]{ grid-column: 1 / span 12; grid-row: 15 / span 2; }
+  [data-card-id="quick-actions"]{ grid-column: 1 / span 12; grid-row: 17 / span 2; }
+  .card-span-2 { grid-column: span 6; }
   .card-span-row { grid-column: 1 / -1; }
   .dash-card.orb-card { background: transparent !important; border-color: transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
   .dash-card.orb-card::before { display: none !important; }
@@ -1196,13 +1206,28 @@
   .proc-panel-close:hover { background: rgba(231,76,60,0.15); color: #e74c3c; }
 
   .proc-table-head {
-    display: grid; grid-template-columns: 2fr 0.8fr 1fr 1fr;
+    display: grid; grid-template-columns: 2fr 0.8fr 1fr 1fr 0.8fr;
     padding: 8px 18px; gap: 8px;
     border-bottom: 1px solid rgba(255,255,255,0.04);
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; text-transform: uppercase;
     letter-spacing: 1px; color: rgba(255,255,255,0.25);
   }
+  .proc-sort-btn {
+    background: none; border: none; color: inherit; font: inherit;
+    cursor: pointer; padding: 0; text-transform: uppercase; letter-spacing: 1px;
+    transition: color 0.2s;
+  }
+  .proc-sort-btn:hover { color: rgba(0,212,255,0.7); }
+  .proc-sort-btn.active { color: rgba(0,212,255,0.9); }
+  .proc-kill-btn {
+    padding: 2px 8px; border-radius: 4px; font-size: 9px;
+    background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3);
+    color: #e74c3c; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 700;
+    transition: all 0.2s;
+  }
+  .proc-kill-btn:hover { background: rgba(231,76,60,0.2); color: #ff6b6b; }
 
   .proc-list {
     flex: 1; overflow-y: auto; padding: 4px 0;
@@ -1211,7 +1236,7 @@
   .proc-list::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.15); border-radius: 4px; }
 
   .proc-row {
-    display: grid; grid-template-columns: 2fr 0.8fr 1fr 1fr;
+    display: grid; grid-template-columns: 2fr 0.8fr 1fr 1fr 0.8fr;
     padding: 7px 18px; gap: 8px;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-bottom: 1px solid rgba(255,255,255,0.02);
@@ -2207,7 +2232,7 @@
     gap: 14px;
   }
   body.dash-editing .dash-grid {
-    grid-auto-flow: dense;
+    /* explicit placement in 12-col mode */
   }
   body.dash-editing .dash-grid > * {
     outline: 2px dashed rgba(0,212,255,0.3);
@@ -2314,7 +2339,38 @@
     min-height: 60px;
   }
 
-  /* ===== RESPONSIVE BREAKPOINTS ===== */
+
+  /* 12-col grid overlay in edit mode */
+  body.dash-editing .dash-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(0,212,255,0.04) 0px, rgba(0,212,255,0.04) 1px, transparent 1px, transparent calc(100% / 12)),
+      repeating-linear-gradient(0deg, rgba(0,212,255,0.02) 0px, rgba(0,212,255,0.02) 1px, transparent 1px, transparent 40px);
+    background-size: 100% 100%;
+  }
+  body.dash-editing .dash-grid {
+    position: relative;
+  }
+  body.dash-editing .dash-grid > [data-card-id] {
+    z-index: 1;
+  }
+  /* Grid position indicator badge */
+  .grid-pos-badge {
+    display: none;
+    position: absolute; bottom: 4px; left: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: rgba(0,212,255,0.5);
+    background: rgba(0,10,30,0.8);
+    padding: 2px 6px; border-radius: 4px;
+    border: 1px solid rgba(0,212,255,0.15);
+    z-index: 55; pointer-events: none;
+    letter-spacing: 1px;
+  }
+  body.dash-editing .grid-pos-badge { display: block; }
 
   /* ===== RESPONSIVE BREAKPOINTS ===== */
 
@@ -2338,9 +2394,16 @@
     #chat-panel.hidden { margin-right: -340px; }
     .chat-toggle-btn { right: 340px; }
     .chat-toggle-btn.panel-hidden { right: 0; }
-    .dash-grid { grid-template-columns: 1fr 1.5fr; gap: 10px; padding: 10px; }
-    .card-span-2 { grid-column: span 2; }
-    .card-span-row { grid-column: 1 / -1; }
+    .dash-grid { grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 10px; }
+    [data-card-id="ai-core"]     { grid-column: 1 / span 3; grid-row: auto; }
+    [data-card-id="live-intel"]  { grid-column: 4 / span 3; grid-row: auto; }
+    [data-card-id="quick-cmd"]   { grid-column: 1 / span 3; grid-row: auto; }
+    [data-card-id="sys-monitor"] { grid-column: 4 / span 3; grid-row: auto; }
+    [data-card-id="orb"]         { grid-column: 1 / span 6; grid-row: auto; }
+    [data-card-id="sys-stats"]   { grid-column: 1 / span 3; grid-row: auto; }
+    [data-card-id="llm-status"]  { grid-column: 1 / span 6; grid-row: auto; }
+    [data-card-id="smart-suggest"]{ grid-column: 1 / span 6; grid-row: auto; }
+    [data-card-id="quick-actions"]{ grid-column: 1 / span 6; grid-row: auto; }
     .top-bar .logo { font-size: 18px; letter-spacing: 3px; }
     .top-bar-widgets { gap: 10px; }
     .tbw-item { min-width: 90px; }
@@ -2350,8 +2413,8 @@
   @media (max-width: 900px) {
     .hud-sidebar { display: none; }
     #dashboard { margin-left: 0; }
-    .dash-grid { grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; }
-    .card-span-2 { grid-column: span 2; }
+    .dash-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; }
+    [data-card-id] { grid-column: 1 / span 4 !important; grid-row: auto !important; }
     #chat-panel { width: 300px; }
     #chat-panel.hidden { margin-right: -300px; }
     .chat-toggle-btn { right: 300px; }
@@ -2368,7 +2431,7 @@
   /* Tablet / narrow screens */
   @media (max-width: 768px) {
     .dash-grid { grid-template-columns: 1fr; gap: 6px; padding: 6px; }
-    .card-span-2, .card-span-row { grid-column: span 1; }
+    [data-card-id] { grid-column: 1 / -1 !important; grid-row: auto !important; }
     #chat-panel {
       position: fixed; top: 0; right: 0; bottom: 0;
       width: 85vw !important; max-width: 360px;
@@ -2553,10 +2616,11 @@
     <button class="proc-panel-close" id="proc-panel-close">&#10005;</button>
   </div>
   <div class="proc-table-head">
-    <span>Name</span>
+    <button class="proc-sort-btn active" data-sort="name">Name &#9660;</button>
     <span>PID</span>
-    <span>CPU (s)</span>
-    <span>RAM (MB)</span>
+    <button class="proc-sort-btn" data-sort="cpu">CPU (s)</button>
+    <button class="proc-sort-btn" data-sort="ram">RAM (MB)</button>
+    <span>Actions</span>
   </div>
   <div class="proc-list" id="proc-list">
     <div class="proc-loading">Loading processes...</div>
@@ -2829,7 +2893,7 @@
     </div>
 
     <!-- Center: Orb Section (all IDs preserved, now spans center+right) -->
-    <div class="dash-card card-span-2 orb-card" data-card-id="orb" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;overflow:visible;position:relative;grid-row:span 2;">
+    <div class="dash-card orb-card" data-card-id="orb" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;overflow:visible;position:relative;">
       <div class="orb-section">
         <div class="orb-container" id="orb-container">
           <div class="orb-ring"></div>
@@ -3046,7 +3110,7 @@
     </div>
 
     <!-- LLM Status Card (Zeus Panel - all IDs preserved) -->
-    <div class="dash-card card-span-2" data-card-id="llm-status">
+    <div class="dash-card" data-card-id="llm-status">
       <div class="dash-card-title">LLM Status <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span><span class="expand-arrow">&#9660;</span></div>
       <div class="zeus-models">
         <div class="zeus-model" id="zm-qwen3-8b" data-model="qwen3:8b">
@@ -3118,7 +3182,7 @@
 
 
     <!-- Smart Suggestions Card -->
-    <div class="dash-card card-span-row" id="suggestions-card" data-card-id="smart-suggest">
+    <div class="dash-card" id="suggestions-card" data-card-id="smart-suggest">
       <div class="dash-card-title">Smart Suggestions <span class="live-dot"></span></div>
       <div id="suggestions-list" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
         <div style="color:var(--text-secondary);font-size:11px;padding:8px;">Loading suggestions...</div>
@@ -3126,7 +3190,7 @@
     </div>
 
     <!-- Quick Actions Row (all qa-btn elements preserved) -->
-    <div class="dash-card card-span-row" data-card-id="quick-actions" style="padding:10px 16px;">
+    <div class="dash-card" data-card-id="quick-actions" style="padding:10px 16px;">
       <div class="quick-actions">
         <button class="qa-btn" data-cmd="open chrome">Chrome</button>
         <button class="qa-btn" data-cmd="open notepad">Notepad</button>
@@ -4972,6 +5036,62 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
   const procClose = document.getElementById("proc-panel-close");
 
   let procOpen = false;
+  let procData = [];
+  let sortBy = "cpu";
+  let sortOrder = "desc";
+
+  function renderProcs() {
+    const sorted = [...procData].sort((a, b) => {
+      let va, vb;
+      if (sortBy === "name") { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); return sortOrder === "asc" ? va.localeCompare(vb) : vb.localeCompare(va); }
+      if (sortBy === "cpu") { va = a.cpu; vb = b.cpu; }
+      else { va = a.ram_mb; vb = b.ram_mb; }
+      return sortOrder === "asc" ? va - vb : vb - va;
+    });
+    if (sorted.length === 0) { procList.innerHTML = '<div class="proc-loading">No processes found</div>'; return; }
+    procList.innerHTML = sorted.map(p => {
+      const cpuCls = p.cpu > 300 ? "crit" : p.cpu > 60 ? "high" : "";
+      const ramCls = p.ram_mb > 1000 ? "high" : "";
+      return `<div class="proc-row">
+        <span class="proc-name" title="${p.name} (${p.status})">${p.name}</span>
+        <span class="proc-pid">${p.pid}</span>
+        <span class="proc-cpu ${cpuCls}">${p.cpu}s</span>
+        <span class="proc-ram ${ramCls}">${p.ram_mb} MB</span>
+        <span style="text-align:center"><button class="proc-kill-btn" data-pid="${p.pid}" data-pname="${p.name}">Kill</button></span>
+      </div>`;
+    }).join("");
+    // Update sort button indicators
+    procPanel.querySelectorAll(".proc-sort-btn").forEach(btn => {
+      const f = btn.getAttribute("data-sort");
+      btn.classList.toggle("active", f === sortBy);
+      const arrow = f === sortBy ? (sortOrder === "asc" ? " ▲" : " ▼") : "";
+      btn.textContent = btn.textContent.replace(/ [▲▼]$/, "") + arrow;
+    });
+  }
+
+  // Sort header clicks
+  procPanel.querySelectorAll(".proc-sort-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const field = this.getAttribute("data-sort");
+      if (sortBy === field) sortOrder = sortOrder === "asc" ? "desc" : "asc";
+      else { sortBy = field; sortOrder = "desc"; }
+      renderProcs();
+    });
+  });
+
+  // Kill process (delegated)
+  procList.addEventListener("click", async function(e) {
+    const btn = e.target.closest(".proc-kill-btn");
+    if (!btn) return;
+    const pid = btn.getAttribute("data-pid");
+    const pname = btn.getAttribute("data-pname");
+    if (!confirm('Terminate "' + pname + '" (PID: ' + pid + ')?')) return;
+    try {
+      await fetch(API + "/kill-process/" + pid, { method: "POST" });
+      procData = procData.filter(p => p.pid != pid);
+      renderProcs();
+    } catch(e) { alert("Failed to kill process"); }
+  });
 
   procClick.addEventListener("click", async function() {
     if (procOpen) { procPanel.classList.remove("open"); procOpen = false; return; }
@@ -4980,24 +5100,12 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
     try {
       const res = await fetch(API + "/top-processes");
       const data = await res.json();
-      const procs = data.processes || [];
-      if (procs.length === 0) { procList.innerHTML = '<div class="proc-loading">No processes found</div>'; return; }
-      procList.innerHTML = procs.map(p => {
-        const cpuCls = p.cpu > 300 ? "crit" : p.cpu > 60 ? "high" : "";
-        const ramCls = p.ram_mb > 1000 ? "high" : "";
-        return `<div class="proc-row">
-          <span class="proc-name" title="${p.name} (${p.status})">${p.name}</span>
-          <span class="proc-pid">${p.pid}</span>
-          <span class="proc-cpu ${cpuCls}">${p.cpu}s</span>
-          <span class="proc-ram ${ramCls}">${p.ram_mb} MB</span>
-        </div>`;
-      }).join("");
+      procData = data.processes || [];
+      renderProcs();
     } catch(e) { procList.innerHTML = '<div class="proc-loading">Error loading processes</div>'; }
   });
 
   procClose.addEventListener("click", function() { procPanel.classList.remove("open"); procOpen = false; });
-
-  // Close on Escape
   document.addEventListener("keydown", function(e) { if (e.key === "Escape" && procOpen) { procPanel.classList.remove("open"); procOpen = false; } });
 })();
 
@@ -5208,7 +5316,7 @@ connectAlertStream();
 
 input.focus();
 
-// ===== DASHBOARD EDITOR =====
+// ===== DASHBOARD EDITOR (12-COL GRID) =====
 (function(){
   const editBtn = document.getElementById("dash-edit-btn");
   const saveBtn = document.getElementById("dash-save-btn");
@@ -5217,19 +5325,76 @@ input.focus();
   if (!editBtn || !grid) return;
 
   let editing = false;
-  let savedHTML = null;
+  let savedState = null;
   let dragCard = null;
-  let placeholder = null;
 
-  // Get all direct grid children (cards + wrapper divs)
-  function getGridItems() {
-    return Array.from(grid.children);
+  // Default 12-col positions (matches initialWidgets.ts from RGL version)
+  const DEFAULT_POS = {
+    "ai-core":      { col:1,  row:1,  w:4,  h:5 },
+    "live-intel":   { col:5,  row:1,  w:4,  h:5 },
+    "quick-cmd":    { col:9,  row:1,  w:4,  h:5 },
+    "sys-monitor":  { col:1,  row:6,  w:3,  h:3 },
+    "orb":          { col:4,  row:6,  w:6,  h:6 },
+    "sys-stats":    { col:10, row:6,  w:3,  h:3 },
+    "llm-status":   { col:1,  row:12, w:12, h:3 },
+    "smart-suggest":{ col:1,  row:15, w:12, h:2 },
+    "quick-actions":{ col:1,  row:17, w:12, h:2 }
+  };
+
+  function getCards() {
+    return Array.from(grid.querySelectorAll("[data-card-id]"));
   }
 
-  // Find closest grid item from a click target
-  function closestGridItem(el) {
-    while (el && el.parentElement !== grid) el = el.parentElement;
-    return el;
+  // Apply grid position to a card element
+  function applyPos(el, pos) {
+    el.style.gridColumn = pos.col + " / span " + pos.w;
+    el.style.gridRow = pos.row + " / span " + pos.h;
+  }
+
+  // Read current grid position from a card element
+  function readPos(el) {
+    const cid = el.getAttribute("data-card-id");
+    const cs = getComputedStyle(el);
+    const gc = cs.gridColumnStart;
+    const gr = cs.gridRowStart;
+    const gce = cs.gridColumnEnd;
+    const gre = cs.gridRowEnd;
+    // Parse "X / span W" or just numbers
+    let col = parseInt(gc) || (DEFAULT_POS[cid] ? DEFAULT_POS[cid].col : 1);
+    let row = parseInt(gr) || (DEFAULT_POS[cid] ? DEFAULT_POS[cid].row : 1);
+    let w, h;
+    if (gce && gce.includes("span")) {
+      w = parseInt(gce.replace(/[^0-9]/g, "")) || 4;
+    } else {
+      w = (parseInt(gce) || (col + 4)) - col;
+    }
+    if (gre && gre.includes("span")) {
+      h = parseInt(gre.replace(/[^0-9]/g, "")) || 3;
+    } else {
+      h = (parseInt(gre) || (row + 3)) - row;
+    }
+    return { col, row, w: Math.max(1, w), h: Math.max(1, h) };
+  }
+
+  // Update position badge text
+  function updateBadge(el) {
+    const badge = el.querySelector(".grid-pos-badge");
+    if (!badge) return;
+    const p = readPos(el);
+    badge.textContent = "C" + p.col + " R" + p.row + " " + p.w + "x" + p.h;
+  }
+
+  // Calculate grid cell from mouse position
+  function getGridCell(clientX, clientY) {
+    const rect = grid.getBoundingClientRect();
+    const x = clientX - rect.left - parseFloat(getComputedStyle(grid).paddingLeft);
+    const y = clientY - rect.top - parseFloat(getComputedStyle(grid).paddingTop);
+    const gap = 12;
+    const colW = (rect.width - parseFloat(getComputedStyle(grid).paddingLeft) - parseFloat(getComputedStyle(grid).paddingRight) - 11 * gap) / 12;
+    const col = Math.max(1, Math.min(12, Math.floor(x / (colW + gap)) + 1));
+    const rowH = 40 + gap; // minmax(40px, auto) + gap
+    const row = Math.max(1, Math.floor(y / rowH) + 1);
+    return { col, row };
   }
 
   function enterEditMode() {
@@ -5238,82 +5403,117 @@ input.focus();
     editBtn.style.display = "none";
     saveBtn.style.display = "inline-flex";
     cancelBtn.style.display = "inline-flex";
-    savedHTML = grid.innerHTML;
 
-    // Tag each grid item + add toolbars + drag handles
-    getGridItems().forEach((item, i) => {
-      item.setAttribute("data-grid-idx", i);
-      item.style.position = "relative";
+    // Save current state for cancel
+    savedState = {};
+    getCards().forEach(el => {
+      const cid = el.getAttribute("data-card-id");
+      savedState[cid] = {
+        gridColumn: el.style.gridColumn,
+        gridRow: el.style.gridRow,
+        background: el.style.background,
+        minHeight: el.style.minHeight
+      };
+    });
 
-      // Add drag handle to each grid item (top bar)
-      if (!item.querySelector(".card-drag-handle")) {
+    // Add drag handles + toolbars + position badges
+    getCards().forEach(el => {
+      el.style.position = "relative";
+
+      // Drag handle
+      if (!el.querySelector(".card-drag-handle")) {
         const dragH = document.createElement("div");
         dragH.className = "card-drag-handle";
-        item.insertBefore(dragH, item.firstChild);
-
-        // Drag logic on handle
+        el.insertBefore(dragH, el.firstChild);
         dragH.addEventListener("mousedown", function(e) {
           e.preventDefault();
           e.stopPropagation();
-          startDrag(item, e);
+          startDrag(el, e);
         });
       }
 
-      // Add toolbar to dash-cards inside
-      const cards = item.classList.contains("dash-card") ? [item] : item.querySelectorAll(".dash-card");
-      cards.forEach(card => {
-        if (card.querySelector(".card-edit-toolbar")) return;
-        card.style.position = "relative";
+      // Position badge
+      if (!el.querySelector(".grid-pos-badge")) {
+        const badge = document.createElement("div");
+        badge.className = "grid-pos-badge";
+        el.appendChild(badge);
+        updateBadge(el);
+      }
 
+      // Edit toolbar
+      if (!el.querySelector(".card-edit-toolbar")) {
         const toolbar = document.createElement("div");
         toolbar.className = "card-edit-toolbar";
         toolbar.innerHTML =
-          '<input type="color" value="#020c19" title="Card Color" class="card-color-pick">' +
-          '<button title="Wider" class="card-wider">&#8644;</button>' +
-          '<button title="Taller" class="card-taller">&#8645;</button>' +
-          '<button title="Reset Size" class="card-reset-size">&#8634;</button>';
-        card.appendChild(toolbar);
-
-        const handle = document.createElement("div");
-        handle.className = "card-resize-handle";
-        handle.textContent = "⤡";
-        card.appendChild(handle);
-
-        // Color
-        toolbar.querySelector(".card-color-pick").addEventListener("input", function(e) {
-          card.style.background = e.target.value;
-        });
-        // Wider
-        toolbar.querySelector(".card-wider").addEventListener("click", function() {
-          const target = closestGridItem(card) || card;
-          if (!target.classList.contains("card-span-2") && !target.classList.contains("card-span-row")) {
-            target.classList.add("card-span-2");
-          } else if (target.classList.contains("card-span-2")) {
-            target.classList.remove("card-span-2");
-            target.classList.add("card-span-row");
-          } else {
-            target.classList.remove("card-span-row");
-          }
-        });
-        // Taller
-        toolbar.querySelector(".card-taller").addEventListener("click", function() {
-          card.style.minHeight = (card.offsetHeight + 50) + "px";
-        });
-        // Reset
-        toolbar.querySelector(".card-reset-size").addEventListener("click", function() {
-          card.style.minHeight = "";
-          const target = closestGridItem(card) || card;
-          target.classList.remove("card-span-2", "card-span-row");
-        });
+          '<input type="color" value="#020c19" title="Card BG Color" class="card-color-pick">' +
+          '<button title="Wider (+1 col)" class="card-wider">&#8594;</button>' +
+          '<button title="Narrower (-1 col)" class="card-narrower">&#8592;</button>' +
+          '<button title="Taller (+1 row)" class="card-taller">&#8595;</button>' +
+          '<button title="Shorter (-1 row)" class="card-shorter">&#8593;</button>' +
+          '<button title="Reset to default" class="card-reset-size">&#8634;</button>';
+        el.appendChild(toolbar);
 
         // Resize handle
+        const handle = document.createElement("div");
+        handle.className = "card-resize-handle";
+        handle.textContent = "\u2921";
+        el.appendChild(handle);
+
+        // Color picker
+        toolbar.querySelector(".card-color-pick").addEventListener("input", function(ev) {
+          if (!el.classList.contains("orb-card")) el.style.background = ev.target.value;
+        });
+
+        // Wider
+        toolbar.querySelector(".card-wider").addEventListener("click", function() {
+          const p = readPos(el);
+          if (p.col + p.w <= 12) { p.w++; applyPos(el, p); updateBadge(el); }
+        });
+
+        // Narrower
+        toolbar.querySelector(".card-narrower").addEventListener("click", function() {
+          const p = readPos(el);
+          if (p.w > 1) { p.w--; applyPos(el, p); updateBadge(el); }
+        });
+
+        // Taller
+        toolbar.querySelector(".card-taller").addEventListener("click", function() {
+          const p = readPos(el);
+          p.h++; applyPos(el, p); updateBadge(el);
+        });
+
+        // Shorter
+        toolbar.querySelector(".card-shorter").addEventListener("click", function() {
+          const p = readPos(el);
+          if (p.h > 1) { p.h--; applyPos(el, p); updateBadge(el); }
+        });
+
+        // Reset
+        toolbar.querySelector(".card-reset-size").addEventListener("click", function() {
+          const cid = el.getAttribute("data-card-id");
+          const def = DEFAULT_POS[cid];
+          if (def) { applyPos(el, def); updateBadge(el); }
+          el.style.background = "";
+          el.style.minHeight = "";
+        });
+
+        // Drag-resize handle
         handle.addEventListener("mousedown", function(e) {
           e.preventDefault(); e.stopPropagation();
           const startX = e.clientX, startY = e.clientY;
-          const startW = card.offsetWidth, startH = card.offsetHeight;
+          const startPos = readPos(el);
+          const rect = grid.getBoundingClientRect();
+          const gap = 12;
+          const colW = (rect.width - parseFloat(getComputedStyle(grid).paddingLeft) - parseFloat(getComputedStyle(grid).paddingRight) - 11 * gap) / 12;
+          const rowH = 40 + gap;
+
           function onMove(ev) {
-            card.style.width = Math.max(150, startW + (ev.clientX - startX)) + "px";
-            card.style.minHeight = Math.max(80, startH + (ev.clientY - startY)) + "px";
+            const dx = ev.clientX - startX;
+            const dy = ev.clientY - startY;
+            const newW = Math.max(1, Math.min(13 - startPos.col, startPos.w + Math.round(dx / (colW + gap))));
+            const newH = Math.max(1, startPos.h + Math.round(dy / rowH));
+            applyPos(el, { col: startPos.col, row: startPos.row, w: newW, h: newH });
+            updateBadge(el);
           }
           function onUp() {
             document.removeEventListener("mousemove", onMove);
@@ -5322,7 +5522,7 @@ input.focus();
           document.addEventListener("mousemove", onMove);
           document.addEventListener("mouseup", onUp);
         });
-      });
+      }
     });
   }
 
@@ -5331,102 +5531,55 @@ input.focus();
     const rect = item.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
-    let lastTarget = null;
-    let swapThrottle = false;
+    const startPos = readPos(item);
 
-    // Create ghost clone that follows mouse
-    var ghost = item.cloneNode(true);
+    // Create ghost
+    const ghost = item.cloneNode(true);
     ghost.id = "drag-ghost";
-    ghost.style.cssText = "position:fixed;pointer-events:none;z-index:99999;opacity:0.75;width:" + rect.width + "px;height:" + rect.height + "px;left:" + rect.left + "px;top:" + rect.top + "px;border:2px solid #ffd900;border-radius:12px;box-shadow:0 0 30px rgba(255,217,0,0.3);transition:none;";
+    ghost.style.cssText = "position:fixed;pointer-events:none;z-index:99999;opacity:0.7;width:" +
+      rect.width + "px;height:" + rect.height + "px;left:" + rect.left + "px;top:" + rect.top +
+      "px;border:2px solid #ffd900;border-radius:12px;box-shadow:0 0 30px rgba(255,217,0,0.3);transition:none;";
     document.body.appendChild(ghost);
 
-    // Create placeholder in original position
-    var placeholder = document.createElement("div");
+    // Create placeholder at current position
+    const placeholder = document.createElement("div");
     placeholder.className = "drag-placeholder";
-    placeholder.style.cssText = "border:2px dashed rgba(255,217,0,0.3);border-radius:12px;background:rgba(255,217,0,0.03);min-height:" + rect.height + "px;";
-    // Copy span classes to placeholder
-    if (item.classList.contains("card-span-2")) placeholder.classList.add("card-span-2");
-    if (item.classList.contains("card-span-row")) placeholder.classList.add("card-span-row");
+    placeholder.style.gridColumn = startPos.col + " / span " + startPos.w;
+    placeholder.style.gridRow = startPos.row + " / span " + startPos.h;
+    placeholder.style.borderRadius = "12px";
+    grid.appendChild(placeholder);
 
-    // Hide original, insert placeholder
-    dragCard.style.display = "none";
-    grid.insertBefore(placeholder, dragCard);
+    // Hide original
+    item.style.opacity = "0";
 
     function onMove(ev) {
-      // Move ghost with mouse
       ghost.style.left = (ev.clientX - offsetX) + "px";
       ghost.style.top = (ev.clientY - offsetY) + "px";
 
-      if (swapThrottle) return;
-
-      // Find which grid item mouse is over
-      const items = Array.from(grid.children).filter(el =>
-        el !== dragCard && el !== placeholder && el.id !== "drag-ghost"
-      );
-
-      // Clear previous highlights
-      items.forEach(t => t.classList.remove("drop-indicator", "drag-shifting"));
-
-      for (const target of items) {
-        const r = target.getBoundingClientRect();
-        if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
-          if (target === lastTarget) {
-            target.classList.add("drop-indicator");
-            return;
-          }
-          lastTarget = target;
-          target.classList.add("drop-indicator");
-
-          // Throttle swaps for smooth animation
-          swapThrottle = true;
-
-          // Add shifting class to nearby items for animation
-          items.forEach(t => {
-            if (t !== target) t.classList.add("drag-shifting");
-          });
-
-          setTimeout(() => {
-            // Move placeholder to target position
-            const placeholderIdx = Array.from(grid.children).indexOf(placeholder);
-            const targetIdx = Array.from(grid.children).indexOf(target);
-            if (placeholderIdx < targetIdx) {
-              grid.insertBefore(placeholder, target.nextSibling);
-            } else {
-              grid.insertBefore(placeholder, target);
-            }
-
-            // Remove shifting class
-            setTimeout(() => {
-              items.forEach(t => t.classList.remove("drag-shifting"));
-              swapThrottle = false;
-            }, 150);
-          }, 50);
-
-          break;
-        }
-      }
+      // Snap placeholder to grid cell under mouse
+      const cell = getGridCell(ev.clientX, ev.clientY);
+      const newCol = Math.max(1, Math.min(13 - startPos.w, cell.col));
+      const newRow = Math.max(1, cell.row);
+      placeholder.style.gridColumn = newCol + " / span " + startPos.w;
+      placeholder.style.gridRow = newRow + " / span " + startPos.h;
     }
 
-    function onUp() {
+    function onUp(ev) {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      // Remove ghost
+
+      // Apply placeholder position to card
+      const cell = getGridCell(ev.clientX, ev.clientY);
+      const newCol = Math.max(1, Math.min(13 - startPos.w, cell.col));
+      const newRow = Math.max(1, cell.row);
+      applyPos(item, { col: newCol, row: newRow, w: startPos.w, h: startPos.h });
+      updateBadge(item);
+
+      // Cleanup
+      item.style.opacity = "";
       if (ghost.parentElement) ghost.remove();
-
-      // Put card where placeholder is
-      grid.insertBefore(dragCard, placeholder);
-      dragCard.style.display = "";
-      dragCard.style.opacity = "";
-      dragCard.style.outline = "";
-
-      // Remove placeholder & indicators
       if (placeholder.parentElement) placeholder.remove();
-      grid.querySelectorAll(".drop-indicator, .drag-shifting").forEach(el => {
-        el.classList.remove("drop-indicator", "drag-shifting");
-      });
-
       dragCard = null;
-      lastTarget = null;
     }
 
     document.addEventListener("mousemove", onMove);
@@ -5439,59 +5592,63 @@ input.focus();
     editBtn.style.display = "";
     saveBtn.style.display = "none";
     cancelBtn.style.display = "none";
-    // drag handles removed in cleanup below
 
     if (save) {
-      const order = [];
-      const styles = {};
-      getGridItems().forEach(item => {
-        const cid = item.getAttribute("data-card-id");
+      // Save v4 format: positions + styles
+      const layout = {};
+      getCards().forEach(el => {
+        const cid = el.getAttribute("data-card-id");
         if (!cid) return;
-        order.push(cid);
-        styles[cid] = {
-          bg: item.style.background || "",
-          minH: item.style.minHeight || "",
-          w: item.style.width || "",
-          span: item.classList.contains("card-span-row") ? "row" : item.classList.contains("card-span-2") ? "2" : "",
+        const pos = readPos(el);
+        layout[cid] = {
+          col: pos.col, row: pos.row, w: pos.w, h: pos.h,
+          bg: (!el.classList.contains("orb-card") && el.style.background) ? el.style.background : "",
+          minH: el.style.minHeight || ""
         };
       });
-      localStorage.setItem("mj-dash-layout", JSON.stringify({ order, styles, v: 3 }));
+      localStorage.setItem("mj-dash-layout", JSON.stringify({ layout, v: 4 }));
     } else {
-      if (savedHTML) grid.innerHTML = savedHTML;
+      // Restore saved state
+      if (savedState) {
+        getCards().forEach(el => {
+          const cid = el.getAttribute("data-card-id");
+          const s = savedState[cid];
+          if (!s) return;
+          el.style.gridColumn = s.gridColumn;
+          el.style.gridRow = s.gridRow;
+          if (!el.classList.contains("orb-card")) el.style.background = s.background;
+          el.style.minHeight = s.minHeight;
+        });
+      }
     }
 
-    // Cleanup
-    grid.querySelectorAll(".card-edit-toolbar, .card-resize-handle, .card-drag-handle, .drag-placeholder").forEach(el => el.remove());
-    grid.querySelectorAll("[data-grid-idx]").forEach(el => el.removeAttribute("data-grid-idx"));
+    // Cleanup editor UI
+    grid.querySelectorAll(".card-edit-toolbar, .card-resize-handle, .card-drag-handle, .drag-placeholder, .grid-pos-badge").forEach(el => el.remove());
+    savedState = null;
   }
 
-  // Load saved layout
+  // Load saved layout (supports v3 migration + v4)
   function loadSavedLayout() {
     const raw = localStorage.getItem("mj-dash-layout");
     if (!raw) return;
     try {
       const data = JSON.parse(raw);
-      if (!data.order || data.v !== 3) return;
-      const map = {};
-      getGridItems().forEach(el => {
-        const cid = el.getAttribute("data-card-id");
-        if (cid) map[cid] = el;
-      });
-      data.order.forEach(cid => {
-        const el = map[cid];
-        if (el) grid.appendChild(el);
-      });
-      if (data.styles) {
-        Object.keys(data.styles).forEach(cid => {
-          const el = map[cid];
-          if (!el) return;
-          const s = data.styles[cid];
-          if (s.bg && !el.classList.contains("orb-card")) el.style.background = s.bg;
-          if (s.minH) el.style.minHeight = s.minH;
-          if (s.w) el.style.width = s.w;
-          if (s.span === "2") { el.classList.remove("card-span-row"); el.classList.add("card-span-2"); }
-          else if (s.span === "row") { el.classList.remove("card-span-2"); el.classList.add("card-span-row"); }
+
+      if (data.v === 4 && data.layout) {
+        // v4: explicit grid positions
+        getCards().forEach(el => {
+          const cid = el.getAttribute("data-card-id");
+          const l = data.layout[cid];
+          if (!l) return;
+          applyPos(el, { col: l.col, row: l.row, w: l.w, h: l.h });
+          if (l.bg && !el.classList.contains("orb-card")) el.style.background = l.bg;
+          if (l.minH) el.style.minHeight = l.minH;
         });
+      } else if (data.v === 3 && data.order) {
+        // v3 migration: just apply order (DOM order), ignore old span classes
+        // Clear old v3 data so next save writes v4
+        console.log("[MJ] Migrating layout from v3 to v4...");
+        localStorage.removeItem("mj-dash-layout");
       }
     } catch(e) { console.log("Layout load error:", e); }
   }
