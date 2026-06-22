@@ -1,0 +1,14 @@
+{
+  "requests": [
+    {
+      "timestamp": "2026-06-22T15:24:15.506237",
+      "user_msg_preview": "hi",
+      "model": "qwen3:8b",
+      "task_type": "chat",
+      "response_time_sec": 0.67,
+      "tokens": 0,
+      "success": true,
+      "error": null
+    }
+  ]
+}

@@ -1,5 +1,41 @@
 [
   {
+    "content": "git add .\ngit commit -m \"Add grid-auto-flow dense to base grid for consistent layout on save\"\ngit push",
+    "time": "04:04 PM",
+    "timestamp": "2026-06-22T16:04:18.135305",
+    "preview": "git add . git commit -m \"Add grid-auto-flow dense to base grid for consistent la"
+  },
+  {
+    "content": "Here's a detailed **Claude 4 Sonnet prompt** you can paste directly into Claude Code. It explains exactly how you want the dashboard builder to work.\n\n---\n\n# Prompt for Claude Code\n\nI want to redesign my **JARVIS Dashboard Layout Editor** to behave like a professional dashboard builder (similar to Grafana, Retool, Notion, Framer, or Gridstack.js).\n\n## Current Problem\n\nAs shown in the attached image, there is an empty gap (highlighted in red) when panels are resized or moved.\n\nI want every panel ",
+    "time": "04:04 PM",
+    "timestamp": "2026-06-22T16:04:04.465433",
+    "preview": "Here's a detailed **Claude 4 Sonnet prompt** you can paste directly into Claude "
+  },
+  {
+    "content": "when move the side panle it should move automatic and when i hit save it should save and give me each and every grid and card that can i resize to hold bottom of the grid and choose the size",
+    "time": "04:02 PM",
+    "timestamp": "2026-06-22T16:02:38.930768",
+    "preview": "when move the side panle it should move automatic and when i hit save it should "
+  },
+  {
+    "content": "git add .\ngit commit -m \"Fix all: card IDs, v3 save/load, grid reorder, orb-card isolation, flex fix\"\ngit push",
+    "time": "03:58 PM",
+    "timestamp": "2026-06-22T15:58:40.531451",
+    "preview": "git add . git commit -m \"Fix all: card IDs, v3 save/load, grid reorder, orb-card"
+  },
+  {
+    "content": "localStorage.removeItem(\"mj-dash-layout\")\nlocalStorage.removeItem(\"mj-dash-settings\")",
+    "time": "03:56 PM",
+    "timestamp": "2026-06-22T15:56:47.198338",
+    "preview": "localStorage.removeItem(\"mj-dash-layout\") localStorage.removeItem(\"mj-dash-setti"
+  },
+  {
+    "content": "localStorage.removeItem(\"mj-dash-layout\")",
+    "time": "02:48 PM",
+    "timestamp": "2026-06-22T14:48:14.210330",
+    "preview": "localStorage.removeItem(\"mj-dash-layout\")"
+  },
+  {
     "content": "window._orbCfg.holoMode = true;",
     "time": "10:31 AM",
     "timestamp": "2026-06-22T10:31:17.496341",
