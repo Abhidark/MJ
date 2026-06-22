@@ -534,6 +534,9 @@
   [data-card-id="llm-status"]  { grid-column: 1 / span 12; grid-row: 12 / span 3; }
   [data-card-id="smart-suggest"]{ grid-column: 1 / span 12; grid-row: 15 / span 2; }
   [data-card-id="quick-actions"]{ grid-column: 1 / span 12; grid-row: 17 / span 2; }
+  [data-card-id="notes"]       { grid-column: 1 / span 4;  grid-row: 19 / span 4; }
+  [data-card-id="timer"]       { grid-column: 5 / span 4;  grid-row: 19 / span 4; }
+  [data-card-id="calendar"]    { grid-column: 9 / span 4;  grid-row: 19 / span 4; }
   .card-span-2 { grid-column: span 6; }
   .card-span-row { grid-column: 1 / -1; }
   .dash-card.orb-card { background: transparent !important; border-color: transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
@@ -2415,6 +2418,192 @@
   body.dash-editing .grid-pos-badge { display: block; }
 
 
+
+  /* ===== KNOWLEDGE BASE PANEL ===== */
+  .kb-panel {
+    position: fixed;
+    left: 220px; top: 50%;
+    transform: translateY(-50%) scale(0.95);
+    width: 480px; max-height: 80vh;
+    background: rgba(10,10,16,0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0,200,255,0.1);
+    border-radius: 14px;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: all 0.25s ease;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,200,255,0.03);
+  }
+  .kb-panel.open { opacity: 1; pointer-events: all; transform: translateY(-50%) scale(1); }
+  .kb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .kb-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(0,220,255,0.9);
+  }
+  .kb-close {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03); color: #888;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: all 0.2s;
+  }
+  .kb-close:hover { background: rgba(231,76,60,0.15); color: #e74c3c; }
+  .kb-tabs {
+    display: flex; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .kb-tab {
+    flex: 1; padding: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; color: rgba(255,255,255,0.3);
+    background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .kb-tab:hover { color: rgba(0,212,255,0.6); }
+  .kb-tab.active { color: #00d4ff; border-bottom-color: #00d4ff; }
+  .kb-body { flex: 1; overflow-y: auto; padding: 14px 18px; }
+  .kb-body::-webkit-scrollbar { width: 4px; }
+  .kb-body::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.15); border-radius: 4px; }
+
+  .kb-upload-zone {
+    border: 2px dashed rgba(0,212,255,0.2);
+    border-radius: 10px; padding: 30px; text-align: center;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 12px;
+  }
+  .kb-upload-zone:hover { border-color: rgba(0,212,255,0.5); background: rgba(0,212,255,0.03); }
+  .kb-upload-icon { font-size: 28px; margin-bottom: 8px; }
+  .kb-upload-text { font-size: 11px; color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace; }
+  .kb-upload-input { display: none; }
+
+  .kb-search-box {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .kb-search-input {
+    flex: 1; background: rgba(0,10,30,0.8); border: 1px solid rgba(0,180,255,0.15);
+    border-radius: 8px; padding: 8px 12px; color: #ddd;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; outline: none;
+  }
+  .kb-search-input:focus { border-color: rgba(0,180,255,0.4); }
+  .kb-search-btn {
+    padding: 8px 14px; background: rgba(0,180,255,0.1); border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 8px; color: #00d4ff; cursor: pointer; font-size: 11px;
+    font-family: 'JetBrains Mono', monospace; transition: all 0.2s;
+  }
+  .kb-search-btn:hover { background: rgba(0,180,255,0.2); }
+
+  .kb-doc-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; margin-bottom: 6px;
+    background: rgba(0,180,255,0.03); border: 1px solid rgba(0,180,255,0.08);
+    border-radius: 8px; transition: all 0.2s;
+  }
+  .kb-doc-item:hover { border-color: rgba(0,180,255,0.2); }
+  .kb-doc-name { font-size: 11px; color: #ddd; font-family: 'JetBrains Mono', monospace; }
+  .kb-doc-meta { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .kb-doc-del {
+    width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(231,76,60,0.2);
+    background: rgba(231,76,60,0.05); color: #e74c3c; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 10px;
+    transition: all 0.2s;
+  }
+  .kb-doc-del:hover { background: rgba(231,76,60,0.15); }
+
+  .kb-result {
+    padding: 10px 12px; margin-bottom: 8px;
+    background: rgba(0,180,255,0.03); border-left: 3px solid rgba(0,212,255,0.3);
+    border-radius: 0 8px 8px 0; font-size: 11px; color: #ccc; line-height: 1.5;
+  }
+  .kb-result-source { font-size: 9px; color: rgba(0,212,255,0.5); margin-top: 4px; }
+  .kb-stat { font-size: 11px; color: rgba(255,255,255,0.4); padding: 6px 0; }
+  .kb-stat span { color: #00d4ff; font-weight: 600; }
+
+  /* ===== NOTES CARD ===== */
+  .notes-area {
+    width: 100%; min-height: 80px; max-height: 200px;
+    background: rgba(0,10,30,0.6); border: 1px solid rgba(0,180,255,0.1);
+    border-radius: 8px; padding: 8px; color: #ddd;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    resize: vertical; outline: none;
+  }
+  .notes-area:focus { border-color: rgba(0,180,255,0.3); }
+  .notes-save-indicator {
+    font-size: 9px; color: rgba(0,255,136,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 4px; opacity: 0; transition: opacity 0.3s;
+  }
+  .notes-save-indicator.show { opacity: 1; }
+
+  /* ===== TIMER CARD ===== */
+  .timer-display {
+    font-family: 'Orbitron', monospace;
+    font-size: 32px; color: #00d4ff;
+    text-align: center; padding: 12px 0;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .timer-btns {
+    display: flex; gap: 8px; justify-content: center; margin-top: 8px;
+  }
+  .timer-btn {
+    padding: 6px 16px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
+    border: 1px solid rgba(0,180,255,0.2);
+    background: rgba(0,180,255,0.05); color: #00d4ff;
+  }
+  .timer-btn:hover { background: rgba(0,180,255,0.15); }
+  .timer-btn.active { background: rgba(0,255,136,0.1); border-color: rgba(0,255,136,0.3); color: #00ff88; }
+  .timer-btn.stop { border-color: rgba(231,76,60,0.3); color: #e74c3c; }
+  .timer-presets {
+    display: flex; gap: 6px; justify-content: center; margin-top: 8px;
+  }
+  .timer-preset {
+    padding: 3px 10px; border-radius: 6px; font-size: 9px;
+    background: rgba(0,10,30,0.6); border: 1px solid rgba(0,180,255,0.1);
+    color: rgba(255,255,255,0.4); cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+  }
+  .timer-preset:hover { border-color: rgba(0,180,255,0.3); color: #00d4ff; }
+
+  /* ===== CALENDAR CARD ===== */
+  .cal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .cal-month {
+    font-family: 'Orbitron', monospace; font-size: 11px;
+    color: rgba(0,212,255,0.8); letter-spacing: 2px;
+  }
+  .cal-nav { display: flex; gap: 6px; }
+  .cal-nav button {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid rgba(0,180,255,0.15); background: rgba(0,10,30,0.6);
+    color: #00d4ff; cursor: pointer; font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .cal-nav button:hover { border-color: rgba(0,180,255,0.4); }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  }
+  .cal-day-label { color: rgba(0,212,255,0.4); font-size: 8px; padding: 4px 0; text-transform: uppercase; }
+  .cal-day {
+    padding: 4px; border-radius: 4px; color: rgba(255,255,255,0.5);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .cal-day:hover { background: rgba(0,180,255,0.1); color: #fff; }
+  .cal-day.today { background: rgba(0,212,255,0.15); color: #00d4ff; font-weight: 700; border: 1px solid rgba(0,212,255,0.3); }
+  .cal-day.other-month { color: rgba(255,255,255,0.15); }
+
   /* Voice waveform indicator */
   .voice-wave {
     display: none;
@@ -2507,6 +2696,9 @@
     [data-card-id="llm-status"]  { grid-column: 1 / span 6; grid-row: auto; }
     [data-card-id="smart-suggest"]{ grid-column: 1 / span 6; grid-row: auto; }
     [data-card-id="quick-actions"]{ grid-column: 1 / span 6; grid-row: auto; }
+    [data-card-id="notes"]       { grid-column: 1 / span 3; grid-row: auto; }
+    [data-card-id="timer"]       { grid-column: 4 / span 3; grid-row: auto; }
+    [data-card-id="calendar"]    { grid-column: 1 / span 6; grid-row: auto; }
     .top-bar .logo { font-size: 18px; letter-spacing: 3px; }
     .top-bar-widgets { gap: 10px; }
     .tbw-item { min-width: 90px; }
@@ -2604,6 +2796,40 @@
 
 <canvas id="particles"></canvas>
 <div class="hex-grid"></div>
+
+    <div class="dash-card" data-card-id="notes">
+      <div class="dash-card-title">&#128221; Quick Notes <span class="expand-arrow">&#9660;</span></div>
+      <textarea class="notes-area" id="mj-notes" placeholder="Type notes here... auto-saved."></textarea>
+      <div class="notes-save-indicator" id="notes-saved">&#10003; Saved</div>
+    </div>
+
+    <div class="dash-card" data-card-id="timer">
+      <div class="dash-card-title">&#9201; Focus Timer <span class="expand-arrow">&#9660;</span></div>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-btns">
+        <button class="timer-btn" id="timer-start">Start</button>
+        <button class="timer-btn stop" id="timer-reset">Reset</button>
+      </div>
+      <div class="timer-presets">
+        <button class="timer-preset" data-mins="5">5m</button>
+        <button class="timer-preset" data-mins="15">15m</button>
+        <button class="timer-preset" data-mins="25">25m</button>
+        <button class="timer-preset" data-mins="45">45m</button>
+      </div>
+    </div>
+
+    <div class="dash-card" data-card-id="calendar">
+      <div class="dash-card-title">&#128197; Calendar <span class="expand-arrow">&#9660;</span></div>
+      <div class="cal-header">
+        <span class="cal-month" id="cal-month"></span>
+        <div class="cal-nav">
+          <button id="cal-prev">&#9664;</button>
+          <button id="cal-next">&#9654;</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
 <div class="scanline"></div>
 
 <!-- ===== HUD LEFT SIDEBAR ===== -->
@@ -2753,6 +2979,40 @@
   </div>
   <div class="proc-list" id="proc-list">
     <div class="proc-loading">Loading processes...</div>
+  </div>
+</div>
+
+
+<!-- Knowledge Base Panel -->
+<div class="kb-panel" id="kb-panel">
+  <div class="kb-header">
+    <span class="kb-title">&#9733; Knowledge Base</span>
+    <button class="kb-close" id="kb-close">&#10005;</button>
+  </div>
+  <div class="kb-tabs">
+    <button class="kb-tab active" data-tab="kb-docs">Documents</button>
+    <button class="kb-tab" data-tab="kb-search">Search</button>
+    <button class="kb-tab" data-tab="kb-stats">Stats</button>
+  </div>
+  <div class="kb-body" id="kb-body">
+    <div id="kb-docs" class="kb-tab-content">
+      <div class="kb-upload-zone" id="kb-upload-zone">
+        <div class="kb-upload-icon">&#128194;</div>
+        <div class="kb-upload-text">Drop files or click to upload</div>
+        <input type="file" class="kb-upload-input" id="kb-upload-input" multiple accept=".txt,.md,.json,.csv,.py,.js,.html">
+      </div>
+      <div id="kb-doc-list"></div>
+    </div>
+    <div id="kb-search" class="kb-tab-content" style="display:none">
+      <div class="kb-search-box">
+        <input class="kb-search-input" id="kb-search-q" placeholder="Search knowledge...">
+        <button class="kb-search-btn" id="kb-search-go">Search</button>
+      </div>
+      <div id="kb-search-results"></div>
+    </div>
+    <div id="kb-stats" class="kb-tab-content" style="display:none">
+      <div id="kb-stats-content"></div>
+    </div>
   </div>
 </div>
 
@@ -5286,6 +5546,234 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
   document.addEventListener("keydown", function(e) { if (e.key === "Escape" && procOpen) { procPanel.classList.remove("open"); procOpen = false; } });
 })();
 
+
+// ===== KNOWLEDGE BASE PANEL =====
+(function() {
+  const panel = document.getElementById("kb-panel");
+  const closeBtn = document.getElementById("kb-close");
+  const body = document.getElementById("kb-body");
+  let kbOpen = false;
+
+  // Open from sidebar (add click handler to knowledge HUD item)
+  document.querySelectorAll(".hud-item").forEach(item => {
+    const label = item.querySelector(".hud-detail-label");
+    if (label && label.textContent.includes("KNOWLEDGE")) {
+      item.classList.add("clickable");
+      item.addEventListener("click", () => {
+        kbOpen = !kbOpen;
+        panel.classList.toggle("open", kbOpen);
+        if (kbOpen) loadDocs();
+      });
+    }
+  });
+
+  closeBtn.addEventListener("click", () => { panel.classList.remove("open"); kbOpen = false; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && kbOpen) { panel.classList.remove("open"); kbOpen = false; } });
+
+  // Tab switching
+  panel.querySelectorAll(".kb-tab").forEach(tab => {
+    tab.addEventListener("click", function() {
+      panel.querySelectorAll(".kb-tab").forEach(t => t.classList.remove("active"));
+      this.classList.add("active");
+      panel.querySelectorAll(".kb-tab-content").forEach(c => c.style.display = "none");
+      document.getElementById(this.dataset.tab).style.display = "block";
+      if (this.dataset.tab === "kb-stats") loadStats();
+    });
+  });
+
+  // Upload
+  const uploadZone = document.getElementById("kb-upload-zone");
+  const uploadInput = document.getElementById("kb-upload-input");
+  uploadZone.addEventListener("click", () => uploadInput.click());
+  uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.style.borderColor = "rgba(0,212,255,0.6)"; });
+  uploadZone.addEventListener("dragleave", () => { uploadZone.style.borderColor = ""; });
+  uploadZone.addEventListener("drop", e => {
+    e.preventDefault(); uploadZone.style.borderColor = "";
+    if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+  });
+  uploadInput.addEventListener("change", () => { if (uploadInput.files.length) uploadFiles(uploadInput.files); });
+
+  async function uploadFiles(files) {
+    for (const file of files) {
+      const form = new FormData();
+      form.append("file", file);
+      try {
+        const res = await fetch(API + "/knowledge-base/ingest", { method: "POST", body: form });
+        const data = await res.json();
+        if (data.status === "error") showOrbAlert("KB: " + data.message, "error", 3000);
+        else showOrbAlert("Indexed: " + file.name, "success", 2000);
+      } catch(e) { showOrbAlert("Upload failed: " + file.name, "error", 3000); }
+    }
+    loadDocs();
+  }
+
+  async function loadDocs() {
+    const list = document.getElementById("kb-doc-list");
+    try {
+      const res = await fetch(API + "/knowledge-base");
+      const data = await res.json();
+      const docs = data.documents || [];
+      if (docs.length === 0) { list.innerHTML = '<div class="kb-stat">No documents indexed yet.</div>'; return; }
+      list.innerHTML = docs.map(d => '<div class="kb-doc-item"><div><div class="kb-doc-name">' +
+        d.filename + '</div><div class="kb-doc-meta">' + (d.chunks || 0) + ' chunks | ' +
+        (d.date || '') + '</div></div><button class="kb-doc-del" data-id="' + d.id + '">\u2715</button></div>').join("");
+      list.querySelectorAll(".kb-doc-del").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          await fetch(API + "/knowledge-base/" + btn.dataset.id, { method: "DELETE" });
+          loadDocs();
+        });
+      });
+    } catch(e) { list.innerHTML = '<div class="kb-stat">Error loading documents.</div>'; }
+  }
+
+  // Search
+  document.getElementById("kb-search-go").addEventListener("click", doSearch);
+  document.getElementById("kb-search-q").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+  async function doSearch() {
+    const q = document.getElementById("kb-search-q").value.trim();
+    if (!q) return;
+    const results = document.getElementById("kb-search-results");
+    results.innerHTML = '<div class="kb-stat">Searching...</div>';
+    try {
+      const res = await fetch(API + "/knowledge-base/search", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({query: q}) });
+      const data = await res.json();
+      if (!data.results || data.results.length === 0) { results.innerHTML = '<div class="kb-stat">No results found.</div>'; return; }
+      results.innerHTML = data.results.map(r => '<div class="kb-result">' + r.text +
+        '<div class="kb-result-source">Source: ' + (r.source || 'unknown') + ' | Score: ' + (r.score || 0).toFixed(2) + '</div></div>').join("");
+    } catch(e) { results.innerHTML = '<div class="kb-stat">Search error.</div>'; }
+  }
+
+  async function loadStats() {
+    const el = document.getElementById("kb-stats-content");
+    try {
+      const res = await fetch(API + "/knowledge-base");
+      const data = await res.json();
+      el.innerHTML = '<div class="kb-stat">Documents: <span>' + (data.total_documents || 0) + '</span></div>' +
+        '<div class="kb-stat">Total chunks: <span>' + (data.total_chunks || 0) + '</span></div>' +
+        '<div class="kb-stat">Index size: <span>' + (data.index_size || '0 KB') + '</span></div>';
+    } catch(e) { el.innerHTML = '<div class="kb-stat">Error loading stats.</div>'; }
+  }
+})();
+
+// ===== NOTES CARD =====
+(function() {
+  const notes = document.getElementById("mj-notes");
+  const saved = document.getElementById("notes-saved");
+  if (!notes) return;
+  notes.value = localStorage.getItem("mj-quick-notes") || "";
+  let saveTimer = null;
+  notes.addEventListener("input", () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      localStorage.setItem("mj-quick-notes", notes.value);
+      saved.classList.add("show");
+      setTimeout(() => saved.classList.remove("show"), 1500);
+    }, 500);
+  });
+})();
+
+// ===== TIMER CARD =====
+(function() {
+  const display = document.getElementById("timer-display");
+  const startBtn = document.getElementById("timer-start");
+  const resetBtn = document.getElementById("timer-reset");
+  if (!display) return;
+  let seconds = 0, interval = null, countDown = false, targetSecs = 0;
+
+  function fmt(s) {
+    const m = Math.floor(s / 60), ss = s % 60;
+    return String(m).padStart(2,"0") + ":" + String(ss).padStart(2,"0");
+  }
+
+  function tick() {
+    if (countDown) {
+      seconds--;
+      if (seconds <= 0) {
+        clearInterval(interval); interval = null;
+        seconds = 0;
+        startBtn.textContent = "Start"; startBtn.classList.remove("active");
+        display.style.color = "#00ff88";
+        if (typeof sendNotification === "function") sendNotification("MJ Timer", "Time is up!");
+        showOrbAlert("TIMER COMPLETE", "success", 5000);
+      }
+    } else {
+      seconds++;
+    }
+    display.textContent = fmt(seconds);
+  }
+
+  startBtn.addEventListener("click", () => {
+    if (interval) {
+      clearInterval(interval); interval = null;
+      startBtn.textContent = "Start"; startBtn.classList.remove("active");
+    } else {
+      interval = setInterval(tick, 1000);
+      startBtn.textContent = "Pause"; startBtn.classList.add("active");
+      display.style.color = "";
+    }
+  });
+
+  resetBtn.addEventListener("click", () => {
+    clearInterval(interval); interval = null;
+    seconds = 0; countDown = false;
+    display.textContent = "00:00"; display.style.color = "";
+    startBtn.textContent = "Start"; startBtn.classList.remove("active");
+  });
+
+  document.querySelectorAll(".timer-preset").forEach(btn => {
+    btn.addEventListener("click", () => {
+      clearInterval(interval); interval = null;
+      seconds = parseInt(btn.dataset.mins) * 60;
+      countDown = true; targetSecs = seconds;
+      display.textContent = fmt(seconds); display.style.color = "";
+      startBtn.textContent = "Start"; startBtn.classList.remove("active");
+    });
+  });
+})();
+
+// ===== CALENDAR CARD =====
+(function() {
+  const monthEl = document.getElementById("cal-month");
+  const gridEl = document.getElementById("cal-grid");
+  const prevBtn = document.getElementById("cal-prev");
+  const nextBtn = document.getElementById("cal-next");
+  if (!gridEl) return;
+
+  let viewDate = new Date();
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const DAYS = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+  function render() {
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    monthEl.textContent = MONTHS[m] + " " + y;
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const prevDays = new Date(y, m, 0).getDate();
+    const today = new Date();
+    let html = DAYS.map(d => '<div class="cal-day-label">' + d + '</div>').join("");
+    // Previous month days
+    for (let i = firstDay - 1; i >= 0; i--) {
+      html += '<div class="cal-day other-month">' + (prevDays - i) + '</div>';
+    }
+    // Current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear();
+      html += '<div class="cal-day' + (isToday ? ' today' : '') + '">' + d + '</div>';
+    }
+    // Next month fill
+    const totalCells = firstDay + daysInMonth;
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      html += '<div class="cal-day other-month">' + d + '</div>';
+    }
+    gridEl.innerHTML = html;
+  }
+
+  prevBtn.addEventListener("click", () => { viewDate.setMonth(viewDate.getMonth() - 1); render(); });
+  nextBtn.addEventListener("click", () => { viewDate.setMonth(viewDate.getMonth() + 1); render(); });
+  render();
+})();
+
 // ===== DESKTOP NOTIFICATIONS =====
 async function sendNotification(title, msg) {
   if (Notification.permission === "granted") new Notification(title, { body: msg });
@@ -5515,7 +6003,10 @@ input.focus();
     "sys-stats":    { col:10, row:6,  w:3,  h:3 },
     "llm-status":   { col:1,  row:12, w:12, h:3 },
     "smart-suggest":{ col:1,  row:15, w:12, h:2 },
-    "quick-actions":{ col:1,  row:17, w:12, h:2 }
+    "quick-actions":{ col:1,  row:17, w:12, h:2 },
+    "notes":        { col:1,  row:19, w:4,  h:4 },
+    "timer":        { col:5,  row:19, w:4,  h:4 },
+    "calendar":     { col:9,  row:19, w:4,  h:4 }
   };
 
   function getCards() {
@@ -5848,39 +6339,39 @@ input.focus();
 
   const roadmap = [
     { phase: "Phase 1 — Foundation", items: [
-      { v:"V1", name:"Core Assistant", desc:"Chat, TTS, History, UI, Logging", pct:75, features:"Chat ✅ | TTS ✅ | History ✅ | UI ✅ | Wake Word ❌ | STT ❌ | Auth ❌" },
-      { v:"V2", name:"Memory System", desc:"Core memory, auto memory, context tracking", pct:70, features:"Core Memory ✅ | Auto Memory ✅ | Context ✅ | Vector DB ❌ | Summaries ❌" },
-      { v:"V3", name:"Tool Framework", desc:"Router, search, files, plugins, calculator", pct:70, features:"Tool Router ✅ | Search ✅ | Files ✅ | Plugins ✅ | Weather ❌ | Calendar ❌" },
-      { v:"V4", name:"Agent Framework", desc:"21 modules, task routing, agent registry", pct:80, features:"21 Modules ✅ | Registry ✅ | Routing ✅ | Agent Comms ❌ | Parallel ❌" },
-      { v:"V5", name:"Constitutional AI", desc:"AI principles, safety, validation", pct:0, features:"Principles ❌ | Safety Rules ❌ | Validation ❌ | Hallucination Check ❌" },
+      { v:"V1", name:"JARVIS Core", desc:"Chat, Voice, FastAPI, Ollama, Logging, Settings", pct:72, features:"Chat UI ✅ | Voice In ✅ | Voice Out ✅ | FastAPI ✅ | Ollama ✅ | Local LLM ✅ | Logging ✅ | Settings ✅ | React ❌ | Auth ❌" },
+      { v:"V2", name:"Memory Engine", desc:"Short/long-term memory, profile, search", pct:45, features:"Long-Term Memory ✅ | Chat History ✅ | Short-Term ⚠️ | User Profile ⚠️ | Memory Search ⚠️ | Timeline ❌ | Qdrant ❌ | PostgreSQL ❌" },
+      { v:"V3", name:"Tool Engine", desc:"Calculator, files, weather, search, email", pct:75, features:"Calculator ✅ | Notes/Todos ✅ | File Manager ✅ | Weather ✅ | Web Search ✅ | Email ✅ | Clipboard ✅ | Calendar ❌" },
+      { v:"V4", name:"Agent Framework", desc:"Registry, lifecycle, message bus, events", pct:65, features:"Agent Registry ✅ | Agent Lifecycle ✅ | Message Bus ⚠️ | Event System ⚠️ | Shared Memory ⚠️ | Task Queue ❌" },
+      { v:"V5", name:"Constitutional AI", desc:"Safety, validation, hallucination detection", pct:10, features:"Self Critique ❌ | Policy Engine ❌ | Hallucination ❌ | Safety ⚠️ | Confidence ❌ | Validation ❌" },
     ]},
     { phase: "Phase 2 — Specialized Agents", items: [
-      { v:"V6", name:"Zeus (Orchestrator)", desc:"Intent analysis, model selection", pct:60, features:"Intent Analysis ✅ | Model Selection ✅ | Multi-Agent ❌ | Workflow Planning ❌" },
-      { v:"V7", name:"Hermes (Communication)", desc:"WhatsApp, Gmail, Slack, Telegram", pct:10, features:"Desktop Notify ✅ | WhatsApp ❌ | Gmail ❌ | Slack ❌ | Telegram ❌" },
-      { v:"V8", name:"Athena (Knowledge)", desc:"Web research, RAG, PDF analysis", pct:40, features:"Web Search ✅ | RAG (TF-IDF) ✅ | PDF ❌ | Knowledge Graph ❌" },
-      { v:"V9", name:"Hephaestus (Developer)", desc:"Code gen, sandbox execution", pct:30, features:"Code Gen ✅ | Sandbox ✅ | Git ❌ | Testing ❌ | Deployment ❌" },
-      { v:"V10", name:"Apollo (Creative)", desc:"Image gen, creative writing", pct:25, features:"Writing ✅ | Image Gen ✅ | Video ❌ | Presentations ❌ | Music ❌" },
-      { v:"V11", name:"Ares (Execution)", desc:"PC control, screenshots, clipboard", pct:50, features:"App Control ✅ | Screenshots ✅ | Clipboard ✅ | Browser Auto ❌" },
-      { v:"V12", name:"Argus (Vision)", desc:"Camera, OCR, screen understanding", pct:10, features:"Module Stub ✅ | Camera ❌ | OCR ❌ | Screen Analysis ❌" },
-      { v:"V13", name:"Mnemosyne (Memory Agent)", desc:"Episodic, semantic, importance scoring", pct:40, features:"Remember/Recall ✅ | Episodic ❌ | Scoring ❌ | Compression ❌" },
-      { v:"V14", name:"Chronos (Time Agent)", desc:"Calendar, reminders, scheduling", pct:30, features:"Todos ✅ | Calendar ❌ | Scheduling ❌ | Habits ❌" },
-      { v:"V15", name:"Hestia (Smart Home)", desc:"IoT, sensors, lights, appliances", pct:5, features:"Stub Only ✅ | IoT ❌ | Lights ❌ | Sensors ❌" },
+      { v:"V6", name:"Zeus (Master Brain)", desc:"Intent, planning, agent selection", pct:60, features:"Intent Detection ✅ | Agent Selection ✅ | Error Recovery ⚠️ | Planning ❌ | Task Breakdown ❌ | Workflows ❌" },
+      { v:"V7", name:"Hermes (Communication)", desc:"Email, notifications, messaging", pct:15, features:"Gmail ✅ | Notifications ✅ | Outlook ⚠️ | WhatsApp ❌ | Discord ❌ | Slack ❌ | Telegram ❌ | SMS ❌" },
+      { v:"V8", name:"Athena (Knowledge)", desc:"Search, RAG, PDF, research", pct:50, features:"Web Search ✅ | RAG (TF-IDF) ✅ | Deep Research ⚠️ | PDF Reader ⚠️ | Knowledge Graph ❌ | Citations ❌" },
+      { v:"V9", name:"Hephaestus (Developer)", desc:"Coding, git, debugging, testing", pct:45, features:"Code Context ✅ | Git (9 cmds) ✅ | Debugging ⚠️ | APIs ⚠️ | Docs ❌ | Testing ❌ | Deploy ❌" },
+      { v:"V10", name:"Apollo (Creative)", desc:"Image gen, writing, video, design", pct:30, features:"Image Gen ✅ | Creative Writing ✅ | Video ❌ | UI Design ❌ | Logo ❌ | Presentation ❌" },
+      { v:"V11", name:"Ares (Execution)", desc:"Desktop, keyboard, apps, browser", pct:70, features:"Desktop Control ✅ | Keyboard ✅ | Windows API ✅ | App Mgmt ✅ | Browser ⚠️ | Mouse ❌" },
+      { v:"V12", name:"Argus (Vision)", desc:"OCR, camera, object detection", pct:25, features:"OCR ✅ | Screenshot ⚠️ | Camera ❌ | Object Detection ❌ | Screen AI ❌" },
+      { v:"V13", name:"Mnemosyne (Memory Agent)", desc:"Episodic, semantic, preferences", pct:40, features:"User Preferences ✅ | Knowledge Base ⚠️ | Semantic ⚠️ | Episodic ❌ | Compression ❌" },
+      { v:"V14", name:"Chronos (Time Agent)", desc:"Reminders, scheduling, tracking", pct:40, features:"Reminders ✅ | Productivity Tracking ✅ | Scheduling ⚠️ | Calendar ❌ | Daily Planning ❌" },
+      { v:"V15", name:"Sentinel (Security)", desc:"Permissions, encryption, audit", pct:20, features:"Hashing ⚠️ | Tool Sandbox ⚠️ | Permissions ❌ | Secrets ❌ | Audit Logs ❌ | Threats ❌" },
     ]},
     { phase: "Phase 3 — Intelligence Layer", items: [
-      { v:"V16", name:"Reflection Engine", desc:"Self-critique, performance analysis", pct:0, features:"Self-Critique ❌ | Error Detection ❌ | Agent Eval ❌" },
-      { v:"V17", name:"Learning Engine", desc:"Preference learning, prompt optimization", pct:15, features:"Emotion Detect ✅ | Preferences ✅ | Prompt Tuning ❌" },
-      { v:"V18", name:"Dashboard (Orb UI)", desc:"Animated orb, live stats, HUD", pct:90, features:"Orb ✅ | Live Stats ✅ | HUD ✅ | System Health ✅ | AI Flow ✅" },
-      { v:"V19", name:"Workflow Automation", desc:"Morning routine, email automation", pct:0, features:"Workflows ❌ | Routines ❌ | Triggers ❌" },
-      { v:"V20", name:"AI Team Collaboration", desc:"Parallel agents, shared memory", pct:0, features:"Parallel ❌ | Shared Memory ❌ | Consensus ❌" },
+      { v:"V16", name:"Reflection Engine", desc:"Mistake detection, learning reports", pct:30, features:"Mistake Detection ✅ | Learning Reports ⚠️ | Suggestions ⚠️ | Daily Reflection ❌ | Agent Score ❌" },
+      { v:"V17", name:"Learning Engine", desc:"Habits, preferences, prompt tuning", pct:35, features:"Preference Learning ✅ | Habit Learning ⚠️ | Prompt Optimization ❌ | Workflow Learning ❌" },
+      { v:"V18", name:"Dashboard 2.0 (Orb UI)", desc:"Orb, HUD, stats, alerts, AI flow", pct:85, features:"Orb ✅ | Live Stats ✅ | CPU/RAM/VRAM ✅ | Notifications ✅ | Voice Viz ✅ | Memory Graph ❌ | Timeline ❌ | Agent Network ❌" },
+      { v:"V19", name:"Workflow Engine", desc:"Morning routine, automation chains", pct:5, features:"Daily Briefing ⚠️ | Morning Routine ❌ | News ❌ | Email Auto ❌ | Calendar ❌ | Auto Tasks ❌" },
+      { v:"V20", name:"Multi-Agent Collaboration", desc:"Agent pipeline, parallel execution", pct:5, features:"Shared Context ⚠️ | Agent Pipeline ❌ | Parallel Execution ❌" },
     ]},
     { phase: "Phase 4 — AI Operating System", items: [
-      { v:"V21", name:"Local AI", desc:"Ollama, Qwen3, DeepSeek, Moondream", pct:85, features:"Ollama ✅ | Qwen3 8B/14B ✅ | DeepSeek-R1 ✅ | Moondream ✅ | Routing ✅" },
-      { v:"V22", name:"Cloud AI", desc:"OpenAI, Anthropic, Gemini", pct:0, features:"OpenAI ❌ | Anthropic ❌ | Gemini ❌ | Azure ❌" },
-      { v:"V23", name:"AI Operating System", desc:"Plugin marketplace, multi-user, sync", pct:0, features:"Plugins ❌ | Multi-User ❌ | Sync ❌ | API Gateway ❌" },
+      { v:"V21", name:"Plugin Marketplace", desc:"Plugin store, third-party integrations", pct:15, features:"Plugin Loader ⚠️ | Plugin Store ❌ | GitHub ❌ | Docker ❌ | Notion ❌ | Google Drive ❌" },
+      { v:"V22", name:"Hybrid AI", desc:"Local + cloud models, auto routing", pct:40, features:"Local Models ✅ | Auto Routing ✅ | Cloud (OpenAI) ❌ | Cloud (Anthropic) ❌ | Cloud (Gemini) ❌" },
+      { v:"V23", name:"AI Operating System", desc:"Multi-user, permissions, sync", pct:5, features:"Background Services ⚠️ | Multi User ❌ | Permissions ❌ | API Gateway ❌ | Cross Device ❌" },
     ]},
-    { phase: "Phase 5 — Autonomous JARVIS", items: [
-      { v:"V24", name:"Self-Improving AI", desc:"Auto prompt tuning, optimization", pct:0, features:"Prompt Tuning ❌ | Optimization ❌ | Health Monitor ❌" },
-      { v:"V25", name:"Ultimate JARVIS", desc:"Everything unified as one AI OS", pct:0, features:"Full Integration ❌ | All Agents ❌ | Autonomous ❌" },
+    { phase: "Phase 5 — Autonomous Intelligence", items: [
+      { v:"V24", name:"Self-Improving JARVIS", desc:"Auto-fix, performance, optimization", pct:15, features:"Error Auto-Fix ✅ | Resource Monitor ✅ | Performance ⚠️ | Prompt Improve ❌ | Memory Optimize ❌" },
+      { v:"V25", name:"JARVIS OS Ultimate", desc:"Everything unified as one AI OS", pct:0, features:"Full Integration ❌ | Mobile ❌ | Smart Home ⚠️ | Complete Stack ⚠️" },
     ]},
   ];
 

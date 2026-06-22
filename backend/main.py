@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from human_layer.human_brain import MJHumanBrain
 from voice_layer.tts_engine import generate_speech, test_voice, cleanup_old_audio
 from voice_layer.voice_config import AVAILABLE_VOICES, load_voice_settings, save_voice_settings
+from voice_layer.stt_engine import save_and_transcribe, get_stt_status
 from pc_control.command_parser import parse_command
 from pc_control.executor import execute_command
 from pc_control.system_stats import get_system_stats
@@ -573,6 +574,40 @@ async def zeus_execute_module(module_name: str, req: ChatRequest):
     except Exception:
         result = mod.execute(req.message, {})
     return result
+
+
+@app.get("/zeus/stats")
+async def zeus_execution_stats():
+    """Get Zeus module execution analytics."""
+    return zeus.get_execution_stats()
+
+
+@app.get("/zeus/history")
+async def zeus_history(limit: int = 20):
+    """Get recent Zeus execution history."""
+    return {"history": zeus.get_recent_history(limit)}
+
+
+@app.post("/zeus/route")
+async def zeus_route_test(req: ChatRequest):
+    """Test route a message to see which modules match."""
+    matches = zeus.route_all(req.message, "", {})
+    return {
+        "matches": [
+            {"module": m.name, "display_name": m.display_name, "confidence": round(s, 3)}
+            for m, s in matches
+        ]
+    }
+
+
+@app.post("/zeus/parallel")
+async def zeus_parallel_execute(req: ChatRequest):
+    """Execute all matching modules in parallel."""
+    matches = zeus.route_all(req.message, "", {}, min_confidence=0.3)
+    if not matches:
+        return {"results": [], "message": "No modules matched."}
+    results = await zeus.execute_parallel(matches, req.message, {})
+    return {"results": results}
 
 
 def get_file_type(filename: str) -> str:
@@ -1550,6 +1585,23 @@ async def test_voice_endpoint(req: TestVoiceRequest):
     filename = await test_voice(req.text, req.voice, req.rate, req.pitch, req.volume)
     cleanup_old_audio()
     return {"audio_url": f"/audio/{filename}"}
+
+
+@app.post("/transcribe")
+async def transcribe_audio_endpoint(
+    file: UploadFile = File(...),
+    language: Optional[str] = Form(None)
+):
+    """Transcribe uploaded audio using Whisper or fallback STT."""
+    audio_bytes = await file.read()
+    result = await save_and_transcribe(audio_bytes, file.filename, language)
+    return result
+
+
+@app.get("/stt-status")
+async def stt_status():
+    """Get STT engine status."""
+    return get_stt_status()
 
 
 @app.get("/")
