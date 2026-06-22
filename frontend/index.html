@@ -1083,6 +1083,29 @@
     box-shadow: 0 4px 15px rgba(0,180,255,0.1);
   }
 
+  /* ===== SMART SUGGESTIONS ===== */
+  .suggest-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass); color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    cursor: pointer; transition: var(--transition);
+    max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .suggest-chip:hover {
+    border-color: #00d4ff; color: #00d4ff;
+    background: rgba(0,180,255,0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,180,255,0.1);
+  }
+  .suggest-chip.high { border-color: rgba(255,59,48,0.4); }
+  .suggest-chip.high:hover { border-color: #ff3b30; color: #ff3b30; background: rgba(255,59,48,0.08); box-shadow: 0 4px 15px rgba(255,59,48,0.1); }
+  .suggest-chip.medium { border-color: rgba(255,149,0,0.4); }
+  .suggest-chip.medium:hover { border-color: #ff9500; color: #ff9500; background: rgba(255,149,0,0.08); }
+  .suggest-chip-icon { font-size: 14px; flex-shrink: 0; }
+  .suggest-chip-text { overflow: hidden; text-overflow: ellipsis; }
+
   /* ===== RIGHT AI FLOW PANEL ===== */
   #ai-flow-panel {
     width: 340px; flex-shrink: 0;
@@ -2320,6 +2343,14 @@
           <div class="w-title">Modules</div>
           <div class="w-value" id="wc-modules-val">21</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Smart Suggestions Card -->
+    <div class="dash-card card-span-row" id="suggestions-card">
+      <div class="dash-card-title">Smart Suggestions <span class="live-dot"></span></div>
+      <div id="suggestions-list" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <div style="color:var(--text-secondary);font-size:11px;padding:8px;">Loading suggestions...</div>
       </div>
     </div>
 
@@ -3638,6 +3669,37 @@ async function updateRealStats() {
   } catch(e) {}
 }
 updateRealStats(); setInterval(updateRealStats, 5000);
+
+// ===== SMART SUGGESTIONS =====
+async function updateSuggestions() {
+  try {
+    const res = await fetch(API + "/suggestions");
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = document.getElementById("suggestions-list");
+    if (!list || !data.suggestions || data.suggestions.length === 0) {
+      if (list) list.innerHTML = '<div style="color:var(--text-secondary);font-size:11px;padding:4px 0;">All good! No suggestions right now.</div>';
+      return;
+    }
+    list.innerHTML = "";
+    data.suggestions.forEach(s => {
+      const chip = document.createElement("div");
+      chip.className = "suggest-chip " + (s.priority || "low");
+      chip.title = s.text + "\nTry: " + s.commands.join(" | ");
+      chip.innerHTML = '<span class="suggest-chip-icon">' + s.icon + '</span><span class="suggest-chip-text">' + s.title + '</span>';
+      chip.addEventListener("click", () => {
+        // Execute first suggested command
+        if (s.commands && s.commands.length > 0) {
+          const input = document.getElementById("user-input");
+          input.value = s.commands[0];
+          send();
+        }
+      });
+      list.appendChild(chip);
+    });
+  } catch(e) {}
+}
+updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
 
 // HUD task tracker — updates when orb state changes
 (function() {

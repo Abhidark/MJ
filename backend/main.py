@@ -13,6 +13,7 @@ import sys
 import base64
 import os
 import time
+import re
 
 # Add backend dir to path for human_layer import
 sys.path.insert(0, str(Path(__file__).parent))
@@ -46,6 +47,8 @@ from intelligence.context_memory import (
 from intelligence.multi_model import needs_deep_reasoning, chain_of_thought, multi_perspective
 from intelligence.live_data import detect_live_data_request, get_live_cricket_scores, get_live_weather, extract_city_from_text
 from intelligence.error_learner import log_error, log_performance, get_diagnostics, get_live_issues
+from intelligence.ocr_engine import ocr_from_file, ocr_screenshot, detect_ocr_request
+from intelligence.smart_suggestions import get_all_suggestions, detect_suggestion_request
 
 # Zeus Module System
 from zeus.brain import Zeus
@@ -803,6 +806,107 @@ async def chat(
             _save_cmd_to_chat(message, live_result)
             return StreamingResponse(live_stream(), media_type="text/event-stream")
 
+    # Check for OCR request (screen read / image text extract)
+    ocr_type = detect_ocr_request(message)
+    if ocr_type:
+        if ocr_type == "screen_ocr":
+            ocr_result = ocr_screenshot()
+        else:
+            ocr_result = {"success": False, "text": "", "message": "Image file path required for OCR"}
+
+        if ocr_result.get("success") and ocr_result.get("text"):
+            ocr_reply = f"Screen pe ye text mila:\n\n{ocr_result['text']}"
+        else:
+            ocr_reply = ocr_result.get("message", "OCR failed — text extract nahi ho paya")
+
+        async def ocr_stream():
+            yield f"data: {json.dumps({'token': ocr_reply})}\n\n"
+            yield f"data: {json.dumps({'emotion': 'happy' if ocr_result.get('success') else 'confused'})}\n\n"
+            yield "data: [DONE]\n\n"
+        _save_cmd_to_chat(message, ocr_reply)
+        return StreamingResponse(ocr_stream(), media_type="text/event-stream")
+
+    # Check for git commands via chat
+    git_patterns = re.compile(
+        r"(?:git\s+(?:status|log|add|commit|push|pull|branch|diff|stash))"
+        r"|(?:code\s+(?:push|commit)\s+(?:kar|karo|kro|do))"
+        r"|(?:(?:push|commit)\s+(?:kar|karo|kro|do)\s+(?:code|changes))"
+        r"|(?:git\s+(?:ka|ki|ke)\s+(?:status|haal))"
+        r"|(?:kitne\s+(?:changes|files)\s+(?:hai|hain|pending))",
+        re.IGNORECASE
+    )
+    if git_patterns.search(message):
+        import subprocess as _sp
+        repo = str(Path(__file__).parent.parent)
+        lower_msg = message.lower()
+
+        if any(w in lower_msg for w in ["push kar", "push karo", "push kro", "push do", "git push"]):
+            # Auto: git add . + commit + push
+            _sp.run(["git", "-C", repo, "add", "."], capture_output=True, timeout=10)
+            commit_r = _sp.run(["git", "-C", repo, "commit", "-m", "MJ auto-commit"], capture_output=True, text=True, timeout=10)
+            push_r = _sp.run(["git", "-C", repo, "push"], capture_output=True, text=True, timeout=30)
+            git_reply = f"Git Push Result:\n{commit_r.stdout or commit_r.stderr}\n{push_r.stdout or push_r.stderr}"
+        elif any(w in lower_msg for w in ["commit kar", "commit karo", "commit kro", "git commit"]):
+            _sp.run(["git", "-C", repo, "add", "."], capture_output=True, timeout=10)
+            commit_r = _sp.run(["git", "-C", repo, "commit", "-m", "MJ auto-commit"], capture_output=True, text=True, timeout=10)
+            git_reply = f"Git Commit:\n{commit_r.stdout or commit_r.stderr}"
+        elif any(w in lower_msg for w in ["git pull"]):
+            pull_r = _sp.run(["git", "-C", repo, "pull"], capture_output=True, text=True, timeout=30)
+            git_reply = f"Git Pull:\n{pull_r.stdout or pull_r.stderr}"
+        elif any(w in lower_msg for w in ["git log"]):
+            log_r = _sp.run(["git", "-C", repo, "log", "--oneline", "-10"], capture_output=True, text=True, timeout=10)
+            git_reply = f"Last 10 Commits:\n{log_r.stdout or 'No commits found'}"
+        elif any(w in lower_msg for w in ["git diff"]):
+            diff_r = _sp.run(["git", "-C", repo, "diff", "--stat"], capture_output=True, text=True, timeout=10)
+            git_reply = f"Git Changes:\n{diff_r.stdout or 'No changes'}"
+        elif any(w in lower_msg for w in ["git branch"]):
+            branch_r = _sp.run(["git", "-C", repo, "branch", "-a"], capture_output=True, text=True, timeout=10)
+            git_reply = f"Branches:\n{branch_r.stdout or 'No branches'}"
+        else:
+            # Default: git status
+            status_r = _sp.run(["git", "-C", repo, "status", "--short"], capture_output=True, text=True, timeout=10)
+            branch_r = _sp.run(["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True, timeout=5)
+            last_r = _sp.run(["git", "-C", repo, "log", "-1", "--oneline"], capture_output=True, text=True, timeout=5)
+            changes = status_r.stdout.strip() or "No changes"
+            branch = branch_r.stdout.strip()
+            last = last_r.stdout.strip()
+            git_reply = f"📂 Git Status:\nBranch: {branch}\nLast Commit: {last}\nChanges:\n{changes}"
+
+        async def git_stream():
+            yield f"data: {json.dumps({'token': git_reply})}\n\n"
+            yield f"data: {json.dumps({'emotion': 'happy'})}\n\n"
+            yield "data: [DONE]\n\n"
+        _save_cmd_to_chat(message, git_reply)
+        return StreamingResponse(git_stream(), media_type="text/event-stream")
+
+    # Check for smart suggestion request
+    if detect_suggestion_request(message):
+        try:
+            s_stats = get_system_stats()
+        except Exception:
+            s_stats = {}
+        try:
+            from pc_control.app_tracker import app_usage as _au
+            s_usage = dict(_au) if _au else {}
+        except Exception:
+            s_usage = {}
+        suggestions = await get_all_suggestions(stats=s_stats, app_usage=s_usage)
+        if suggestions:
+            lines = ["🧠 Smart Suggestions for you:\n"]
+            for i, s in enumerate(suggestions, 1):
+                lines.append(f"{s['icon']} **{s['title']}** — {s['text']}")
+                lines.append(f"   Try: {' | '.join(s['commands'])}\n")
+            suggest_reply = "\n".join(lines)
+        else:
+            suggest_reply = "Sab badhiya hai! Koi specific suggestion nahi abhi. Keep going! 💪"
+
+        async def suggest_stream():
+            yield f"data: {json.dumps({'token': suggest_reply})}\n\n"
+            yield f"data: {json.dumps({'emotion': 'happy'})}\n\n"
+            yield "data: [DONE]\n\n"
+        _save_cmd_to_chat(message, suggest_reply)
+        return StreamingResponse(suggest_stream(), media_type="text/event-stream")
+
     # Check for greeting -> daily briefing
     if is_greeting(message):
         briefing = await generate_briefing()
@@ -1272,6 +1376,124 @@ async def wake_briefing():
         "issues": issues,
         "ollama": "online" if ollama_ok else "offline",
     }
+
+
+# ===== OCR ENDPOINTS =====
+
+@app.get("/ocr/screen")
+async def ocr_screen():
+    """Take screenshot and extract text via OCR."""
+    result = ocr_screenshot()
+    return result
+
+
+@app.post("/ocr/file")
+async def ocr_file(filepath: str = Form(...)):
+    """Extract text from a given image file."""
+    result = ocr_from_file(filepath)
+    return result
+
+
+# ===== GIT INTEGRATION =====
+
+class GitRequest(BaseModel):
+    command: str
+    path: str = ""  # repo path, empty = auto-detect
+
+@app.post("/git")
+async def git_command(req: GitRequest):
+    """Execute git commands for MJ project or any repo."""
+    import subprocess as sp
+
+    allowed = ["status", "log", "add", "commit", "push", "pull", "branch", "diff", "stash"]
+    cmd_lower = req.command.strip().lower()
+
+    # Parse the git command
+    parts = cmd_lower.split()
+    if not parts:
+        return {"success": False, "message": "No git command provided"}
+
+    git_action = parts[0]
+    if git_action not in allowed:
+        return {"success": False, "message": f"Git command '{git_action}' not allowed. Allowed: {', '.join(allowed)}"}
+
+    # Build the actual git command
+    repo_path = req.path if req.path else str(Path(__file__).parent.parent)  # Default: MJ-Assistant root
+
+    full_cmd = ["git", "-C", repo_path] + parts
+
+    # For commit, ensure message is provided
+    if git_action == "commit" and "-m" not in cmd_lower:
+        return {"success": False, "message": "Commit me message do: commit -m \"your message\""}
+
+    try:
+        r = sp.run(full_cmd, capture_output=True, text=True, timeout=30)
+        output = r.stdout.strip() or r.stderr.strip() or "Done (no output)"
+        success = r.returncode == 0
+
+        return {
+            "success": success,
+            "command": " ".join(full_cmd),
+            "output": output,
+            "message": output if success else f"Git error: {output}"
+        }
+    except sp.TimeoutExpired:
+        return {"success": False, "message": "Git command timed out (30s)"}
+    except FileNotFoundError:
+        return {"success": False, "message": "Git not installed or not in PATH"}
+    except Exception as e:
+        return {"success": False, "message": f"Git error: {str(e)[:200]}"}
+
+
+@app.get("/git/status")
+async def git_quick_status():
+    """Quick git status for MJ project."""
+    import subprocess as sp
+    repo = str(Path(__file__).parent.parent)
+    try:
+        # Get branch
+        branch = sp.run(["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"],
+                        capture_output=True, text=True, timeout=5).stdout.strip()
+        # Get status
+        status = sp.run(["git", "-C", repo, "status", "--porcelain"],
+                        capture_output=True, text=True, timeout=5).stdout.strip()
+        # Get last commit
+        last_commit = sp.run(["git", "-C", repo, "log", "-1", "--oneline"],
+                             capture_output=True, text=True, timeout=5).stdout.strip()
+        # Count changes
+        changed = len([l for l in status.split("\n") if l.strip()]) if status else 0
+
+        return {
+            "success": True,
+            "branch": branch,
+            "changed_files": changed,
+            "status": status or "Clean — no changes",
+            "last_commit": last_commit,
+            "clean": changed == 0
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Git status failed: {str(e)[:200]}"}
+
+
+# ===== SMART SUGGESTIONS =====
+
+@app.get("/suggestions")
+async def smart_suggestions():
+    """Get proactive smart suggestions based on time, system, usage."""
+    try:
+        stats = get_system_stats()
+    except Exception:
+        stats = {}
+
+    # Get app usage
+    try:
+        from pc_control.app_tracker import app_usage
+        usage = dict(app_usage) if app_usage else {}
+    except Exception:
+        usage = {}
+
+    suggestions = await get_all_suggestions(stats=stats, app_usage=usage)
+    return {"suggestions": suggestions, "count": len(suggestions)}
 
 
 class SpeakRequest(BaseModel):
