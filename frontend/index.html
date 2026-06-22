@@ -2368,6 +2368,15 @@
               <div class="os-toggle-knob"></div>
             </button>
           </div>
+          <div class="os-toggle-card">
+            <div class="os-toggle-info">
+              <div class="os-toggle-title">Holo FX</div>
+              <div class="os-toggle-desc">Scan lines + rings</div>
+            </div>
+            <button class="os-toggle-switch on" id="os-holo-toggle">
+              <div class="os-toggle-knob"></div>
+            </button>
+          </div>
         </div>
         <div class="os-tip">
           <strong>Tip:</strong> Drag the orb to rotate manually. Click inside the sphere to trigger shockwave ripples. Settings persist per state.
@@ -3225,6 +3234,10 @@ drawParticles();
   document.getElementById("os-glow-toggle").addEventListener("click", function() {
     this.classList.toggle("on");
     if (window._orbCfg) window._orbCfg.hyperGlow = this.classList.contains("on");
+  });
+  document.getElementById("os-holo-toggle").addEventListener("click", function() {
+    this.classList.toggle("on");
+    if (window._orbCfg) window._orbCfg.holoMode = this.classList.contains("on");
   });
 
   // Close panel on outside click

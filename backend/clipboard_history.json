@@ -1,5 +1,29 @@
 [
   {
+    "content": "git add .\ngit commit -m \"Add Holo FX toggle to orb settings panel\"\ngit push",
+    "time": "10:29 AM",
+    "timestamp": "2026-06-22T10:29:59.741522",
+    "preview": "git add . git commit -m \"Add Holo FX toggle to orb settings panel\" git push"
+  },
+  {
+    "content": "allow pasting",
+    "time": "10:28 AM",
+    "timestamp": "2026-06-22T10:28:05.906611",
+    "preview": "allow pasting"
+  },
+  {
+    "content": "window._orbCfg.holoMode = true;",
+    "time": "10:26 AM",
+    "timestamp": "2026-06-22T10:26:46.486295",
+    "preview": "window._orbCfg.holoMode = true;"
+  },
+  {
+    "content": "window._orbCfg.holoMode = false;  // effects OFF\nwindow._orbCfg.holoMode = true;   // effects ON",
+    "time": "10:25 AM",
+    "timestamp": "2026-06-22T10:25:36.418047",
+    "preview": "window._orbCfg.holoMode = false;  // effects OFF window._orbCfg.holoMode = true;"
+  },
+  {
     "content": "git add .\ngit commit -m \"Fix orb settings overlap + add drag handle bar for reliable card move\"\ngit push",
     "time": "08:24 PM",
     "timestamp": "2026-06-21T20:24:22.385486",
