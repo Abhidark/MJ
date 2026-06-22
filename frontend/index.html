@@ -5878,29 +5878,156 @@ input.focus();
   var saved = JSON.parse(localStorage.getItem("mj-dash-settings") || "{}");
 
   var themeColors = {
-    default: { bg1: "#020c19", bg2: "#0a1628", accent: "#00d4ff", border: "rgba(0,180,255,0.1)" },
-    emerald: { bg1: "#021910", bg2: "#0a2818", accent: "#00ff88", border: "rgba(0,255,136,0.1)" },
-    crimson: { bg1: "#190205", bg2: "#280a0f", accent: "#ff3b5c", border: "rgba(255,59,92,0.1)" },
-    violet:  { bg1: "#0f0219", bg2: "#1a0a28", accent: "#b92eff", border: "rgba(185,46,255,0.1)" },
-    solar:   { bg1: "#191002", bg2: "#281a0a", accent: "#ffa500", border: "rgba(255,165,0,0.1)" },
-    midnight:{ bg1: "#000000", bg2: "#111111", accent: "#888888", border: "rgba(136,136,136,0.1)" }
+    default: { bg1: "#020c19", bg2: "#0a1628", accent: "#00d4ff" },
+    emerald: { bg1: "#021910", bg2: "#0a2818", accent: "#00ff88" },
+    crimson: { bg1: "#190205", bg2: "#280a0f", accent: "#ff3b5c" },
+    violet:  { bg1: "#0f0219", bg2: "#1a0a28", accent: "#b92eff" },
+    solar:   { bg1: "#191002", bg2: "#281a0a", accent: "#ffa500" },
+    midnight:{ bg1: "#000000", bg2: "#111111", accent: "#888888" }
   };
+
+  // Convert hex to {r,g,b}
+  function hexRgb(hex) {
+    hex = hex.replace("#","");
+    return { r: parseInt(hex.substring(0,2),16), g: parseInt(hex.substring(2,4),16), b: parseInt(hex.substring(4,6),16) };
+  }
+
+  // Darken a color
+  function darken(hex, pct) {
+    var c = hexRgb(hex);
+    var f = 1 - pct;
+    return "#" + [Math.round(c.r*f), Math.round(c.g*f), Math.round(c.b*f)].map(function(v){ return v.toString(16).padStart(2,"0"); }).join("");
+  }
+
+  function applyAccentGlobal(accent) {
+    var c = hexRgb(accent);
+    var r = c.r, g = c.g, b = c.b;
+    var root = document.documentElement.style;
+
+    // Update ALL CSS variables that use the accent/cyan color
+    root.setProperty("--accent", accent);
+    root.setProperty("--accent2", darken(accent, 0.3));
+    root.setProperty("--primary", accent);
+    root.setProperty("--primary-dim", darken(accent, 0.4));
+    root.setProperty("--jarvis-cyan", accent);
+    root.setProperty("--jarvis-blue", darken(accent, 0.5));
+    root.setProperty("--blue", accent);
+    root.setProperty("--glow", "rgba("+r+","+g+","+b+",0.35)");
+    root.setProperty("--glow2", "rgba("+r+","+g+","+b+",0.25)");
+    root.setProperty("--glass", "rgba("+r+","+g+","+b+",0.03)");
+    root.setProperty("--glass2", "rgba("+r+","+g+","+b+",0.06)");
+    root.setProperty("--glass-border", "rgba("+r+","+g+","+b+",0.1)");
+    root.setProperty("--glass-border-hover", "rgba("+r+","+g+","+b+",0.25)");
+    root.setProperty("--panel-border", "rgba("+r+","+g+","+b+",0.08)");
+    root.setProperty("--jarvis-glow", "rgba("+r+","+g+","+b+",0.15)");
+    root.setProperty("--arc-reactor", "radial-gradient(circle, rgba("+r+","+g+","+b+",0.15) 0%, rgba("+Math.round(r*0.4)+","+Math.round(g*0.4)+","+Math.round(b*0.4)+",0.05) 40%, transparent 70%)");
+
+    // Update dash-card borders
+    var borderColor = "rgba("+r+","+g+","+b+",0.1)";
+    document.querySelectorAll(".dash-card").forEach(function(card) {
+      if (card.style.borderColor === "transparent") return;
+      card.style.borderColor = borderColor;
+    });
+
+    // Update dash-card ::before gradient via a dynamic style tag
+    var dynStyle = document.getElementById("mj-dynamic-theme");
+    if (!dynStyle) {
+      dynStyle = document.createElement("style");
+      dynStyle.id = "mj-dynamic-theme";
+      document.head.appendChild(dynStyle);
+    }
+    dynStyle.textContent = [
+      ".dash-card::before { background: linear-gradient(90deg, transparent, rgba("+r+","+g+","+b+",0.3), transparent) !important; }",
+      ".dash-card:hover { border-color: rgba("+r+","+g+","+b+",0.2) !important; box-shadow: 0 0 20px rgba("+r+","+g+","+b+",0.05) !important; }",
+      ".dash-card-title { color: "+accent+" !important; }",
+      ".dash-card-title:hover { color: "+accent+" !important; filter: brightness(1.3); }",
+      ".sysmon-ring { stroke: "+accent+" !important; }",
+      "#sg-cpu-ring { stroke: "+accent+" !important; }",
+      "#sg-ram-ring { stroke: "+darken(accent,0.1)+" !important; }",
+      "#sg-disk-ring { stroke: "+darken(accent,0.2)+" !important; }",
+      "#sg-gpu-ring { stroke: "+accent+" !important; }",
+      ".sysmon-val { color: "+accent+" !important; }",
+      ".orb-ring, .orb-ring-2 { border-color: rgba("+r+","+g+","+b+",0.08) !important; }",
+      ".orb-alert { background: rgba("+r+","+g+","+b+",0.12) !important; border-color: rgba("+r+","+g+","+b+",0.3) !important; }",
+      ".orb-settings-btn, .holo-toggle-btn { border-color: rgba("+r+","+g+","+b+",0.2) !important; color: rgba("+r+","+g+","+b+",0.5) !important; }",
+      ".orb-settings-btn:hover, .orb-settings-btn.active, .holo-toggle-btn:hover, .holo-toggle-btn.active { border-color: rgba("+r+","+g+","+b+",0.6) !important; color: "+accent+" !important; box-shadow: 0 0 12px rgba("+r+","+g+","+b+",0.3) !important; }",
+      ".os-header-left, .os-section-title { color: rgba("+r+","+g+","+b+",0.7) !important; }",
+      ".os-preset-btn:hover, .os-preset-btn.active { border-color: rgba("+r+","+g+","+b+",0.5) !important; }",
+      ".os-mode-btn:hover, .os-mode-btn.active { border-color: rgba("+r+","+g+","+b+",0.5) !important; }",
+      ".os-toggle-switch.on { background: rgba("+r+","+g+","+b+",0.3) !important; border-color: "+accent+" !important; }",
+      ".os-toggle-switch.on .os-toggle-knob { background: "+accent+" !important; }",
+      ".card-drag-handle { background: linear-gradient(180deg, rgba("+r+","+g+","+b+",0.15), rgba("+r+","+g+","+b+",0.05)) !important; border-color: rgba("+r+","+g+","+b+",0.2) !important; }",
+      ".card-drag-handle::after { color: rgba("+r+","+g+","+b+",0.6) !important; }",
+      ".card-drag-handle:hover { background: linear-gradient(180deg, rgba("+r+","+g+","+b+",0.3), rgba("+r+","+g+","+b+",0.1)) !important; }",
+      ".card-drag-handle:hover::after { color: rgba("+r+","+g+","+b+",0.9) !important; }",
+      "body.dash-editing .dash-grid > * { outline-color: rgba("+r+","+g+","+b+",0.3) !important; }",
+      "body.dash-editing .dash-grid > *:hover { outline-color: rgba("+r+","+g+","+b+",0.6) !important; box-shadow: 0 0 20px rgba("+r+","+g+","+b+",0.15) !important; }",
+      ".zeus-auto-badge { background: rgba("+r+","+g+","+b+",0.12) !important; color: "+accent+" !important; border-color: rgba("+r+","+g+","+b+",0.3) !important; }",
+      ".zm-dot { background: "+accent+" !important; box-shadow: 0 0 6px "+accent+" !important; }",
+      ".qc-item:hover { background: rgba("+r+","+g+","+b+",0.08) !important; border-color: rgba("+r+","+g+","+b+",0.2) !important; }",
+      ".qc-icon { color: "+accent+" !important; }",
+      ".icon-btn:hover { color: "+accent+" !important; }",
+      ".live-dot { background: "+accent+" !important; box-shadow: 0 0 6px "+accent+" !important; }",
+      ".suggest-chip { border-color: rgba("+r+","+g+","+b+",0.2) !important; }",
+      ".suggest-chip:hover { border-color: rgba("+r+","+g+","+b+",0.4) !important; background: rgba("+r+","+g+","+b+",0.08) !important; }",
+      ".qa-btn { border-color: rgba("+r+","+g+","+b+",0.12) !important; }",
+      ".qa-btn:hover { border-color: rgba("+r+","+g+","+b+",0.3) !important; background: rgba("+r+","+g+","+b+",0.08) !important; color: "+accent+" !important; }",
+      "#state-text { color: "+accent+" !important; }",
+      ".sdp-item { border-color: rgba("+r+","+g+","+b+",0.08) !important; background: rgba("+r+","+g+","+b+",0.04) !important; }",
+      ".sdp-item-value { color: "+accent+" !important; }",
+      ".sdp-section-title { color: rgba("+r+","+g+","+b+",0.5) !important; border-color: rgba("+r+","+g+","+b+",0.08) !important; }",
+      ".sdp-cmd-btn { border-color: rgba("+r+","+g+","+b+",0.15) !important; background: rgba("+r+","+g+","+b+",0.04) !important; }",
+      ".sdp-cmd-btn:hover { border-color: rgba("+r+","+g+","+b+",0.4) !important; background: rgba("+r+","+g+","+b+",0.12) !important; color: "+accent+" !important; }",
+      ".sdp-model-card { border-color: rgba("+r+","+g+","+b+",0.1) !important; background: rgba("+r+","+g+","+b+",0.04) !important; }",
+      ".sdp-model-card:hover { border-color: rgba("+r+","+g+","+b+",0.3) !important; }",
+      ".sdp-model-name { color: "+accent+" !important; }",
+      ".section-detail-panel.open { border-top-color: rgba("+r+","+g+","+b+",0.1) !important; }",
+      ".expand-arrow { color: "+accent+" !important; }",
+      ".gesture-toggle-btn { border-color: rgba("+r+","+g+","+b+",0.3) !important; color: rgba("+r+","+g+","+b+",0.5) !important; }",
+      ".gesture-toggle-btn:hover, .gesture-toggle-btn.active { border-color: "+accent+" !important; color: "+accent+" !important; }",
+      ".gesture-preview { border-color: rgba("+r+","+g+","+b+",0.3) !important; }",
+      ".gesture-label { color: "+accent+" !important; }",
+      ".w-icon { color: "+accent+" !important; }",
+      ".w-value { color: "+accent+" !important; }",
+      ".top-bar { border-color: rgba("+r+","+g+","+b+",0.08) !important; }",
+      ".msg.assistant { border-color: rgba("+r+","+g+","+b+",0.1) !important; }",
+      ".csi-icon { color: "+accent+" !important; }",
+      ".lf-icon { color: "+accent+" !important; }",
+      "body.holo-active .dash-card::before { border-color: rgba("+r+","+g+","+b+",0.6) !important; }",
+      "body.holo-active .dash-card::after { border-color: rgba("+r+","+g+","+b+",0.6) !important; }",
+      ".dsp-section-title { color: rgba("+r+","+g+","+b+",0.5) !important; }",
+      ".dsp-slider::-webkit-slider-thumb { background: "+accent+" !important; box-shadow: 0 0 8px rgba("+r+","+g+","+b+",0.4) !important; }",
+      ".hud-sidebar { border-color: rgba("+r+","+g+","+b+",0.06) !important; }",
+      ".hud-item-val { color: "+accent+" !important; }",
+      ".hud-item-icon { color: rgba("+r+","+g+","+b+",0.4) !important; }",
+      "#chat-input:focus { border-color: rgba("+r+","+g+","+b+",0.4) !important; box-shadow: 0 0 20px rgba("+r+","+g+","+b+",0.05) !important; }",
+      "#send-btn { background: rgba("+r+","+g+","+b+",0.15) !important; color: "+accent+" !important; border-color: rgba("+r+","+g+","+b+",0.2) !important; }",
+      "#send-btn:hover { background: rgba("+r+","+g+","+b+",0.25) !important; }",
+    ].join("\n");
+
+    // Update orb color
+    if (window._orbSetIdleColor) window._orbSetIdleColor(accent);
+
+    // Update accent picker UI
+    var accentInput = document.getElementById("dsp-accent-color");
+    if (accentInput) accentInput.value = accent;
+    var accentHex = document.getElementById("dsp-accent-hex");
+    if (accentHex) accentHex.textContent = accent;
+  }
 
   function applyTheme(name) {
     var t = themeColors[name];
     if (!t) return;
-    document.documentElement.style.setProperty("--accent", t.accent);
-    document.documentElement.style.setProperty("--primary", t.accent);
+
+    // Apply background
+    document.documentElement.style.setProperty("--bg", t.bg1);
+    document.documentElement.style.setProperty("--bg2", t.bg2);
     document.body.style.background = "linear-gradient(135deg, " + t.bg1 + ", " + t.bg2 + ")";
-    document.querySelectorAll(".dash-card").forEach(function(c) {
-      if (c.style.background === "transparent") return;
-      c.style.borderColor = t.border;
-    });
-    if (window._orbSetIdleColor) window._orbSetIdleColor(t.accent);
-    var accentInput = document.getElementById("dsp-accent-color");
-    if (accentInput) accentInput.value = t.accent;
-    var accentHex = document.getElementById("dsp-accent-hex");
-    if (accentHex) accentHex.textContent = t.accent;
+
+    // Apply all accent colors globally
+    applyAccentGlobal(t.accent);
+
+    // Highlight active swatch
     document.querySelectorAll(".dsp-theme-swatch").forEach(function(s) { s.classList.remove("active"); });
     var activeSwatch = document.querySelector('[data-theme="' + name + '"]');
     if (activeSwatch) activeSwatch.classList.add("active");
@@ -5908,9 +6035,8 @@ input.focus();
 
   function applySettings(s) {
     if (s.theme) applyTheme(s.theme);
-    if (s.accent) {
-      document.documentElement.style.setProperty("--accent", s.accent);
-      document.documentElement.style.setProperty("--primary", s.accent);
+    if (s.accent && !s.theme) {
+      applyAccentGlobal(s.accent);
     }
     if (s.opacity !== undefined) {
       document.querySelectorAll(".dash-card").forEach(function(c) {
@@ -5950,12 +6076,8 @@ input.focus();
   });
 
   document.getElementById("dsp-accent-color").addEventListener("input", function() {
-    var color = this.value;
-    document.documentElement.style.setProperty("--accent", color);
-    document.documentElement.style.setProperty("--primary", color);
-    document.getElementById("dsp-accent-hex").textContent = color;
-    if (window._orbSetIdleColor) window._orbSetIdleColor(color);
-    saveSettings("accent", color);
+    applyAccentGlobal(this.value);
+    saveSettings("accent", this.value);
   });
 
   document.getElementById("dsp-opacity").addEventListener("input", function() {

@@ -1,5 +1,33 @@
 [
   {
+    "id": "alert_20260622_125845_580521",
+    "timestamp": "2026-06-22T12:58:45.580521",
+    "time_display": "12:58:45 PM",
+    "title": "CPU Critical",
+    "message": "CPU usage is at 97%! System may freeze or crash.",
+    "severity": "critical",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
+    "id": "alert_20260622_125744_214778",
+    "timestamp": "2026-06-22T12:57:44.214778",
+    "time_display": "12:57:44 PM",
+    "title": "Disk Warning",
+    "message": "Disk is 94% full. Consider cleanup.",
+    "severity": "warning",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
     "id": "alert_20260622_103219_795676",
     "timestamp": "2026-06-22T10:32:19.795676",
     "time_display": "10:32:19 AM",
