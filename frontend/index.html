@@ -101,6 +101,50 @@
   #dashboard::-webkit-scrollbar { width: 4px; }
   #dashboard::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.15); border-radius: 4px; }
 
+
+  /* ===== PERFORMANCE & POLISH ===== */
+  .dash-card, .orb-card, .hud-sidebar, #chat-panel, #ai-flow-panel,
+  .proc-panel, .roadmap-panel, .chat-delete-confirm {
+    will-change: transform, opacity;
+  }
+  body.no-animations * { animation: none !important; transition: none !important; }
+  .chat-messages, .proc-list, .ch-list, .dash-grid {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  :focus-visible {
+    outline: 2px solid rgba(0,212,255,0.5);
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) { outline: none; }
+  .card-skeleton {
+    background: linear-gradient(90deg,
+      rgba(0,180,255,0.03) 25%,
+      rgba(0,180,255,0.06) 37%,
+      rgba(0,180,255,0.03) 63%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: 6px;
+    min-height: 20px;
+  }
+  @keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
   .dash-grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
@@ -142,8 +186,6 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-  }
-  .dash-card-title {
     cursor: pointer;
     transition: color 0.2s;
   }
@@ -2372,6 +2414,67 @@
   }
   body.dash-editing .grid-pos-badge { display: block; }
 
+
+  /* Voice waveform indicator */
+  .voice-wave {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    height: 18px;
+    margin-left: 8px;
+  }
+  .voice-wave.active { display: inline-flex; }
+  .voice-wave span {
+    width: 3px;
+    background: #00d4ff;
+    border-radius: 2px;
+    animation: vwave 0.6s ease-in-out infinite;
+  }
+  .voice-wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .voice-wave span:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+  .voice-wave span:nth-child(3) { height: 18px; animation-delay: 0.2s; }
+  .voice-wave span:nth-child(4) { height: 12px; animation-delay: 0.3s; }
+  .voice-wave span:nth-child(5) { height: 6px; animation-delay: 0.4s; }
+  @keyframes vwave {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.4; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+  .voice-wave.wake-active span { background: #00ff88; }
+  .voice-wave.processing span { background: #ffd900; animation-duration: 0.3s; }
+
+  /* Voice language selector */
+  .voice-lang-select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: rgba(0,10,30,0.8);
+    color: #00d4ff;
+    border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 6px;
+    padding: 3px 6px;
+    cursor: pointer;
+    outline: none;
+    margin-left: 6px;
+  }
+  .voice-lang-select:hover { border-color: rgba(0,180,255,0.5); }
+
+  /* Mic button pulse when wake detected */
+  #mic-btn.wake-active {
+    box-shadow: 0 0 20px rgba(0,255,136,0.4), 0 0 40px rgba(0,255,136,0.1);
+    border-color: rgba(0,255,136,0.5);
+  }
+  #mic-btn.wake-active::after {
+    content: 'MJ';
+    position: absolute;
+    top: -8px; right: -8px;
+    font-size: 8px;
+    background: #00ff88;
+    color: #000;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+  }
+
   /* ===== RESPONSIVE BREAKPOINTS ===== */
 
   /* Large screens — shrink AI Flow + Chat */
@@ -2426,6 +2529,32 @@
     .top-bar-actions button, .top-bar-actions a { padding: 5px 10px; font-size: 9px; }
     .roadmap-panel { width: 100%; max-width: 360px; }
     .orb-settings-panel { width: 340px; }
+  }
+
+
+  /* Mobile: better touch targets */
+  @media (max-width: 768px) {
+    .top-bar-actions button, .top-bar-actions a,
+    .chat-header-btns button, .hud-item {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .chat-input-area input {
+      font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+    .dash-card { padding: 16px; }
+    #mic-btn { width: 44px; height: 44px; }
+  }
+
+
+  @media (max-width: 768px) {
+    .top-bar-actions button, .top-bar-actions a,
+    .chat-header-btns button, .hud-item {
+      min-height: 44px; min-width: 44px;
+    }
+    .chat-input-area input { font-size: 16px; }
+    .dash-card { padding: 16px; }
+    #mic-btn { width: 44px; height: 44px; }
   }
 
   /* Tablet / narrow screens */
@@ -4501,71 +4630,98 @@ document.getElementById("wc-voice").addEventListener("click", () => {
   window.location.href = "/static/settings.html";
 });
 
-// ===== VOICE INPUT =====
+// ===== VOICE INPUT (Enhanced) =====
 const micBtn = document.getElementById("mic-btn");
 const micStatus = document.getElementById("mic-status");
+const voiceWave = document.getElementById("voice-wave");
+const voiceLang = document.getElementById("voice-lang");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let listening = false;
 let wakeDetected = false;
-let firstWakeDone = false; // Track if first "Hey MJ" briefing already happened this session
+let firstWakeDone = false;
+let wakeTimeout = null;
 
 function setMicStatus(text) { micStatus.textContent = text; }
+function setWaveState(state) {
+  voiceWave.classList.remove("active", "wake-active", "processing");
+  if (state) { voiceWave.classList.add("active"); if (state !== "idle") voiceWave.classList.add(state); }
+}
 
-// ── First Wake Briefing: "Yes Boss" + system status ──
+// ── Detect preferred language from browser ──
+const browserLang = (navigator.language || "en-US");
+const langMap = {"en":"en-US","hi":"hi-IN","es":"es-ES","fr":"fr-FR","de":"de-DE","ja":"ja-JP","zh":"zh-CN"};
+const detectedLang = langMap[browserLang.split("-")[0]] || "en-US";
+// Set saved or detected language
+const savedLang = localStorage.getItem("mj-voice-lang") || detectedLang;
+voiceLang.value = savedLang;
+voiceLang.addEventListener("change", function() {
+  localStorage.setItem("mj-voice-lang", this.value);
+  if (listening && recognition) { recognition.lang = this.value; try { recognition.stop(); } catch(e) {} }
+});
+
+// ── Wake word patterns (multi-language) ──
+const WAKE_PATTERNS = [
+  "mj", "m.j", "em j", "hey mj", "ok mj", "emj", "m j",
+  "heyy mj", "hey m j", "hame j",
+  "aye mj", "yo mj", "hello mj", "hi mj", // English
+  "ey mj", "oye mj", "bolo mj",  // Hindi/Casual
+  "jarvis", "friday", "hey jarvis" // Easter eggs
+];
+
+// ── First Wake Briefing ──
 async function doFirstWakeBriefing() {
   if (firstWakeDone) return;
   firstWakeDone = true;
-
   setOrbState("thinking");
-  showOrbAlert("WAKE DETECTED — Fetching system status...", "success", 5000);
+  showOrbAlert("WAKE DETECTED \u2014 Fetching system status...", "success", 5000);
   setMicStatus("MJ activating...");
-
+  setWaveState("processing");
+  micBtn.classList.add("wake-active");
   try {
     const res = await fetch(API + "/wake-briefing");
     if (!res.ok) throw new Error("Briefing fetch failed");
     const data = await res.json();
     const briefing = data.briefing || "Yes Boss! MJ online.";
-
-    // Show briefing in chat
     addMsg(briefing, "assistant");
-
-    // Show issues on orb if any
     if (data.issues && data.issues.length > 0) {
-      for (const issue of data.issues) {
-        showOrbAlert("⚠ " + issue, "error", 10000);
-      }
+      for (const issue of data.issues) showOrbAlert("\u26a0 " + issue, "error", 10000);
     } else {
       showOrbAlert("ALL SYSTEMS NOMINAL", "success", 5000);
     }
-
-    // Speak the briefing via TTS
     speakText(briefing, "confident");
-
   } catch (err) {
     console.error("Wake briefing error:", err);
-    const fallback = "Yes Boss! MJ online. System status check failed, but I am ready for your commands.";
+    const fallback = "Yes Boss! MJ online. System status check failed, but I am ready.";
     addMsg(fallback, "assistant");
     speakText(fallback, "neutral");
-    showOrbAlert("WAKE ACTIVE — Status check failed", "error", 5000);
+    showOrbAlert("WAKE ACTIVE \u2014 Status check failed", "error", 5000);
   }
+  setTimeout(() => { micBtn.classList.remove("wake-active"); setWaveState("idle"); }, 3000);
 }
 
 if (SpeechRecognition) {
   const recognition = new SpeechRecognition();
-  recognition.lang = "hi-IN"; recognition.continuous = false; recognition.interimResults = true;
+  recognition.lang = savedLang;
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 3;
 
   function startListening() {
     listening = true; micBtn.classList.add("recording");
     wakeDetected = false; setOrbState("listening");
     setMicStatus('Say "Hey MJ" to activate...');
+    setWaveState("active");
     document.getElementById("wc-voice-val").textContent = "Active";
+    recognition.lang = voiceLang.value;
     try { recognition.start(); } catch(e) {}
   }
 
   function stopListening() {
-    listening = false; micBtn.classList.remove("recording");
+    listening = false; micBtn.classList.remove("recording", "wake-active");
     setOrbState("idle"); setMicStatus("Mic off");
+    setWaveState(null);
     document.getElementById("wc-voice-val").textContent = "Off";
+    if (wakeTimeout) { clearTimeout(wakeTimeout); wakeTimeout = null; }
     try { recognition.stop(); } catch(e) {}
   }
 
@@ -4574,26 +4730,45 @@ if (SpeechRecognition) {
   recognition.onresult = (e) => {
     let transcript = "";
     for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-    const lower = transcript.toLowerCase();
-    setMicStatus("Heard: " + transcript);
+    const lower = transcript.toLowerCase().trim();
+    setMicStatus("\ud83c\udfa4 " + transcript);
     const isFinal = e.results[e.results.length - 1].isFinal;
     if (!isFinal) return;
-    const wakePatterns = ["mj", "m.j", "em j", "hey mj", "ok mj", "emj", "m j", "heyy mj", "hey m j", "hame j"];
-    let hasWake = wakePatterns.some(w => lower.includes(w));
+
+    const hasWake = WAKE_PATTERNS.some(w => lower.includes(w));
+
     if (hasWake) {
-      // First wake of the session → briefing
-      if (!firstWakeDone) {
-        doFirstWakeBriefing();
-        return;
-      }
-      // Subsequent wakes → extract command after wake word
+      if (!firstWakeDone) { doFirstWakeBriefing(); return; }
+      // Extract command after wake word
       let command = transcript;
-      for (const w of ["MJ", "mj", "M.J", "m.j", "em j", "hey MJ", "ok MJ", "emj", "Hey MJ", "OK MJ", "heyy MJ", "hey m j", "hame j"]) {
+      for (const w of WAKE_PATTERNS) {
         command = command.replace(new RegExp(w, "gi"), "").trim();
       }
-      if (command.length > 1) { input.value = command; isVoiceCommand = true; send(); }
-      else { wakeDetected = true; setMicStatus("MJ activated! Speak your command..."); }
-    } else if (wakeDetected) { input.value = transcript.trim(); wakeDetected = false; isVoiceCommand = true; send(); }
+      if (command.length > 1) {
+        setWaveState("processing");
+        input.value = command; isVoiceCommand = true; send();
+        setTimeout(() => setWaveState("active"), 2000);
+      } else {
+        wakeDetected = true;
+        micBtn.classList.add("wake-active");
+        setMicStatus("MJ active! Speak your command...");
+        setWaveState("wake-active");
+        // Auto-timeout wake after 15s
+        if (wakeTimeout) clearTimeout(wakeTimeout);
+        wakeTimeout = setTimeout(() => {
+          wakeDetected = false;
+          micBtn.classList.remove("wake-active");
+          setMicStatus('Say "Hey MJ" to activate...');
+          setWaveState("active");
+        }, 15000);
+      }
+    } else if (wakeDetected) {
+      setWaveState("processing");
+      input.value = transcript.trim(); wakeDetected = false; isVoiceCommand = true; send();
+      micBtn.classList.remove("wake-active");
+      if (wakeTimeout) { clearTimeout(wakeTimeout); wakeTimeout = null; }
+      setTimeout(() => setWaveState("active"), 2000);
+    }
   };
 
   recognition.onend = () => {
@@ -4601,6 +4776,7 @@ if (SpeechRecognition) {
       setTimeout(() => {
         if (listening) {
           if (!wakeDetected) setMicStatus('Say "Hey MJ" to activate...');
+          recognition.lang = voiceLang.value;
           try { recognition.start(); } catch(e) {}
         }
       }, 200);
@@ -4608,7 +4784,8 @@ if (SpeechRecognition) {
   };
 
   recognition.onerror = (e) => {
-    if (e.error === "no-speech") setMicStatus("Listening...");
+    if (e.error === "no-speech") { setMicStatus("Listening..."); }
+    else if (e.error === "network") { setMicStatus("Network error - retrying..."); }
     else if (e.error !== "aborted") setMicStatus("Mic error: " + e.error);
   };
 
@@ -5087,7 +5264,7 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
     const pname = btn.getAttribute("data-pname");
     if (!confirm('Terminate "' + pname + '" (PID: ' + pid + ')?')) return;
     try {
-      await fetch(API + "/kill-process/" + pid, { method: "POST" });
+      await fetch(API + "/processes/" + pid + "/kill", { method: "POST" });
       procData = procData.filter(p => p.pid != pid);
       renderProcs();
     } catch(e) { alert("Failed to kill process"); }
@@ -6096,7 +6273,7 @@ input.focus();
 
   async function loadPanelData(panelId) {
     try {
-      var res = await fetch(API + "/stats");
+      var res = await fetch(API + "/system-stats");
       var stats = await res.json();
 
       if (panelId === "sdp-ai-core" || panelId === "sdp-live-intel" || panelId === "sdp-sysmon") {

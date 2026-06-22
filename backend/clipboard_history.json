@@ -1,5 +1,17 @@
 [
   {
+    "content": "git add .\ngit commit -m \"12-col grid, process sort/kill, voice upgrade, performance polish\"\ngit push",
+    "time": "10:01 PM",
+    "timestamp": "2026-06-22T22:01:40.470410",
+    "preview": "git add . git commit -m \"12-col grid, process sort/kill, voice upgrade, performa"
+  },
+  {
+    "content": "Considering everything we've discussed, **I would not build JARVIS as \"a chatbot with features.\"** I would build it as an **AI Operating System** where every version is a stable milestone.\n\nThe roadmap below is designed so that by **V25**, your project can compete with advanced open-source AI assistants while remaining **100% local-first** and allowing optional cloud APIs later.\n\n---\n\n# ?? JARVIS AI Operating System Roadmap (V1 \u001a V25)\n\n## ?? PHASE 1 - Foundation (V1-V5)\n\n### ? V1 - JARVIS Core\n\n",
+    "time": "08:34 PM",
+    "timestamp": "2026-06-22T20:34:57.220177",
+    "preview": "Considering everything we've discussed, **I would not build JARVIS as \"a chatbot"
+  },
+  {
     "content": "git add .\ngit commit -m \"12-col grid layout, v4 layout save, process panel sort+kill, bug fixes\"\ngit push",
     "time": "08:33 PM",
     "timestamp": "2026-06-22T20:33:33.487604",
