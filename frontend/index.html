@@ -406,6 +406,169 @@
     color: #00d4ff;
   }
 
+  /* === HOLOGRAPHIC MODE CSS === */
+  .holo-scanlines::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent, transparent 2px,
+      rgba(0,212,255,0.03) 2px, rgba(0,212,255,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+    animation: scanlineScroll 8s linear infinite;
+  }
+
+  @keyframes scanlineScroll {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(4px); }
+  }
+
+  @keyframes holoFlicker {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: 0.95; }
+    97% { opacity: 0.98; }
+  }
+
+  @keyframes holoPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(0,212,255,0.1), inset 0 0 5px rgba(0,212,255,0.05); }
+    50% { box-shadow: 0 0 15px rgba(0,212,255,0.2), inset 0 0 10px rgba(0,212,255,0.1); }
+  }
+
+  body.holo-active {
+    animation: holoFlicker 4s ease-in-out infinite;
+  }
+  body.holo-active .dash-card {
+    border-color: rgba(0,212,255,0.3) !important;
+    animation: holoPulse 3s ease-in-out infinite;
+    position: relative;
+  }
+  /* HUD targeting corners */
+  body.holo-active .dash-card::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px;
+    width: 12px; height: 12px;
+    border-top: 2px solid rgba(0,212,255,0.6);
+    border-left: 2px solid rgba(0,212,255,0.6);
+    pointer-events: none;
+    z-index: 2;
+  }
+  body.holo-active .dash-card::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 12px; height: 12px;
+    border-bottom: 2px solid rgba(0,212,255,0.6);
+    border-right: 2px solid rgba(0,212,255,0.6);
+    pointer-events: none;
+    z-index: 2;
+  }
+  body.holo-active .msg.assistant {
+    text-shadow: 0.5px 0 rgba(255,0,0,0.15), -0.5px 0 rgba(0,255,255,0.15);
+  }
+  /* Vignette */
+  body.holo-active::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* Holo toggle button */
+  .holo-toggle-btn {
+    position: absolute;
+    bottom: -50px;
+    left: -10px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.2);
+    background: rgba(17,17,21,0.7);
+    color: rgba(0,212,255,0.5);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+    z-index: 10;
+  }
+  .holo-toggle-btn:hover, .holo-toggle-btn.active {
+    border-color: rgba(0,212,255,0.6);
+    color: #00d4ff;
+    background: rgba(0,212,255,0.1);
+    box-shadow: 0 0 12px rgba(0,212,255,0.3);
+  }
+
+  /* Gesture webcam preview */
+  .gesture-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+  .gesture-toggle-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.3);
+    background: rgba(17,17,21,0.8);
+    color: rgba(0,212,255,0.5);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+  }
+  .gesture-toggle-btn:hover, .gesture-toggle-btn.active {
+    border-color: #00d4ff;
+    color: #00d4ff;
+    box-shadow: 0 0 12px rgba(0,212,255,0.3);
+  }
+  .gesture-preview {
+    display: none;
+    width: 160px; height: 120px;
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    position: relative;
+    background: #000;
+  }
+  .gesture-preview.active { display: block; }
+  .gesture-preview video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0.7;
+    transform: scaleX(-1);
+  }
+  .gesture-preview canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    transform: scaleX(-1);
+  }
+  .gesture-label {
+    position: absolute;
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    color: #00d4ff;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .gesture-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #ff3b30;
+    position: absolute;
+    top: 6px; right: 6px;
+  }
+  .gesture-status-dot.active { background: #00ff88; }
+
   .orb-settings-panel {
     position: fixed;
     top: 60px;
@@ -2095,6 +2258,7 @@
           <div class="orb" id="orb">
             <canvas id="orb-canvas" width="320" height="320"></canvas>
             <!-- MJ label removed -->
+            <button class="holo-toggle-btn" id="holo-toggle" title="Holographic Mode">&#9674;</button>
           </div>
         </div>
         <!-- orb settings moved to HUD sidebar -->
@@ -2381,6 +2545,16 @@
   </div>
 
   <!-- Orb Settings Panel moved inside orb dash-card above -->
+
+  <div class="gesture-container" id="gesture-container">
+    <div class="gesture-preview" id="gesture-preview">
+      <video id="gesture-video" autoplay playsinline muted></video>
+      <canvas id="gesture-canvas" width="160" height="120"></canvas>
+      <div class="gesture-label" id="gesture-label">GESTURE: IDLE</div>
+      <div class="gesture-status-dot" id="gesture-dot"></div>
+    </div>
+    <button class="gesture-toggle-btn" id="gesture-toggle" title="Gesture Control">&#9995;</button>
+  </div>
 
   <div class="alert-toast-container" id="alert-toast-box"></div>
 
@@ -2750,6 +2924,7 @@ drawParticles();
     interactionStrength: 0.5,
     volumetric: false,
     hyperGlow: false,
+    holoMode: true,
   };
   window._orbCfg = orbCfg;
 
@@ -2924,6 +3099,48 @@ drawParticles();
       octx.beginPath();
       octx.arc(dx, dy, sz, 0, Math.PI*2);
       octx.fill();
+    }
+
+    // === HOLOGRAPHIC EFFECTS ===
+    if (orbCfg.holoMode) {
+      // Scan line sweep
+      const scanY = (now * 0.05) % (SIZE);
+      octx.globalCompositeOperation = "source-over";
+      const scanGrad = octx.createLinearGradient(0, scanY - 20, 0, scanY + 20);
+      scanGrad.addColorStop(0, "rgba(0,212,255,0)");
+      scanGrad.addColorStop(0.5, `rgba(${cr},${cg},${cb},0.08)`);
+      scanGrad.addColorStop(1, "rgba(0,212,255,0)");
+      octx.fillStyle = scanGrad;
+      octx.beginPath();
+      octx.arc(cx, cy, ORB_RADIUS * 1.1, 0, Math.PI * 2);
+      octx.fill();
+      octx.globalCompositeOperation = "lighter";
+
+      // Depth rings
+      for (let ri = 0; ri < 3; ri++) {
+        const ringPhase = now * 0.001 + ri * 2.094;
+        const ringR = ORB_RADIUS * (0.5 + ri * 0.25) + Math.sin(ringPhase) * 5;
+        const ringA = 0.06 + Math.sin(ringPhase) * 0.03;
+        octx.strokeStyle = `rgba(${cr},${cg},${cb},${ringA.toFixed(3)})`;
+        octx.lineWidth = 0.5;
+        octx.beginPath();
+        octx.ellipse(cx, cy, ringR, ringR * 0.3, now * 0.0003, 0, Math.PI * 2);
+        octx.stroke();
+      }
+
+      // Chromatic aberration border glow
+      const caOffset = 2;
+      octx.globalCompositeOperation = "source-over";
+      octx.strokeStyle = `rgba(255,0,80,0.04)`;
+      octx.lineWidth = 1.5;
+      octx.beginPath();
+      octx.arc(cx + caOffset, cy, ORB_RADIUS * 1.05, 0, Math.PI * 2);
+      octx.stroke();
+      octx.strokeStyle = `rgba(0,200,255,0.04)`;
+      octx.beginPath();
+      octx.arc(cx - caOffset, cy, ORB_RADIUS * 1.05, 0, Math.PI * 2);
+      octx.stroke();
+      octx.globalCompositeOperation = "lighter";
     }
 
     octx.globalCompositeOperation = "source-over";
@@ -4621,6 +4838,241 @@ input.focus();
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   });
+})();
+
+// ===== HOLOGRAPHIC UI MODE =====
+(function() {
+  const holoBtn = document.getElementById("holo-toggle");
+  if (!holoBtn) return;
+
+  let holoActive = false;
+
+  holoBtn.addEventListener("click", function(e) {
+    e.stopPropagation();
+    holoActive = !holoActive;
+    holoBtn.classList.toggle("active", holoActive);
+    document.body.classList.toggle("holo-active", holoActive);
+    document.body.classList.toggle("holo-scanlines", holoActive);
+
+    if (window.showOrbAlert) {
+      showOrbAlert(holoActive ? "HOLOGRAPHIC MODE — ENGAGED" : "HOLOGRAPHIC MODE — DISENGAGED", "success", 3000);
+    }
+  });
+})();
+
+// ===== GESTURE CONTROL (Webcam Motion Detection) =====
+(function() {
+  const gestureToggle = document.getElementById("gesture-toggle");
+  const gesturePreview = document.getElementById("gesture-preview");
+  const gestureVideo = document.getElementById("gesture-video");
+  const gestureCanvas = document.getElementById("gesture-canvas");
+  const gestureLabel = document.getElementById("gesture-label");
+  const gestureDot = document.getElementById("gesture-dot");
+  if (!gestureToggle || !gestureVideo) return;
+
+  let gestureActive = false;
+  let stream = null;
+  let animFrame = null;
+  let prevFrame = null;
+  let motionHistory = [];
+  let lastGesture = "";
+  let gestureTimeout = null;
+
+  const gCtx = gestureCanvas.getContext("2d", { willReadFrequently: true });
+
+  gestureToggle.addEventListener("click", async function() {
+    if (gestureActive) {
+      stopGesture();
+    } else {
+      await startGesture();
+    }
+  });
+
+  async function startGesture() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 160, height: 120, facingMode: "user" }
+      });
+      gestureVideo.srcObject = stream;
+      gestureActive = true;
+      gestureToggle.classList.add("active");
+      gesturePreview.classList.add("active");
+      gestureDot.classList.add("active");
+      if (window.showOrbAlert) showOrbAlert("GESTURE CONTROL — ONLINE", "success", 3000);
+      detectMotion();
+    } catch(err) {
+      if (window.showOrbAlert) showOrbAlert("CAMERA ACCESS DENIED", "error", 5000);
+    }
+  }
+
+  function stopGesture() {
+    gestureActive = false;
+    gestureToggle.classList.remove("active");
+    gesturePreview.classList.remove("active");
+    gestureDot.classList.remove("active");
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+    if (animFrame) cancelAnimationFrame(animFrame);
+    prevFrame = null;
+    motionHistory = [];
+    gestureLabel.textContent = "GESTURE: IDLE";
+  }
+
+  function detectMotion() {
+    if (!gestureActive) return;
+
+    gCtx.drawImage(gestureVideo, 0, 0, 160, 120);
+    const currentFrame = gCtx.getImageData(0, 0, 160, 120);
+
+    if (prevFrame) {
+      let totalMotion = 0;
+      let leftMotion = 0;
+      let rightMotion = 0;
+      let centerMotion = 0;
+      const data = currentFrame.data;
+      const prev = prevFrame.data;
+
+      for (let i = 0; i < data.length; i += 16) {
+        const diff = Math.abs(data[i] - prev[i]) +
+                     Math.abs(data[i+1] - prev[i+1]) +
+                     Math.abs(data[i+2] - prev[i+2]);
+        if (diff > 45) {
+          totalMotion++;
+          const pixIdx = i / 4;
+          const x = pixIdx % 160;
+          if (x < 53) leftMotion++;
+          else if (x > 107) rightMotion++;
+          else centerMotion++;
+        }
+      }
+
+      const totalPixels = (160 * 120) / 4;
+      const motionPct = (totalMotion / totalPixels) * 100;
+
+      motionHistory.push({
+        total: motionPct,
+        left: leftMotion,
+        right: rightMotion,
+        center: centerMotion,
+        time: Date.now()
+      });
+
+      if (motionHistory.length > 15) motionHistory.shift();
+
+      analyzeGesture();
+      drawMotionOverlay(data, prev);
+    }
+
+    prevFrame = currentFrame;
+    animFrame = requestAnimationFrame(detectMotion);
+  }
+
+  function analyzeGesture() {
+    if (motionHistory.length < 5) return;
+
+    const recent = motionHistory.slice(-10);
+    const avgMotion = recent.reduce((s, f) => s + f.total, 0) / recent.length;
+
+    // Wave detection: alternating left-right motion
+    if (recent.length >= 6) {
+      let alternations = 0;
+      for (let i = 1; i < recent.length; i++) {
+        const prevDom = recent[i-1].left > recent[i-1].right ? "left" : "right";
+        const curDom = recent[i].left > recent[i].right ? "left" : "right";
+        if (prevDom !== curDom && recent[i].total > 2) alternations++;
+      }
+
+      if (alternations >= 3 && avgMotion > 3) {
+        triggerGesture("wave");
+        return;
+      }
+    }
+
+    // Large still presence (open palm / stop)
+    if (avgMotion < 1.5 && motionHistory.length >= 10) {
+      const older = motionHistory.slice(0, 5);
+      const olderAvg = older.reduce((s, f) => s + f.total, 0) / older.length;
+      if (olderAvg > 3) {
+        triggerGesture("palm");
+        return;
+      }
+    }
+
+    // Sudden large motion (fist/swipe dismiss)
+    if (recent.length >= 3) {
+      const last3 = recent.slice(-3);
+      const burst = last3.reduce((s, f) => s + f.total, 0) / 3;
+      if (burst > 15) {
+        triggerGesture("swipe");
+        return;
+      }
+    }
+
+    gestureLabel.textContent = avgMotion > 1 ? "GESTURE: TRACKING..." : "GESTURE: IDLE";
+  }
+
+  function triggerGesture(type) {
+    if (type === lastGesture) return;
+    lastGesture = type;
+    clearTimeout(gestureTimeout);
+    gestureTimeout = setTimeout(() => { lastGesture = ""; }, 2000);
+
+    switch(type) {
+      case "wave":
+        gestureLabel.textContent = "GESTURE: WAVE";
+        if (window.showOrbAlert) showOrbAlert("GESTURE: WAVE DETECTED — Hey MJ!", "success", 3000);
+        if (typeof doFirstWakeBriefing === "function") {
+          doFirstWakeBriefing();
+        } else {
+          const chatInput = document.getElementById("chat-input");
+          if (chatInput) {
+            chatInput.value = "Hey MJ";
+            const sendBtn = document.getElementById("send-btn");
+            if (sendBtn) sendBtn.click();
+          }
+        }
+        break;
+
+      case "palm":
+        gestureLabel.textContent = "GESTURE: PALM";
+        if (window.showOrbAlert) showOrbAlert("GESTURE: PALM — Muting audio", "success", 3000);
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+        }
+        break;
+
+      case "swipe":
+        gestureLabel.textContent = "GESTURE: SWIPE";
+        if (window.showOrbAlert) showOrbAlert("GESTURE: SWIPE — Dismissed", "success", 2000);
+        const alertEl = document.getElementById("orb-alert");
+        if (alertEl) alertEl.classList.remove("active", "success");
+        break;
+    }
+  }
+
+  function drawMotionOverlay(current, prev) {
+    gCtx.clearRect(0, 0, 160, 120);
+    gCtx.drawImage(gestureVideo, 0, 0, 160, 120);
+
+    const imgData = gCtx.getImageData(0, 0, 160, 120);
+    const d = imgData.data;
+
+    for (let i = 0; i < d.length; i += 16) {
+      const diff = Math.abs(current[i] - prev[i]) +
+                   Math.abs(current[i+1] - prev[i+1]) +
+                   Math.abs(current[i+2] - prev[i+2]);
+      if (diff > 45) {
+        d[i] = 0; d[i+1] = 212; d[i+2] = 255; d[i+3] = 180;
+        if (i+4 < d.length) { d[i+4] = 0; d[i+5] = 212; d[i+6] = 255; d[i+7] = 180; }
+        if (i+8 < d.length) { d[i+8] = 0; d[i+9] = 212; d[i+10] = 255; d[i+11] = 180; }
+        if (i+12 < d.length) { d[i+12] = 0; d[i+13] = 212; d[i+14] = 255; d[i+15] = 180; }
+      }
+    }
+
+    gCtx.putImageData(imgData, 0, 0);
+  }
 })();
 </script>
 </body>

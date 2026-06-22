@@ -1496,6 +1496,20 @@ async def smart_suggestions():
     return {"suggestions": suggestions, "count": len(suggestions)}
 
 
+@app.get("/gesture/status")
+async def gesture_status():
+    """Return gesture control status."""
+    return {
+        "available": True,
+        "gestures": {
+            "wave": "Wake MJ / Say Hey MJ",
+            "palm": "Mute / Pause audio",
+            "swipe": "Dismiss alert / notification"
+        },
+        "status": "ready"
+    }
+
+
 class SpeakRequest(BaseModel):
     text: str
     emotion: str = "neutral"
