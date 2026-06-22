@@ -1,5 +1,19 @@
 [
   {
+    "id": "alert_20260622_103219_795676",
+    "timestamp": "2026-06-22T10:32:19.795676",
+    "time_display": "10:32:19 AM",
+    "title": "Disk Warning",
+    "message": "Disk is 94% full. Consider cleanup.",
+    "severity": "warning",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
     "id": "alert_20260622_102852_231249",
     "timestamp": "2026-06-22T10:28:52.231249",
     "time_display": "10:28:52 AM",
@@ -9,9 +23,9 @@
     "category": "system",
     "source": "system_monitor",
     "error_id": "",
-    "resolved": false,
-    "resolved_at": "",
-    "resolve_message": ""
+    "resolved": true,
+    "resolved_at": "2026-06-22T10:31:52.232694",
+    "resolve_message": "Auto-resolved after timeout"
   },
   {
     "id": "alert_20260622_102219_053155",

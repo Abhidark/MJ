@@ -2,10 +2,11 @@
   "date": "2026-06-22",
   "apps": {
     "MJ Assistant Control Panel": 5.662556,
-    "Google Chrome": 225.981294,
-    "Claude": 241.79408999999998,
+    "Google Chrome": 589.0233149999999,
+    "Claude": 472.32589499999995,
     "Unknown": 5.648177,
-    "Snipping Tool Overlay": 5.537634
+    "Snipping Tool Overlay": 10.927883,
+    "VS Code": 33.213493
   },
   "session_start": "2026-06-22T10:21:58.728012"
 }

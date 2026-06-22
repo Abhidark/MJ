@@ -141,6 +141,337 @@
     align-items: center;
     justify-content: space-between;
   }
+  .dash-card-title {
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .dash-card-title:hover {
+    color: #00ffcc;
+  }
+  .dash-card-title .expand-arrow {
+    font-size: 10px;
+    transition: transform 0.3s;
+    opacity: 0.4;
+    margin-left: 8px;
+  }
+  .dash-card-title.expanded .expand-arrow {
+    transform: rotate(180deg);
+    opacity: 0.8;
+  }
+
+  .section-detail-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    border-top: 1px solid transparent;
+    margin-top: 0;
+  }
+  .section-detail-panel.open {
+    max-height: 600px;
+    opacity: 1;
+    border-top: 1px solid rgba(0,212,255,0.1);
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .sdp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .sdp-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(0,180,255,0.04);
+    border-radius: 6px;
+    border: 1px solid rgba(0,180,255,0.08);
+    font-size: 11px;
+  }
+  .sdp-item-label {
+    color: rgba(255,255,255,0.5);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .sdp-item-value {
+    color: #00d4ff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+  .sdp-full {
+    grid-column: 1 / -1;
+  }
+  .sdp-section-title {
+    grid-column: 1 / -1;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    color: rgba(0,212,255,0.5);
+    letter-spacing: 2px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.08);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+  .sdp-process-list {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    max-height: 100px;
+    overflow-y: auto;
+  }
+  .sdp-process-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 8px;
+    border-bottom: 1px solid rgba(0,180,255,0.05);
+    color: rgba(255,255,255,0.6);
+  }
+  .sdp-process-item:hover {
+    background: rgba(0,180,255,0.06);
+  }
+  .sdp-cmd-group {
+    grid-column: 1 / -1;
+  }
+  .sdp-cmd-group-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    color: rgba(0,212,255,0.6);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .sdp-cmd-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .sdp-cmd-btn {
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,212,255,0.15);
+    background: rgba(0,212,255,0.04);
+    color: rgba(255,255,255,0.7);
+    font-size: 10px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: all 0.2s;
+  }
+  .sdp-cmd-btn:hover {
+    background: rgba(0,212,255,0.12);
+    border-color: rgba(0,212,255,0.4);
+    color: #00d4ff;
+  }
+  .sdp-search {
+    grid-column: 1 / -1;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    outline: none;
+  }
+  .sdp-search:focus {
+    border-color: rgba(0,212,255,0.4);
+  }
+  .sdp-model-card {
+    padding: 8px;
+    background: rgba(0,180,255,0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(0,180,255,0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sdp-model-card:hover {
+    border-color: rgba(0,212,255,0.3);
+    background: rgba(0,180,255,0.08);
+  }
+  .sdp-model-card .sdp-model-name {
+    font-size: 12px;
+    color: #00d4ff;
+    font-weight: bold;
+  }
+  .sdp-model-card .sdp-model-meta {
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+  }
+  .sdp-sparkline {
+    width: 60px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  /* Dashboard Settings Panel */
+  .dash-settings-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+  }
+  .dash-settings-overlay.open {
+    display: flex;
+  }
+  .dash-settings-panel {
+    width: 380px;
+    max-height: 85vh;
+    background: rgba(8,16,30,0.97);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,212,255,0.1), 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .dsp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(0,212,255,0.1);
+  }
+  .dsp-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .dsp-close:hover {
+    color: #ff3b30;
+    background: rgba(255,59,48,0.1);
+  }
+  .dsp-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    max-height: calc(85vh - 60px);
+  }
+  .dsp-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+  }
+  .dsp-section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: rgba(0,212,255,0.5);
+    margin-bottom: 10px;
+  }
+  .dsp-theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .dsp-theme-swatch {
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .dsp-theme-swatch:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(0,212,255,0.2);
+  }
+  .dsp-theme-swatch.active {
+    border-width: 2px;
+  }
+  .dsp-color-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .dsp-color-picker {
+    width: 40px;
+    height: 30px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .dsp-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .dsp-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(0,212,255,0.15);
+    outline: none;
+  }
+  .dsp-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #00d4ff;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(0,212,255,0.4);
+  }
+  .dsp-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+  .dsp-reset-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,59,48,0.3);
+    background: rgba(255,59,48,0.06);
+    color: #ff3b5c;
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dsp-reset-btn:hover {
+    background: rgba(255,59,48,0.15);
+    border-color: rgba(255,59,48,0.5);
+  }
+
+  /* Compact mode */
+  body.compact-mode .dash-card {
+    padding: 8px;
+  }
+  body.compact-mode .dash-card-title {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+  body.compact-mode .dash-grid {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  /* No animations mode */
+  body.no-animations, body.no-animations * {
+    animation: none !important;
+    transition: none !important;
+  }
+  /* No blur mode */
+  body.no-blur .dash-card {
+    backdrop-filter: none !important;
+  }
+
   .dash-card-title .live-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
@@ -1773,11 +2104,24 @@
   body.dash-editing .dash-grid {
     gap: 14px;
   }
+  body.dash-editing .dash-grid {
+    grid-auto-flow: dense;
+  }
   body.dash-editing .dash-grid > * {
     outline: 2px dashed rgba(0,212,255,0.3);
     cursor: default;
-    transition: outline 0.2s, box-shadow 0.2s;
+    transition: outline 0.2s, box-shadow 0.2s, transform 0.25s ease, opacity 0.2s;
     border-radius: 12px;
+  }
+  body.dash-editing .dash-grid > .drag-shifting {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+  .drop-indicator {
+    border: 2px dashed rgba(255,217,0,0.5) !important;
+    background: rgba(255,217,0,0.05) !important;
+    outline: none !important;
+    box-shadow: 0 0 20px rgba(255,217,0,0.15) !important;
   }
   body.dash-editing .dash-grid > *:hover {
     outline-color: rgba(0,212,255,0.6);
@@ -2163,6 +2507,7 @@
       <a href="/static/dashboard.html" class="icon-btn" title="System Dashboard">&#128202;</a>
       <a href="/static/settings.html" class="icon-btn" title="Voice Settings">&#9881;</a>
       <button class="icon-btn" id="fullscreen-btn" title="Fullscreen">&#9974;</button>
+      <button class="icon-btn" id="dash-settings-btn" title="Dashboard Settings" style="color:#00d4ff;">&#9881;</button>
     </div>
   </div>
 
@@ -2173,7 +2518,7 @@
     <div style="display:flex;flex-direction:column;gap:12px;">
       <!-- AI Core Overview Card -->
       <div class="dash-card" style="margin:0;">
-        <div class="dash-card-title">AI Core Overview</div>
+        <div class="dash-card-title">AI Core Overview <span class="expand-arrow">&#9660;</span></div>
         <div class="core-status-list">
           <div class="core-status-item">
             <span class="csi-icon">&#128172;</span>
@@ -2211,11 +2556,45 @@
             </div>
           </div>
         </div>
+        <div class="section-detail-panel" id="sdp-ai-core">
+          <div class="sdp-grid">
+            <div class="sdp-item"><span class="sdp-item-label">Version</span><span class="sdp-item-value">MJ v1.0</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Build</span><span class="sdp-item-value">2026.06</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Uptime</span><span class="sdp-item-value" id="sdp-uptime">--</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Active Modules</span><span class="sdp-item-value" id="sdp-modules">21</span></div>
+            <div class="sdp-section-title">Module List</div>
+            <div class="sdp-full" style="display:flex;flex-wrap:wrap;gap:4px;">
+              <span class="sdp-cmd-btn">Chat Engine</span>
+              <span class="sdp-cmd-btn">Voice TTS</span>
+              <span class="sdp-cmd-btn">OCR Engine</span>
+              <span class="sdp-cmd-btn">PC Control</span>
+              <span class="sdp-cmd-btn">App Tracker</span>
+              <span class="sdp-cmd-btn">Zeus Router</span>
+              <span class="sdp-cmd-btn">Live Data</span>
+              <span class="sdp-cmd-btn">Smart Suggest</span>
+              <span class="sdp-cmd-btn">Git Engine</span>
+              <span class="sdp-cmd-btn">Wake Word</span>
+              <span class="sdp-cmd-btn">Gesture Ctrl</span>
+              <span class="sdp-cmd-btn">Holo FX</span>
+              <span class="sdp-cmd-btn">Memory</span>
+              <span class="sdp-cmd-btn">Self-Learn</span>
+              <span class="sdp-cmd-btn">Error Handler</span>
+              <span class="sdp-cmd-btn">Clipboard</span>
+              <span class="sdp-cmd-btn">Screenshot</span>
+              <span class="sdp-cmd-btn">System Stats</span>
+              <span class="sdp-cmd-btn">Weather</span>
+              <span class="sdp-cmd-btn">Cricket Live</span>
+              <span class="sdp-cmd-btn">File Manager</span>
+            </div>
+            <div class="sdp-item"><span class="sdp-item-label">Memory Bank</span><span class="sdp-item-value" id="sdp-memory">0 facts</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Last Command</span><span class="sdp-item-value" id="sdp-last-cmd">--</span></div>
+          </div>
+        </div>
       </div>
 
       <!-- Live Intelligence Feed Card (moved below AI Core) -->
       <div class="dash-card" style="margin:0;">
-        <div class="dash-card-title">Live Intelligence <span class="live-dot"></span></div>
+        <div class="dash-card-title">Live Intelligence <span class="live-dot"></span><span class="expand-arrow">&#9660;</span></div>
         <div class="live-feed-list" id="live-feed-list">
           <div class="lf-item">
             <span class="lf-icon">&#128200;</span>
@@ -2243,6 +2622,28 @@
             <div class="lf-info">
               <div class="lf-text">GPU: <span id="lf-gpu">--%</span></div>
               <div class="lf-sub" id="lf-gpu-temp">-- °C</div>
+            </div>
+          </div>
+        </div>
+        <div class="section-detail-panel" id="sdp-live-intel">
+          <div class="sdp-grid">
+            <div class="sdp-section-title">CPU Details</div>
+            <div class="sdp-item"><span class="sdp-item-label">Usage</span><span class="sdp-item-value" id="sdp-cpu-detail">--%</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Cores</span><span class="sdp-item-value">12 (6C/12T)</span></div>
+            <div class="sdp-section-title">Memory Details</div>
+            <div class="sdp-item"><span class="sdp-item-label">Used</span><span class="sdp-item-value" id="sdp-ram-used">-- GB</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Total</span><span class="sdp-item-value" id="sdp-ram-total">32 GB</span></div>
+            <div class="sdp-section-title">GPU Details</div>
+            <div class="sdp-item"><span class="sdp-item-label">Name</span><span class="sdp-item-value" id="sdp-gpu-name">--</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Temp</span><span class="sdp-item-value" id="sdp-gpu-temp2">-- °C</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">VRAM</span><span class="sdp-item-value" id="sdp-vram">--</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Utilization</span><span class="sdp-item-value" id="sdp-gpu-util">--%</span></div>
+            <div class="sdp-section-title">Network</div>
+            <div class="sdp-item"><span class="sdp-item-label">Download</span><span class="sdp-item-value" id="sdp-net-down">-- KB/s</span></div>
+            <div class="sdp-item"><span class="sdp-item-label">Upload</span><span class="sdp-item-value" id="sdp-net-up">-- KB/s</span></div>
+            <div class="sdp-section-title">Top Processes</div>
+            <div class="sdp-process-list" id="sdp-top-procs">
+              <div class="sdp-process-item"><span>Loading...</span></div>
             </div>
           </div>
         </div>
@@ -2386,7 +2787,7 @@
 
     <!-- LLM Status Card (Zeus Panel - all IDs preserved) -->
     <div class="dash-card card-span-2">
-      <div class="dash-card-title">LLM Status <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span></div>
+      <div class="dash-card-title">LLM Status <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span><span class="expand-arrow">&#9660;</span></div>
       <div class="zeus-models">
         <div class="zeus-model" id="zm-qwen3-8b" data-model="qwen3:8b">
           <div class="zm-dot"></div>
@@ -2426,11 +2827,37 @@
         <span class="zlu-model" id="zlu-model">-</span>
         <span class="zlu-task" id="zlu-task">-</span>
       </div>
+      <div class="section-detail-panel" id="sdp-llm">
+        <div class="sdp-grid">
+          <div class="sdp-section-title">Model Details</div>
+          <div class="sdp-model-card">
+            <div class="sdp-model-name">Qwen3 8B</div>
+            <div class="sdp-model-meta">4.7 GB - Fast Chat - Default for all tasks</div>
+          </div>
+          <div class="sdp-model-card">
+            <div class="sdp-model-name">Qwen3 14B</div>
+            <div class="sdp-model-meta">8.9 GB - Complex reasoning - Heavy tasks</div>
+          </div>
+          <div class="sdp-model-card">
+            <div class="sdp-model-name">DeepSeek R1</div>
+            <div class="sdp-model-meta">4.7 GB - Chain-of-thought - Math/Logic</div>
+          </div>
+          <div class="sdp-model-card">
+            <div class="sdp-model-name">Moondream</div>
+            <div class="sdp-model-meta">1.7 GB - Vision - Image analysis</div>
+          </div>
+          <div class="sdp-section-title">Ollama Status</div>
+          <div class="sdp-item"><span class="sdp-item-label">Status</span><span class="sdp-item-value" id="sdp-ollama-status">Checking...</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Active Model</span><span class="sdp-item-value" id="sdp-active-model">--</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Avg Response</span><span class="sdp-item-value" id="sdp-avg-resp">-- ms</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Queries Today</span><span class="sdp-item-value" id="sdp-queries">0</span></div>
+        </div>
+      </div>
     </div>
 
     <!-- Quick Commands Card -->
     <div class="dash-card">
-      <div class="dash-card-title">Quick Commands</div>
+      <div class="dash-card-title">Quick Commands <span class="expand-arrow">&#9660;</span></div>
       <div class="qc-list">
         <div class="qc-item" onclick="document.querySelector('[data-cmd=\'open chrome\']').click()">
           <span class="qc-icon">&#127760;</span>
@@ -2453,11 +2880,63 @@
           <span class="qc-label">Check Email</span>
         </div>
       </div>
+      <div class="section-detail-panel" id="sdp-quick-cmd">
+        <div class="sdp-grid">
+          <input type="text" class="sdp-search" id="sdp-cmd-search" placeholder="Search commands...">
+          <div class="sdp-cmd-group">
+            <div class="sdp-cmd-group-title">SYSTEM</div>
+            <div class="sdp-cmd-grid">
+              <button class="sdp-cmd-btn" onclick="quickCmd('lock pc')">Lock PC</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('shutdown')">Shutdown</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('restart')">Restart</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('sleep')">Sleep</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('volume mute')">Mute</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('brightness up')">Brightness+</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('brightness down')">Brightness-</button>
+            </div>
+          </div>
+          <div class="sdp-cmd-group">
+            <div class="sdp-cmd-group-title">APPS</div>
+            <div class="sdp-cmd-grid">
+              <button class="sdp-cmd-btn" onclick="quickCmd('open chrome')">Chrome</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('open vs code')">VS Code</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('open notepad')">Notepad</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('open file explorer')">Files</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('open calculator')">Calculator</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('open spotify')">Spotify</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('open youtube')">YouTube</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('open terminal')">Terminal</button>
+            </div>
+          </div>
+          <div class="sdp-cmd-group">
+            <div class="sdp-cmd-group-title">DEV TOOLS</div>
+            <div class="sdp-cmd-grid">
+              <button class="sdp-cmd-btn" onclick="quickCmd('git status')">Git Status</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('git push')">Git Push</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('git pull')">Git Pull</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('git log')">Git Log</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('top processes')">Processes</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('app usage')">App Usage</button>
+            </div>
+          </div>
+          <div class="sdp-cmd-group">
+            <div class="sdp-cmd-group-title">AI / MEDIA</div>
+            <div class="sdp-cmd-grid">
+              <button class="sdp-cmd-btn" onclick="quickCmd('screenshot le')">Screenshot</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('screen pe kya likha hai')">OCR Screen</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('weather kya hai')">Weather</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('live cricket score')">Cricket</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('Tell me a joke')">Joke</button>
+              <button class="sdp-cmd-btn" onclick="quickCmd('good morning')">Briefing</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- System Monitor Card -->
     <div class="dash-card">
-      <div class="dash-card-title">System Monitor</div>
+      <div class="dash-card-title">System Monitor <span class="expand-arrow">&#9660;</span></div>
       <div class="sysmon-gauges">
         <div class="sysmon-gauge">
           <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="35" fill="none" stroke="rgba(0,180,255,0.1)" stroke-width="4"/><circle class="sysmon-ring" id="sg-cpu-ring" cx="40" cy="40" r="35" fill="none" stroke="#00d4ff" stroke-width="4" stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" transform="rotate(-90 40 40)"/></svg>
@@ -2478,6 +2957,22 @@
           <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="35" fill="none" stroke="rgba(0,180,255,0.1)" stroke-width="4"/><circle class="sysmon-ring" id="sg-gpu-ring" cx="40" cy="40" r="35" fill="none" stroke="#00ffaa" stroke-width="4" stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" transform="rotate(-90 40 40)"/></svg>
           <div class="sysmon-val" id="sg-gpu-val">N/A</div>
           <div class="sysmon-label">GPU</div>
+        </div>
+      </div>
+      <div class="section-detail-panel" id="sdp-sysmon">
+        <div class="sdp-grid">
+          <div class="sdp-item"><span class="sdp-item-label">CPU</span><span class="sdp-item-value" id="sdp-sm-cpu">--%</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">RAM</span><span class="sdp-item-value" id="sdp-sm-ram">-- / -- GB</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Disk</span><span class="sdp-item-value" id="sdp-sm-disk">-- / -- GB</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">GPU Util</span><span class="sdp-item-value" id="sdp-sm-gpu">--%</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">GPU Temp</span><span class="sdp-item-value" id="sdp-sm-gtemp">-- °C</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">GPU VRAM</span><span class="sdp-item-value" id="sdp-sm-vram">-- / -- MB</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Net Down</span><span class="sdp-item-value" id="sdp-sm-down">-- KB/s</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Net Up</span><span class="sdp-item-value" id="sdp-sm-up">-- KB/s</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Processes</span><span class="sdp-item-value" id="sdp-sm-procs">--</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Uptime</span><span class="sdp-item-value" id="sdp-sm-uptime">--</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Battery</span><span class="sdp-item-value" id="sdp-sm-batt">N/A</span></div>
+          <div class="sdp-item"><span class="sdp-item-label">Disk Free</span><span class="sdp-item-value" id="sdp-sm-dfree">-- GB</span></div>
         </div>
       </div>
     </div>
@@ -2554,6 +3049,90 @@
   </div>
 
   <!-- Orb Settings Panel moved inside orb dash-card above -->
+
+  <div class="dash-settings-overlay" id="dash-settings-overlay">
+    <div class="dash-settings-panel" id="dash-settings-panel">
+      <div class="dsp-header">
+        <span style="font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:#00d4ff;">&#9881; DASHBOARD SETTINGS</span>
+        <button class="dsp-close" id="dsp-close">&#10005;</button>
+      </div>
+      <div class="dsp-body">
+        <div class="dsp-section">
+          <div class="dsp-section-title">THEME</div>
+          <div class="dsp-theme-grid" id="dsp-themes">
+            <div class="dsp-theme-swatch active" data-theme="default" style="background:linear-gradient(135deg,#020c19,#0a1628);border:2px solid #00d4ff;" title="Default JARVIS">
+              <span style="color:#00d4ff;font-size:9px;">JARVIS</span>
+            </div>
+            <div class="dsp-theme-swatch" data-theme="emerald" style="background:linear-gradient(135deg,#021910,#0a2818);" title="Emerald">
+              <span style="color:#00ff88;font-size:9px;">EMERALD</span>
+            </div>
+            <div class="dsp-theme-swatch" data-theme="crimson" style="background:linear-gradient(135deg,#190205,#280a0f);" title="Crimson">
+              <span style="color:#ff3b5c;font-size:9px;">CRIMSON</span>
+            </div>
+            <div class="dsp-theme-swatch" data-theme="violet" style="background:linear-gradient(135deg,#0f0219,#1a0a28);" title="Violet">
+              <span style="color:#b92eff;font-size:9px;">VIOLET</span>
+            </div>
+            <div class="dsp-theme-swatch" data-theme="solar" style="background:linear-gradient(135deg,#191002,#281a0a);" title="Solar">
+              <span style="color:#ffa500;font-size:9px;">SOLAR</span>
+            </div>
+            <div class="dsp-theme-swatch" data-theme="midnight" style="background:linear-gradient(135deg,#000,#111);" title="Midnight">
+              <span style="color:#888;font-size:9px;">MIDNIGHT</span>
+            </div>
+          </div>
+        </div>
+        <div class="dsp-section">
+          <div class="dsp-section-title">ACCENT COLOR</div>
+          <div class="dsp-color-row">
+            <input type="color" id="dsp-accent-color" value="#00d4ff" class="dsp-color-picker">
+            <span id="dsp-accent-hex" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#888;">#00d4ff</span>
+          </div>
+        </div>
+        <div class="dsp-section">
+          <div class="dsp-section-title">CARD OPACITY</div>
+          <div class="dsp-slider-row">
+            <input type="range" id="dsp-opacity" min="0" max="100" value="75" class="dsp-slider">
+            <span id="dsp-opacity-val" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#888;">75%</span>
+          </div>
+        </div>
+        <div class="dsp-section">
+          <div class="dsp-section-title">FONT SIZE</div>
+          <div class="dsp-slider-row">
+            <input type="range" id="dsp-fontsize" min="8" max="16" value="11" class="dsp-slider">
+            <span id="dsp-fontsize-val" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#888;">11px</span>
+          </div>
+        </div>
+        <div class="dsp-section">
+          <div class="dsp-section-title">BACKGROUND PARTICLES</div>
+          <div class="dsp-slider-row">
+            <input type="range" id="dsp-particles" min="0" max="200" value="50" class="dsp-slider">
+            <span id="dsp-particles-val" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#888;">50</span>
+          </div>
+        </div>
+        <div class="dsp-section">
+          <div class="dsp-section-title">OPTIONS</div>
+          <div class="dsp-toggle-row">
+            <span>Animations</span>
+            <button class="os-toggle-switch on" id="dsp-animations"><div class="os-toggle-knob"></div></button>
+          </div>
+          <div class="dsp-toggle-row">
+            <span>Blur Effects</span>
+            <button class="os-toggle-switch on" id="dsp-blur"><div class="os-toggle-knob"></div></button>
+          </div>
+          <div class="dsp-toggle-row">
+            <span>Compact Mode</span>
+            <button class="os-toggle-switch" id="dsp-compact"><div class="os-toggle-knob"></div></button>
+          </div>
+          <div class="dsp-toggle-row">
+            <span>Show Seconds</span>
+            <button class="os-toggle-switch on" id="dsp-seconds"><div class="os-toggle-knob"></div></button>
+          </div>
+        </div>
+        <div class="dsp-section" style="border:none;padding-bottom:0;">
+          <button class="dsp-reset-btn" id="dsp-reset">Reset to Default</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="gesture-container" id="gesture-container">
     <div class="gesture-preview" id="gesture-preview">
@@ -4591,6 +5170,8 @@ input.focus();
     const rect = item.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
+    let lastTarget = null;
+    let swapThrottle = false;
 
     // Create ghost clone that follows mouse
     var ghost = item.cloneNode(true);
@@ -4598,28 +5179,68 @@ input.focus();
     ghost.style.cssText = "position:fixed;pointer-events:none;z-index:99999;opacity:0.75;width:" + rect.width + "px;height:" + rect.height + "px;left:" + rect.left + "px;top:" + rect.top + "px;border:2px solid #ffd900;border-radius:12px;box-shadow:0 0 30px rgba(255,217,0,0.3);transition:none;";
     document.body.appendChild(ghost);
 
-    // Dim original in grid
-    dragCard.style.opacity = "0.3";
-    dragCard.style.outline = "2px dashed #ffd900";
+    // Create placeholder in original position
+    var placeholder = document.createElement("div");
+    placeholder.className = "drag-placeholder";
+    placeholder.style.cssText = "border:2px dashed rgba(255,217,0,0.3);border-radius:12px;background:rgba(255,217,0,0.03);min-height:" + rect.height + "px;";
+    // Copy span classes to placeholder
+    if (item.classList.contains("card-span-2")) placeholder.classList.add("card-span-2");
+    if (item.classList.contains("card-span-row")) placeholder.classList.add("card-span-row");
+
+    // Hide original, insert placeholder
+    dragCard.style.display = "none";
+    grid.insertBefore(placeholder, dragCard);
 
     function onMove(ev) {
       // Move ghost with mouse
       ghost.style.left = (ev.clientX - offsetX) + "px";
       ghost.style.top = (ev.clientY - offsetY) + "px";
 
+      if (swapThrottle) return;
+
       // Find which grid item mouse is over
-      const items = Array.from(grid.children).filter(el => el !== dragCard);
+      const items = Array.from(grid.children).filter(el =>
+        el !== dragCard && el !== placeholder && el.id !== "drag-ghost"
+      );
+
+      // Clear previous highlights
+      items.forEach(t => t.classList.remove("drop-indicator", "drag-shifting"));
+
       for (const target of items) {
         const r = target.getBoundingClientRect();
         if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
-          // Swap in DOM
-          const dragIdx = Array.from(grid.children).indexOf(dragCard);
-          const targetIdx = Array.from(grid.children).indexOf(target);
-          if (dragIdx < targetIdx) {
-            grid.insertBefore(dragCard, target.nextSibling);
-          } else {
-            grid.insertBefore(dragCard, target);
+          if (target === lastTarget) {
+            target.classList.add("drop-indicator");
+            return;
           }
+          lastTarget = target;
+          target.classList.add("drop-indicator");
+
+          // Throttle swaps for smooth animation
+          swapThrottle = true;
+
+          // Add shifting class to nearby items for animation
+          items.forEach(t => {
+            if (t !== target) t.classList.add("drag-shifting");
+          });
+
+          setTimeout(() => {
+            // Move placeholder to target position
+            const placeholderIdx = Array.from(grid.children).indexOf(placeholder);
+            const targetIdx = Array.from(grid.children).indexOf(target);
+            if (placeholderIdx < targetIdx) {
+              grid.insertBefore(placeholder, target.nextSibling);
+            } else {
+              grid.insertBefore(placeholder, target);
+            }
+
+            // Remove shifting class
+            setTimeout(() => {
+              items.forEach(t => t.classList.remove("drag-shifting"));
+              swapThrottle = false;
+            }, 150);
+          }, 50);
+
           break;
         }
       }
@@ -4630,10 +5251,21 @@ input.focus();
       document.removeEventListener("mouseup", onUp);
       // Remove ghost
       if (ghost.parentElement) ghost.remove();
-      // Restore original
+
+      // Put card where placeholder is
+      grid.insertBefore(dragCard, placeholder);
+      dragCard.style.display = "";
       dragCard.style.opacity = "";
       dragCard.style.outline = "";
+
+      // Remove placeholder & indicators
+      if (placeholder.parentElement) placeholder.remove();
+      grid.querySelectorAll(".drop-indicator, .drag-shifting").forEach(el => {
+        el.classList.remove("drop-indicator", "drag-shifting");
+      });
+
       dragCard = null;
+      lastTarget = null;
     }
 
     document.addEventListener("mousemove", onMove);
@@ -5086,6 +5718,314 @@ input.focus();
 
     gCtx.putImageData(imgData, 0, 0);
   }
+})();
+
+// ===== CLICKABLE SECTION PANELS =====
+(function() {
+  var panelMap = {
+    "AI Core Overview": "sdp-ai-core",
+    "Live Intelligence": "sdp-live-intel",
+    "LLM Status": "sdp-llm",
+    "Quick Commands": "sdp-quick-cmd",
+    "System Monitor": "sdp-sysmon"
+  };
+
+  document.querySelectorAll(".dash-card-title").forEach(function(title) {
+    var titleText = title.childNodes[0] ? title.childNodes[0].textContent.trim() : title.textContent.trim();
+    var panelId = null;
+    for (var key in panelMap) {
+      if (titleText.indexOf(key) !== -1) {
+        panelId = panelMap[key];
+        break;
+      }
+    }
+    if (!panelId) return;
+
+    title.addEventListener("click", function(e) {
+      if (e.target.closest(".zeus-auto-badge, .live-dot")) return;
+      var panel = document.getElementById(panelId);
+      if (!panel) return;
+      var isOpen = panel.classList.contains("open");
+      document.querySelectorAll(".section-detail-panel.open").forEach(function(p) {
+        if (p !== panel) {
+          p.classList.remove("open");
+          var pt = p.parentElement.querySelector(".dash-card-title");
+          if (pt) pt.classList.remove("expanded");
+        }
+      });
+      panel.classList.toggle("open", !isOpen);
+      title.classList.toggle("expanded", !isOpen);
+      if (!isOpen) loadPanelData(panelId);
+    });
+  });
+
+  window.quickCmd = function(cmd) {
+    var chatInput = document.getElementById("chat-input");
+    var sendBtn = document.getElementById("send-btn");
+    if (chatInput && sendBtn) {
+      chatInput.value = cmd;
+      sendBtn.click();
+    }
+  };
+
+  var cmdSearch = document.getElementById("sdp-cmd-search");
+  if (cmdSearch) {
+    cmdSearch.addEventListener("input", function() {
+      var query = this.value.toLowerCase();
+      var panel = document.getElementById("sdp-quick-cmd");
+      panel.querySelectorAll(".sdp-cmd-btn").forEach(function(btn) {
+        btn.style.display = btn.textContent.toLowerCase().indexOf(query) !== -1 || !query ? "" : "none";
+      });
+    });
+  }
+
+  async function loadPanelData(panelId) {
+    try {
+      var res = await fetch(API + "/stats");
+      var stats = await res.json();
+
+      if (panelId === "sdp-ai-core" || panelId === "sdp-live-intel" || panelId === "sdp-sysmon") {
+        var upEl = document.getElementById("sdp-uptime");
+        if (upEl) upEl.textContent = stats.uptime || "--";
+        var lcEl = document.getElementById("sdp-last-cmd");
+        if (lcEl) lcEl.textContent = window._lastMjCommand || "None yet";
+        var cpuD = document.getElementById("sdp-cpu-detail");
+        if (cpuD) cpuD.textContent = stats.cpu + "%";
+        var ramU = document.getElementById("sdp-ram-used");
+        if (ramU) ramU.textContent = stats.ram_used + " GB";
+        var ramT = document.getElementById("sdp-ram-total");
+        if (ramT) ramT.textContent = stats.ram_total + " GB";
+        var gpuN = document.getElementById("sdp-gpu-name");
+        if (gpuN) gpuN.textContent = stats.gpu_name || "N/A";
+        var gpuT2 = document.getElementById("sdp-gpu-temp2");
+        if (gpuT2) gpuT2.textContent = (stats.gpu_temp > 0 ? stats.gpu_temp + " °C" : "N/A");
+        var vram = document.getElementById("sdp-vram");
+        if (vram) vram.textContent = stats.gpu_mem_used + " / " + stats.gpu_mem_total + " MB";
+        var gpuU = document.getElementById("sdp-gpu-util");
+        if (gpuU) gpuU.textContent = (stats.gpu_util >= 0 ? stats.gpu_util + "%" : "N/A");
+        var netD = document.getElementById("sdp-net-down");
+        if (netD) netD.textContent = stats.net_down_kbs + " KB/s";
+        var netU = document.getElementById("sdp-net-up");
+        if (netU) netU.textContent = stats.net_up_kbs + " KB/s";
+        var smCpu = document.getElementById("sdp-sm-cpu");
+        if (smCpu) smCpu.textContent = stats.cpu + "%";
+        var smRam = document.getElementById("sdp-sm-ram");
+        if (smRam) smRam.textContent = stats.ram_used + " / " + stats.ram_total + " GB";
+        var smDisk = document.getElementById("sdp-sm-disk");
+        if (smDisk) smDisk.textContent = stats.disk_used + " / " + stats.disk_total + " GB";
+        var smGpu = document.getElementById("sdp-sm-gpu");
+        if (smGpu) smGpu.textContent = (stats.gpu_util >= 0 ? stats.gpu_util + "%" : "N/A");
+        var smGtemp = document.getElementById("sdp-sm-gtemp");
+        if (smGtemp) smGtemp.textContent = (stats.gpu_temp > 0 ? stats.gpu_temp + " °C" : "N/A");
+        var smVram = document.getElementById("sdp-sm-vram");
+        if (smVram) smVram.textContent = stats.gpu_mem_used + " / " + stats.gpu_mem_total + " MB";
+        var smDown = document.getElementById("sdp-sm-down");
+        if (smDown) smDown.textContent = stats.net_down_kbs + " KB/s";
+        var smUp = document.getElementById("sdp-sm-up");
+        if (smUp) smUp.textContent = stats.net_up_kbs + " KB/s";
+        var smProcs = document.getElementById("sdp-sm-procs");
+        if (smProcs) smProcs.textContent = stats.process_count;
+        var smUptime = document.getElementById("sdp-sm-uptime");
+        if (smUptime) smUptime.textContent = stats.uptime || "--";
+        var smBatt = document.getElementById("sdp-sm-batt");
+        if (smBatt) smBatt.textContent = stats.battery > 0 ? stats.battery + "%" + (stats.charging ? " ⚡" : "") : "N/A";
+        var smDfree = document.getElementById("sdp-sm-dfree");
+        if (smDfree) smDfree.textContent = stats.disk_free + " GB";
+      }
+
+      if (panelId === "sdp-live-intel") {
+        try {
+          var pRes = await fetch(API + "/processes");
+          var pData = await pRes.json();
+          var procEl = document.getElementById("sdp-top-procs");
+          if (procEl && pData.processes) {
+            procEl.innerHTML = pData.processes.slice(0, 5).map(function(p) {
+              return '<div class="sdp-process-item"><span>' + p.name + '</span><span>' + p.ram_mb + ' MB · CPU: ' + p.cpu + '</span></div>';
+            }).join("");
+          }
+        } catch(e) {}
+      }
+
+      if (panelId === "sdp-llm") {
+        var ollamaEl = document.getElementById("sdp-ollama-status");
+        if (ollamaEl) {
+          try {
+            var oRes = await fetch(API + "/health");
+            var oData = await oRes.json();
+            ollamaEl.textContent = oData.ollama ? "Running ✓" : "Stopped ✗";
+            ollamaEl.style.color = oData.ollama ? "#00ff88" : "#ff3b30";
+          } catch(e) {
+            ollamaEl.textContent = "Offline";
+            ollamaEl.style.color = "#ff3b30";
+          }
+        }
+      }
+    } catch(err) {
+      console.log("Panel data load error:", err);
+    }
+  }
+
+  window._lastMjCommand = "";
+})();
+
+// ===== DASHBOARD UI SETTINGS =====
+(function() {
+  var settingsBtn = document.getElementById("dash-settings-btn");
+  var overlay = document.getElementById("dash-settings-overlay");
+  var closeBtn = document.getElementById("dsp-close");
+  if (!settingsBtn || !overlay) return;
+
+  var saved = JSON.parse(localStorage.getItem("mj-dash-settings") || "{}");
+
+  var themeColors = {
+    default: { bg1: "#020c19", bg2: "#0a1628", accent: "#00d4ff", border: "rgba(0,180,255,0.1)" },
+    emerald: { bg1: "#021910", bg2: "#0a2818", accent: "#00ff88", border: "rgba(0,255,136,0.1)" },
+    crimson: { bg1: "#190205", bg2: "#280a0f", accent: "#ff3b5c", border: "rgba(255,59,92,0.1)" },
+    violet:  { bg1: "#0f0219", bg2: "#1a0a28", accent: "#b92eff", border: "rgba(185,46,255,0.1)" },
+    solar:   { bg1: "#191002", bg2: "#281a0a", accent: "#ffa500", border: "rgba(255,165,0,0.1)" },
+    midnight:{ bg1: "#000000", bg2: "#111111", accent: "#888888", border: "rgba(136,136,136,0.1)" }
+  };
+
+  function applyTheme(name) {
+    var t = themeColors[name];
+    if (!t) return;
+    document.documentElement.style.setProperty("--accent", t.accent);
+    document.documentElement.style.setProperty("--primary", t.accent);
+    document.body.style.background = "linear-gradient(135deg, " + t.bg1 + ", " + t.bg2 + ")";
+    document.querySelectorAll(".dash-card").forEach(function(c) {
+      if (c.style.background === "transparent") return;
+      c.style.borderColor = t.border;
+    });
+    if (window._orbSetIdleColor) window._orbSetIdleColor(t.accent);
+    var accentInput = document.getElementById("dsp-accent-color");
+    if (accentInput) accentInput.value = t.accent;
+    var accentHex = document.getElementById("dsp-accent-hex");
+    if (accentHex) accentHex.textContent = t.accent;
+    document.querySelectorAll(".dsp-theme-swatch").forEach(function(s) { s.classList.remove("active"); });
+    var activeSwatch = document.querySelector('[data-theme="' + name + '"]');
+    if (activeSwatch) activeSwatch.classList.add("active");
+  }
+
+  function applySettings(s) {
+    if (s.theme) applyTheme(s.theme);
+    if (s.accent) {
+      document.documentElement.style.setProperty("--accent", s.accent);
+      document.documentElement.style.setProperty("--primary", s.accent);
+    }
+    if (s.opacity !== undefined) {
+      document.querySelectorAll(".dash-card").forEach(function(c) {
+        if (c.style.background === "transparent") return;
+        c.style.background = "rgba(2,12,25," + (s.opacity / 100) + ")";
+      });
+    }
+    if (s.fontSize) {
+      document.querySelectorAll(".dash-card").forEach(function(c) {
+        c.style.fontSize = s.fontSize + "px";
+      });
+    }
+    if (s.animations === false) document.body.classList.add("no-animations");
+    if (s.blur === false) document.body.classList.add("no-blur");
+    if (s.compact) document.body.classList.add("compact-mode");
+  }
+
+  if (Object.keys(saved).length) applySettings(saved);
+
+  function saveSettings(key, val) {
+    saved[key] = val;
+    localStorage.setItem("mj-dash-settings", JSON.stringify(saved));
+  }
+
+  settingsBtn.addEventListener("click", function() { overlay.classList.add("open"); });
+  closeBtn.addEventListener("click", function() { overlay.classList.remove("open"); });
+  overlay.addEventListener("click", function(e) {
+    if (e.target === overlay) overlay.classList.remove("open");
+  });
+
+  document.getElementById("dsp-themes").addEventListener("click", function(e) {
+    var swatch = e.target.closest("[data-theme]");
+    if (!swatch) return;
+    var theme = swatch.dataset.theme;
+    applyTheme(theme);
+    saveSettings("theme", theme);
+  });
+
+  document.getElementById("dsp-accent-color").addEventListener("input", function() {
+    var color = this.value;
+    document.documentElement.style.setProperty("--accent", color);
+    document.documentElement.style.setProperty("--primary", color);
+    document.getElementById("dsp-accent-hex").textContent = color;
+    if (window._orbSetIdleColor) window._orbSetIdleColor(color);
+    saveSettings("accent", color);
+  });
+
+  document.getElementById("dsp-opacity").addEventListener("input", function() {
+    var val = parseInt(this.value);
+    document.getElementById("dsp-opacity-val").textContent = val + "%";
+    document.querySelectorAll(".dash-card").forEach(function(c) {
+      if (c.style.background === "transparent") return;
+      c.style.background = "rgba(2,12,25," + (val / 100) + ")";
+    });
+    saveSettings("opacity", val);
+  });
+
+  document.getElementById("dsp-fontsize").addEventListener("input", function() {
+    var val = parseInt(this.value);
+    document.getElementById("dsp-fontsize-val").textContent = val + "px";
+    document.querySelectorAll(".dash-card").forEach(function(c) {
+      c.style.fontSize = val + "px";
+    });
+    saveSettings("fontSize", val);
+  });
+
+  document.getElementById("dsp-particles").addEventListener("input", function() {
+    var val = parseInt(this.value);
+    document.getElementById("dsp-particles-val").textContent = val;
+    var canvas = document.getElementById("particles");
+    if (canvas && window._bgParticles) {
+      window._bgParticles.length = 0;
+      for (var i = 0; i < val; i++) {
+        window._bgParticles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.5 + 0.5,
+          d: Math.random() * 2 + 0.5,
+          o: Math.random() * 0.3 + 0.05
+        });
+      }
+    }
+    saveSettings("particles", val);
+  });
+
+  ["dsp-animations", "dsp-blur", "dsp-compact", "dsp-seconds"].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener("click", function() {
+      this.classList.toggle("on");
+      var isOn = this.classList.contains("on");
+      switch(id) {
+        case "dsp-animations":
+          document.body.classList.toggle("no-animations", !isOn);
+          saveSettings("animations", isOn);
+          break;
+        case "dsp-blur":
+          document.body.classList.toggle("no-blur", !isOn);
+          saveSettings("blur", isOn);
+          break;
+        case "dsp-compact":
+          document.body.classList.toggle("compact-mode", isOn);
+          saveSettings("compact", isOn);
+          break;
+        case "dsp-seconds":
+          saveSettings("showSeconds", isOn);
+          break;
+      }
+    });
+  });
+
+  document.getElementById("dsp-reset").addEventListener("click", function() {
+    localStorage.removeItem("mj-dash-settings");
+    location.reload();
+  });
 })();
 </script>
 </body>

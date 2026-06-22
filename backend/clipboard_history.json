@@ -1,5 +1,23 @@
 [
   {
+    "content": "window._orbCfg.holoMode = true;",
+    "time": "10:31 AM",
+    "timestamp": "2026-06-22T10:31:17.496341",
+    "preview": "window._orbCfg.holoMode = true;"
+  },
+  {
+    "content": "window._orbCfg.holoMode = false;",
+    "time": "10:31 AM",
+    "timestamp": "2026-06-22T10:31:00.880695",
+    "preview": "window._orbCfg.holoMode = false;"
+  },
+  {
+    "content": "window._orbCfg.holoMode = true;",
+    "time": "10:30 AM",
+    "timestamp": "2026-06-22T10:30:42.721809",
+    "preview": "window._orbCfg.holoMode = true;"
+  },
+  {
     "content": "git add .\ngit commit -m \"Add Holo FX toggle to orb settings panel\"\ngit push",
     "time": "10:29 AM",
     "timestamp": "2026-06-22T10:29:59.741522",
