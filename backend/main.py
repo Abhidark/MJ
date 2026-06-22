@@ -1179,6 +1179,101 @@ async def ollama_status():
         return {"status": "error", "message": f"Ollama check failed: {str(e)[:100]}", "models": []}
 
 
+# ===== WAKE WORD BRIEFING =====
+
+@app.get("/wake-briefing")
+async def wake_briefing():
+    """
+    Called when user says 'Hey MJ' for the first time after page load.
+    Returns system status briefing: CPU, RAM, GPU, temp, issues, weather.
+    """
+    try:
+        stats = get_system_stats()
+    except Exception:
+        stats = {}
+
+    # Build briefing parts
+    parts = ["Yes Boss! MJ online and ready."]
+
+    # System stats
+    cpu = stats.get("cpu", -1)
+    ram_pct = stats.get("ram_percent", -1)
+    ram_used = stats.get("ram_used", 0)
+    ram_total = stats.get("ram_total", 0)
+    gpu_util = stats.get("gpu_util", -1)
+    gpu_temp = stats.get("gpu_temp", -1)
+    gpu_name = stats.get("gpu_name", "N/A")
+    gpu_mem_used = stats.get("gpu_mem_used", 0)
+    gpu_mem_total = stats.get("gpu_mem_total", 0)
+    process_count = stats.get("process_count", 0)
+    uptime = stats.get("uptime", "unknown")
+
+    if cpu >= 0:
+        parts.append(f"CPU is at {cpu}%.")
+    if ram_pct >= 0:
+        parts.append(f"RAM usage {ram_pct}%, {ram_used} GB out of {ram_total} GB used.")
+    if gpu_util >= 0:
+        parts.append(f"GPU {gpu_name} at {gpu_util}% utilization, {gpu_mem_used} MB of {gpu_mem_total} MB VRAM used.")
+    if gpu_temp >= 0:
+        parts.append(f"GPU temperature is {gpu_temp} degrees Celsius.")
+    if process_count > 0:
+        parts.append(f"{process_count} processes running, system uptime {uptime}.")
+
+    # Issues detection
+    issues = []
+    if cpu > 85:
+        issues.append(f"CPU is running high at {cpu}%")
+    if ram_pct > 85:
+        issues.append(f"RAM is running high at {ram_pct}%")
+    if gpu_temp > 80:
+        issues.append(f"GPU temperature is high at {gpu_temp} degrees")
+    if gpu_util > 90:
+        issues.append(f"GPU utilization is very high at {gpu_util}%")
+
+    # Check Ollama status
+    ollama_ok = False
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            resp = await client.get("http://localhost:11434/api/tags")
+            if resp.status_code == 200:
+                ollama_ok = True
+                model_count = len(resp.json().get("models", []))
+                parts.append(f"Ollama is online with {model_count} models ready.")
+    except Exception:
+        issues.append("Ollama is not running")
+        parts.append("Warning: Ollama is offline, run ollama serve.")
+
+    # Weather (quick fetch, don't block if fails)
+    try:
+        async with httpx.AsyncClient(timeout=4) as client:
+            resp = await client.get(
+                "https://wttr.in/Delhi?format=j1",
+                headers={"User-Agent": "curl/7.68.0"}
+            )
+            if resp.status_code == 200:
+                weather = resp.json()
+                current = weather["current_condition"][0]
+                temp = current["temp_C"]
+                desc = current["weatherDesc"][0]["value"]
+                parts.append(f"Current weather in Delhi: {temp} degrees, {desc}.")
+    except Exception:
+        pass
+
+    if issues:
+        parts.append("Issues detected: " + ". ".join(issues) + ".")
+    else:
+        parts.append("All systems nominal, no issues detected.")
+
+    briefing_text = " ".join(parts)
+
+    return {
+        "briefing": briefing_text,
+        "stats": stats,
+        "issues": issues,
+        "ollama": "online" if ollama_ok else "offline",
+    }
+
+
 class SpeakRequest(BaseModel):
     text: str
     emotion: str = "neutral"

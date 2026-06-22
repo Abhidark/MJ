@@ -3442,8 +3442,48 @@ const micStatus = document.getElementById("mic-status");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let listening = false;
 let wakeDetected = false;
+let firstWakeDone = false; // Track if first "Hey MJ" briefing already happened this session
 
 function setMicStatus(text) { micStatus.textContent = text; }
+
+// ── First Wake Briefing: "Yes Boss" + system status ──
+async function doFirstWakeBriefing() {
+  if (firstWakeDone) return;
+  firstWakeDone = true;
+
+  setOrbState("thinking");
+  showOrbAlert("WAKE DETECTED — Fetching system status...", "success", 5000);
+  setMicStatus("MJ activating...");
+
+  try {
+    const res = await fetch(API + "/wake-briefing");
+    if (!res.ok) throw new Error("Briefing fetch failed");
+    const data = await res.json();
+    const briefing = data.briefing || "Yes Boss! MJ online.";
+
+    // Show briefing in chat
+    addMsg(briefing, "assistant");
+
+    // Show issues on orb if any
+    if (data.issues && data.issues.length > 0) {
+      for (const issue of data.issues) {
+        showOrbAlert("⚠ " + issue, "error", 10000);
+      }
+    } else {
+      showOrbAlert("ALL SYSTEMS NOMINAL", "success", 5000);
+    }
+
+    // Speak the briefing via TTS
+    speakText(briefing, "confident");
+
+  } catch (err) {
+    console.error("Wake briefing error:", err);
+    const fallback = "Yes Boss! MJ online. System status check failed, but I am ready for your commands.";
+    addMsg(fallback, "assistant");
+    speakText(fallback, "neutral");
+    showOrbAlert("WAKE ACTIVE — Status check failed", "error", 5000);
+  }
+}
 
 if (SpeechRecognition) {
   const recognition = new SpeechRecognition();
@@ -3452,7 +3492,7 @@ if (SpeechRecognition) {
   function startListening() {
     listening = true; micBtn.classList.add("recording");
     wakeDetected = false; setOrbState("listening");
-    setMicStatus('Say "MJ" to activate...');
+    setMicStatus('Say "Hey MJ" to activate...');
     document.getElementById("wc-voice-val").textContent = "Active";
     try { recognition.start(); } catch(e) {}
   }
@@ -3473,11 +3513,17 @@ if (SpeechRecognition) {
     setMicStatus("Heard: " + transcript);
     const isFinal = e.results[e.results.length - 1].isFinal;
     if (!isFinal) return;
-    const wakePatterns = ["mj", "m.j", "em j", "hey mj", "ok mj", "emj", "m j"];
+    const wakePatterns = ["mj", "m.j", "em j", "hey mj", "ok mj", "emj", "m j", "heyy mj", "hey m j", "hame j"];
     let hasWake = wakePatterns.some(w => lower.includes(w));
     if (hasWake) {
+      // First wake of the session → briefing
+      if (!firstWakeDone) {
+        doFirstWakeBriefing();
+        return;
+      }
+      // Subsequent wakes → extract command after wake word
       let command = transcript;
-      for (const w of ["MJ", "mj", "M.J", "m.j", "em j", "hey MJ", "ok MJ", "emj", "Hey MJ", "OK MJ"]) {
+      for (const w of ["MJ", "mj", "M.J", "m.j", "em j", "hey MJ", "ok MJ", "emj", "Hey MJ", "OK MJ", "heyy MJ", "hey m j", "hame j"]) {
         command = command.replace(new RegExp(w, "gi"), "").trim();
       }
       if (command.length > 1) { input.value = command; isVoiceCommand = true; send(); }
@@ -3489,7 +3535,7 @@ if (SpeechRecognition) {
     if (listening) {
       setTimeout(() => {
         if (listening) {
-          if (!wakeDetected) setMicStatus('Say "MJ" to activate...');
+          if (!wakeDetected) setMicStatus('Say "Hey MJ" to activate...');
           try { recognition.start(); } catch(e) {}
         }
       }, 200);
