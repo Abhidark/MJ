@@ -1,5 +1,17 @@
 [
   {
+    "content": "Copy and paste the prompt below into Claude.\n\n```\nYou are a Senior QA Engineer with 12+ years of experience in Manual Testing, Automation Testing, Performance Testing, Database Testing, UI/UX Review, Accessibility, and Security Testing.\n\nYour task is to perform a COMPLETE END-TO-END QA of the entire application. Do not stop after finding a few bugs. Test every page, every workflow, every button, every form, every API interaction, every filter, every table, every export, every modal, every dashbo",
+    "time": "11:16 AM",
+    "timestamp": "2026-06-23T11:16:35.323716",
+    "preview": "Copy and paste the prompt below into Claude.  ``` You are a Senior QA Engineer w"
+  },
+  {
+    "content": "Here's a professional prompt you can paste directly into **Claude Code**:\n\n---\n\n# Feature Request: Make the Header Fully Responsive to the Dashboard Layout\n\nThe dashboard is working well, but the **top header is not responsive**.\n\nI want the **header to automatically resize and reposition** whenever the dashboard layout changes.\n\n**Important:** Do **NOT** modify or break any backend logic, APIs, state management, or existing functionality. This should be a **UI/layout-only** improvement.\n\n---\n\n#",
+    "time": "11:16 AM",
+    "timestamp": "2026-06-23T11:16:21.300461",
+    "preview": "Here's a professional prompt you can paste directly into **Claude Code**:  ---  "
+  },
+  {
     "content": "Use this prompt for Claude Code:\n\n---\n\n# Bug Fix: Left Sidebar Content Does Not Expand While Resizing\n\nThere is a bug in the left sidebar resize functionality.\n\n## Current Issue\n\nWhen I drag the resize handle:\n\n* ? The **left sidebar container width increases**.\n* ? The **content inside the sidebar does not expand**.\n* ? Widgets remain at their old width.\n* ? There is only empty space added to the right side.\n\nThe sidebar and all its child components should resize together.\n\n---\n\n## Expected Beh",
     "time": "09:51 AM",
     "timestamp": "2026-06-23T09:51:40.797969",

@@ -4,12 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MJ - AI Assistant</title>
+<script>
+// Restore saved layout widths BEFORE first paint to prevent header/layout flash
+(function(){
+  try {
+    var sw = localStorage.getItem("mj-sidebar-width");
+    if (sw) { var v = parseInt(sw,10); if (v >= 80 && v <= 380) document.documentElement.style.setProperty("--sidebar-w", v + "px"); }
+    var aw = localStorage.getItem("mj-aiflow-width");
+    if (aw) { var p = parseInt(aw); if (p >= 180 && p <= 600) { var s = document.createElement("style"); s.id = "aiflow-init"; s.textContent = "#ai-flow-panel{width:" + p + "px!important}"; document.head.appendChild(s); } }
+  } catch(e){}
+  // Disable transitions during page load
+  var ns = document.createElement("style"); ns.id = "no-transition-init"; ns.textContent = "*,*::before,*::after{transition:none!important}"; document.head.appendChild(ns);
+  // Re-enable transitions after layout settles
+  window.addEventListener("DOMContentLoaded", function(){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ var el = document.getElementById("no-transition-init"); if(el) el.remove(); var af = document.getElementById("aiflow-init"); if(af) af.remove(); }); }); });
+})();
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
+    --sidebar-w: 210px;
     --bg: #020408;
     --bg2: #040810;
     --primary: #00d4ff;
@@ -44,6 +60,7 @@
     font-family: 'Inter', -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
+    width: 100vw;
     height: 100vh;
     overflow: hidden;
     display: flex;
@@ -88,6 +105,27 @@
   }
 
   /* ===== LEFT DASHBOARD ===== */
+  /* Main content wrapper — holds header + content row */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: var(--sidebar-w, 210px);
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
+    transition: margin-left 0.15s ease;
+  }
+  .main-content.resizing { transition: none; }
+
+  /* Content row — dashboard + right panels side by side */
+  .content-row {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   #dashboard {
     flex: 1;
     display: flex;
@@ -152,6 +190,7 @@
     gap: 12px;
     padding: 12px 16px;
     flex: 1 0 auto;
+    width: 100%;
     min-width: 0;
   }
 
@@ -606,11 +645,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
     padding: 10px 20px;
     border-bottom: 1px solid rgba(0,180,255,0.08);
     background: rgba(2,8,18,0.85);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    flex-shrink: 0;
   }
 
   .top-bar .logo {
@@ -1422,9 +1463,7 @@
   .hud-item.clickable { cursor: pointer; }
   .hud-item.clickable:hover { background: rgba(0,200,255,0.04); border-radius: 8px; }
 
-  /* Push dashboard content to make room for sidebar */
-  #dashboard { margin-left: var(--sidebar-w, 210px); transition: margin-left 0.15s ease; }
-  #dashboard.resizing { transition: none; }
+  /* Sidebar offset now handled by .main-content wrapper */
 
   .orb-status {
     margin-top: 24px;
@@ -2748,7 +2787,7 @@
     .hud-sidebar .hud-detail { display: none; }
     .hud-sidebar .hud-item { justify-content: center; padding-left: 0; }
     .sidebar-resize-handle { display: none; }
-    #dashboard { margin-left: 60px; }
+    .main-content { margin-left: 60px; }
     #ai-flow-panel { display: none; }
     #chat-panel { width: 340px; }
     #chat-panel.hidden { margin-right: -340px; }
@@ -2773,7 +2812,7 @@
   @media (max-width: 900px) {
     .hud-sidebar { display: none; }
     .sidebar-resize-handle { display: none; }
-    #dashboard { margin-left: 0; }
+    .main-content { margin-left: 0; }
     .dash-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; }
     [data-card-id] { grid-column: 1 / span 4 !important; grid-row: auto !important; }
     #chat-panel { width: 300px; }
@@ -3078,8 +3117,8 @@
   <div class="roadmap-list" id="roadmap-list"></div>
 </div>
 
-<!-- ===== LEFT: DASHBOARD ===== -->
-<div id="dashboard">
+<!-- ===== MAIN CONTENT WRAPPER (header + content row) ===== -->
+<div class="main-content" id="main-content">
   <div class="top-bar">
     <div class="logo">M<span>J</span></div>
     <div class="top-bar-widgets">
@@ -3114,6 +3153,12 @@
       <button class="icon-btn" id="dash-settings-btn" title="Dashboard Settings" style="color:#00d4ff;">&#9881;</button>
     </div>
   </div>
+
+  <!-- Content row: dashboard + right panels -->
+  <div class="content-row">
+
+<!-- ===== LEFT: DASHBOARD ===== -->
+<div id="dashboard">
 
   <!-- JARVIS Dashboard Grid -->
   <div class="dash-grid">
@@ -3838,6 +3883,9 @@
     <button id="send-btn">SEND</button>
   </div>
 </div>
+
+  </div><!-- /.content-row -->
+</div><!-- /.main-content -->
 
 <script>
 const API = window.location.origin;
@@ -6457,13 +6505,15 @@ input.focus();
   const handle = document.getElementById("aifp-resize-handle");
   if (!panel || !handle) return;
 
-  // Load saved width (validate bounds)
+  // Load saved width (validate bounds) — also set by early <head> script via !important
   const savedW = localStorage.getItem("mj-aiflow-width");
   if (savedW) {
     const pw = parseInt(savedW);
     if (pw >= 180 && pw <= 600) panel.style.width = savedW;
     else localStorage.removeItem("mj-aiflow-width");
   }
+  // Remove the early init style (no longer needed, inline style takes over)
+  var afInit = document.getElementById("aiflow-init"); if (afInit) afInit.remove();
 
   handle.addEventListener("mousedown", function(e) {
     e.preventDefault();
@@ -7233,7 +7283,7 @@ input.focus();
 
   var sidebar = document.getElementById("hud-sidebar");
   var handle = document.getElementById("sidebar-resize-handle");
-  var dashboard = document.getElementById("dashboard");
+  var mainContent = document.getElementById("main-content");
   if (!sidebar || !handle) return;
 
   var currentWidth = SIDEBAR_DEFAULT;
@@ -7275,9 +7325,12 @@ input.focus();
     });
   }
 
-  // Init
+  // Init — width already pre-set by early <head> script, but re-apply for icon-only toggle
   applySidebarWidth(loadSidebarWidth(), false);
   hookLayoutSave();
+
+  // Force layout sync after all widths restored
+  requestAnimationFrame(function() { window.dispatchEvent(new Event("resize")); });
 
   // Pointer events for smooth dragging
   handle.addEventListener("pointerdown", function(e) {
@@ -7285,7 +7338,7 @@ input.focus();
     isResizing = true;
     handle.classList.add("active", "resizing");
     sidebar.classList.add("resizing");
-    if (dashboard) dashboard.classList.add("resizing");
+    if (mainContent) mainContent.classList.add("resizing");
     handle.setPointerCapture(e.pointerId);
 
     var onMove = function(ev) {
@@ -7299,7 +7352,7 @@ input.focus();
       isResizing = false;
       handle.classList.remove("active", "resizing");
       sidebar.classList.remove("resizing");
-      if (dashboard) dashboard.classList.remove("resizing");
+      if (mainContent) mainContent.classList.remove("resizing");
       handle.releasePointerCapture(ev.pointerId);
       handle.removeEventListener("pointermove", onMove);
       handle.removeEventListener("pointerup", onUp);
