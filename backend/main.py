@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, RedirectResponse, JSONResponse
+from fastapi.responses import StreamingResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from datetime import datetime
@@ -139,6 +139,7 @@ MJ_PROMPT_FILE = Path(__file__).parent / "human_layer" / "prompts" / "mj_system_
 MJ_BASE_PROMPT = MJ_PROMPT_FILE.read_text(encoding="utf-8") if MJ_PROMPT_FILE.exists() else ""
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+REACT_DIST_DIR = Path(__file__).parent.parent / "frontend-react" / "dist"
 
 # Load plugins and start background services on boot
 load_plugins()
@@ -1929,6 +1930,37 @@ async def stt_status():
 
 @app.get("/")
 async def root():
+    # Serve React build if available, else fall back to old frontend
+    react_index = REACT_DIST_DIR / "index.html"
+    if react_index.exists():
+        return FileResponse(str(react_index), media_type="text/html")
+    return RedirectResponse("/static/index.html")
+
+
+# SPA catch-all: serve React index.html for client-side routes
+# Only matches paths that don't start with /api, /auth, /chat, /static, /audio, /assets, /docs, /openapi
+@app.get("/{path:path}")
+async def spa_catch_all(path: str):
+    # Skip API/backend paths — let them 404 normally
+    first_segment = path.split("/")[0] if path else ""
+    backend_prefixes = {
+        "auth", "chat", "chats", "history", "select-chat", "new-chat", "delete-chat",
+        "core-memory", "remember", "context-memory", "execute", "system-stats",
+        "top-processes", "processes", "network-stats", "notify", "reminders",
+        "scheduled-tasks", "health", "errors", "alerts", "models", "provider",
+        "plugins", "zeus", "knowledge-base", "intelligence", "diagnostics",
+        "ollama-status", "wake-briefing", "ocr", "git", "suggestions",
+        "gesture", "speak", "voice-settings", "test-voice", "email",
+        "clipboard", "app-usage", "generated-images", "weather",
+        "static", "audio", "assets", "docs", "openapi.json",
+        "favicon.ico", "favicon.svg", "icons.svg",
+    }
+    if first_segment in backend_prefixes:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    react_index = REACT_DIST_DIR / "index.html"
+    if react_index.exists():
+        return FileResponse(str(react_index), media_type="text/html")
     return RedirectResponse("/static/index.html")
 
 
@@ -1943,5 +1975,9 @@ GEN_IMAGES_DIR = Path(__file__).parent / "generated_images"
 GEN_IMAGES_DIR.mkdir(exist_ok=True)
 app.mount("/static/generated", StaticFiles(directory=str(GEN_IMAGES_DIR)), name="generated_images")
 
-# Mount frontend static files (must be AFTER API routes)
+# Mount React build assets (if dist/ exists)
+if REACT_DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(REACT_DIST_DIR / "assets")), name="react_assets")
+
+# Mount old frontend static files as fallback (must be AFTER API routes)
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

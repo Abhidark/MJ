@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 
-// ─── Roadmap Data (mirrored from index.html) ───
 const ROADMAP = [
   { phase: 'Phase 1 — Foundation', items: [
-    { v:'V1', name:'JARVIS Core', desc:'Chat, Voice, FastAPI, Ollama, Logging, Settings, Auth', pct:85, features:'Chat UI ✅ | Voice In ✅ | Voice Out ✅ | FastAPI ✅ | Ollama ✅ | Local LLM ✅ | Logging ✅ | Settings ✅ | Auth ✅ | Login Screen ✅ | Change Password ✅ | React ❌' },
+    { v:'V1', name:'JARVIS Core', desc:'Chat, Voice, FastAPI, Ollama, Logging, Settings, Auth, React', pct:100, features:'Chat UI ✅ | Voice In ✅ | Voice Out ✅ | FastAPI ✅ | Ollama ✅ | Local LLM ✅ | Logging ✅ | Settings ✅ | Auth ✅ | Login Screen ✅ | Change Password ✅ | React ✅' },
     { v:'V2', name:'Memory Engine', desc:'Short/long-term memory, profile, search', pct:45, features:'Long-Term Memory ✅ | Chat History ✅ | Short-Term ⚠️ | User Profile ⚠️ | Memory Search ⚠️ | Timeline ❌ | Qdrant ❌ | PostgreSQL ❌' },
     { v:'V3', name:'Tool Engine', desc:'Calculator, files, weather, search, email', pct:75, features:'Calculator ✅ | Notes/Todos ✅ | File Manager ✅ | Weather ✅ | Web Search ✅ | Email ✅ | Clipboard ✅ | Calendar ❌' },
     { v:'V4', name:'Agent Framework', desc:'Registry, lifecycle, message bus, events', pct:65, features:'Agent Registry ✅ | Agent Lifecycle ✅ | Message Bus ⚠️ | Event System ⚠️ | Shared Memory ⚠️ | Task Queue ❌' },
@@ -111,8 +110,8 @@ export default function RoadmapPanel({ onClose }) {
     <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="rm-panel">
         <div className="rm-header">
-          <span className="rm-title">{'\u{1F680}'} MJ ROADMAP</span>
-          <button className="panel-close" onClick={onClose}>{'✕'}</button>
+          <span className="rm-title">🚀 MJ ROADMAP</span>
+          <button className="panel-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="rm-overall">
