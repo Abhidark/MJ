@@ -26,3 +26,4 @@ send2trash
 # OCR (uses Windows PowerShell — no extra dep)
 # Web search (uses httpx + DuckDuckGo — no extra dep)
 # Live data (cricket/weather/stocks/news — all use httpx, no extra dep)
+# Groq Cloud API (uses httpx — no extra dep, just set GROQ_API_KEY in backend/.env)

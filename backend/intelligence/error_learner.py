@@ -197,14 +197,14 @@ def _detect_issues(perf_data):
                 "suggestion": f"Check if '{model}' is properly installed: ollama pull {model}",
             })
 
-    # Issue 5: Empty responses
+    # Issue 5: Empty responses (only alert if 3+ consecutive empty)
     empty = [r for r in recent if r["tokens"] == 0 and r["success"]]
-    if empty:
+    if len(empty) >= 3:
         issues.append({
             "type": "empty_responses",
             "severity": "warning",
-            "message": f"{len(empty)} empty responses — model generating nothing",
-            "suggestion": "Model might be stuck. Restart Ollama: ollama serve",
+            "message": f"{len(empty)} empty responses — model may be too weak",
+            "suggestion": "Try 'use groq' for cloud AI, or pull a bigger model: ollama pull qwen2.5:7b",
         })
 
     return issues

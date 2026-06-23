@@ -3691,7 +3691,7 @@
 
     <!-- LLM Status Card (Zeus Panel - all IDs preserved) -->
     <div class="dash-card" data-card-id="llm-status">
-      <div class="dash-card-title">LLM Status <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span><span class="expand-arrow">&#9660;</span></div>
+      <div class="dash-card-title">LLM Status <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span><span class="zeus-auto-badge" id="zeus-provider-badge" style="background:rgba(0,255,180,0.15);color:#0fb;margin-left:4px;">OLLAMA</span><span class="expand-arrow">&#9660;</span></div>
       <div class="zeus-models" id="zeus-models-container">
         <div class="zeus-no-models" id="zeus-no-models" style="display:none;">
           <div style="text-align:center;padding:12px 0;color:rgba(255,100,100,0.7);font-size:11px;letter-spacing:0.5px;">No AI models installed</div>
@@ -3706,7 +3706,8 @@
         <div class="sdp-grid">
           <div class="sdp-section-title">Installed Models</div>
           <div id="sdp-model-list"><div class="sdp-model-card"><div class="sdp-model-meta">Loading models...</div></div></div>
-          <div class="sdp-section-title">Ollama Status</div>
+          <div class="sdp-section-title">Provider Status</div>
+          <div class="sdp-item"><span class="sdp-item-label">Provider</span><span class="sdp-item-value" id="sdp-provider">Ollama</span></div>
           <div class="sdp-item"><span class="sdp-item-label">Status</span><span class="sdp-item-value" id="sdp-ollama-status">Checking...</span></div>
           <div class="sdp-item"><span class="sdp-item-label">Active Model</span><span class="sdp-item-value" id="sdp-active-model">--</span></div>
           <div class="sdp-item"><span class="sdp-item-label">Avg Response</span><span class="sdp-item-value" id="sdp-avg-resp">-- ms</span></div>
@@ -4927,6 +4928,16 @@ async function loadModelConfig() {
       badge.style.color = data.auto_select ? 'var(--success)' : 'var(--warning)';
       badge.style.borderColor = data.auto_select ? 'rgba(0,255,136,0.3)' : 'rgba(255,170,0,0.3)';
     }
+
+    // Update provider badge
+    const provBadge = document.getElementById('zeus-provider-badge');
+    if (provBadge && data.provider) {
+      const isGroq = data.provider === 'groq';
+      provBadge.textContent = isGroq ? 'GROQ ☁️' : 'OLLAMA';
+      provBadge.style.background = isGroq ? 'rgba(160,100,255,0.15)' : 'rgba(0,255,180,0.15)';
+      provBadge.style.color = isGroq ? '#c8a0ff' : '#0fb';
+      provBadge.style.borderColor = isGroq ? 'rgba(160,100,255,0.3)' : 'rgba(0,255,180,0.3)';
+    }
   } catch(e) {
     console.log('[MJ] Failed to load models:', e);
     const noModelsEl = document.getElementById('zeus-no-models');
@@ -4970,11 +4981,11 @@ async function send() {
 
   input.value = ""; sendBtn.disabled = true; setOrbState("thinking"); setZeusThinking();
   const typing = addMsg("Loading model & thinking...", "assistant typing");
-  // Timeout safety — if no response in 120s, show alert
+  // Timeout safety — if model loading is slow, show helpful alert
   let responseStarted = false;
   const stuckTimer = setTimeout(() => {
     if (!responseStarted) {
-      showOrbAlert("MODEL LOADING — 14B model swap takes time, please wait...", "error", 30000);
+      showOrbAlert("MODEL LOADING — Ollama is loading the model, please wait...", "warning", 20000);
     }
   }, 15000);
 
@@ -5003,6 +5014,22 @@ async function send() {
         if (line.startsWith("data: ") && line !== "data: [DONE]") {
           try {
             const data = JSON.parse(line.slice(6));
+            // Model info event (first SSE event from backend)
+            if (data.model && !data.token) {
+              responseStarted = true; clearTimeout(stuckTimer);
+              const isGroq = data.provider === 'groq';
+              const shortModel = isGroq ? 'Groq ☁️' : data.model.split(":")[0];
+              typing.textContent = `Using ${shortModel}... thinking...`;
+              // Update last-used display
+              const zluModel = document.getElementById('zlu-model');
+              const zluTask = document.getElementById('zlu-task');
+              const zluEl = document.getElementById('zeus-last-used');
+              if (zluModel) zluModel.textContent = data.model;
+              if (zluTask) zluTask.textContent = data.task_type || 'chat';
+              if (zluEl) zluEl.style.display = 'flex';
+              console.log("[MJ] Provider:", data.provider, "| Model:", data.model, "| Task:", data.task_type);
+              continue;
+            }
             if (data.token) {
               if (!responseStarted) { responseStarted = true; clearTimeout(stuckTimer); }
               rawBuffer += data.token;

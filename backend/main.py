@@ -79,7 +79,14 @@ from modules.hestia.module import HestiaModule
 from modules.loki.module import LokiModule
 from modules.chronos.module import ChronosModule
 from modules.phantom.module import PhantomModule
-from human_layer.model_manager import parse_model_command, handle_model_command, get_model_for_task, get_available_models, load_model_config, save_model_config, get_routing_info, set_active_model, toggle_auto_select, set_model_for_task
+from human_layer.model_manager import (
+    parse_model_command, handle_model_command, get_model_for_task,
+    get_available_models, load_model_config, save_model_config,
+    get_routing_info, set_active_model, toggle_auto_select,
+    set_model_for_task, sync_config_with_installed,
+    get_active_provider, auto_detect_provider
+)
+from intelligence.groq_provider import is_groq_available, stream_groq_chat, get_groq_model, check_groq_connection
 from plugins.plugin_manager import load_plugins, match_plugin, run_plugin, notify_plugins, parse_plugin_command, handle_plugin_management, get_plugin_list
 from self_healer.error_tracker import log_error, get_recent_errors, get_error_stats, clear_errors
 from self_healer.auto_fixer import attempt_fix, analyze_error
@@ -92,6 +99,13 @@ from self_healer.alert_system import (
 )
 
 app = FastAPI()
+
+# Auto-detect installed models and best provider on startup
+try:
+    sync_config_with_installed()
+    auto_detect_provider()
+except Exception:
+    pass  # Ollama might not be running yet — will retry on first request
 
 # Initialize Human Brain
 mj_brain = MJHumanBrain()
@@ -363,15 +377,41 @@ async def clear_all_errors():
 
 @app.get("/models")
 async def list_models():
-    """List available Ollama models."""
+    """List available models (Ollama + Groq)."""
     models = await get_available_models()
     config = load_model_config()
+    provider = get_active_provider()
+    groq_status = await check_groq_connection() if is_groq_available() else {"available": False}
     return {
         "models": models,
         "active": config.get("active_model"),
         "auto_select": config.get("auto_select"),
         "model_map": config.get("model_map", {}),
+        "provider": provider,
+        "groq": groq_status,
     }
+
+
+@app.get("/provider")
+async def get_provider_status():
+    """Get current AI provider status."""
+    provider = get_active_provider()
+    groq_avail = is_groq_available()
+    groq_status = await check_groq_connection() if groq_avail else {"available": False}
+    return {
+        "provider": provider,
+        "groq_available": groq_avail,
+        "groq_status": groq_status,
+    }
+
+
+@app.post("/provider/set")
+async def set_provider_endpoint(req: dict):
+    """Switch AI provider: 'ollama' or 'groq'."""
+    from human_layer.model_manager import set_provider as _set_provider
+    provider = req.get("provider", "").lower()
+    result = _set_provider(provider)
+    return result
 
 
 @app.post("/models/route")
@@ -1187,15 +1227,23 @@ async def chat(
         user_msg_entry["images"] = images
     messages.append(user_msg_entry)
 
+    # Detect provider
+    active_provider = get_active_provider()
+
+    # For Groq: override model with Groq model name
+    if active_provider == "groq":
+        groq_model = get_groq_model()
+        selected_model = f"groq:{groq_model}"
+
     payload = {
         "model": selected_model,
         "messages": messages,
         "stream": True,
         "options": {
-            "num_ctx": 4096,         # Smaller context = faster (was default 8192)
+            "num_ctx": 4096,
             "temperature": 0.7,
             "repeat_penalty": 1.1,
-            "num_predict": 1024,     # Max tokens to generate (prevents endless responses)
+            "num_predict": 1024,
             "top_k": 40,
             "top_p": 0.9,
         },
@@ -1206,51 +1254,75 @@ async def chat(
 
     async def stream_response():
         _error_occurred = None
-        try:
-            async with httpx.AsyncClient(timeout=180) as client:
-                async with client.stream("POST", OLLAMA_URL, json=payload) as resp:
-                    async for line in resp.aiter_lines():
-                        if line:
-                            data = json.loads(line)
-                            token = data.get("message", {}).get("content", "")
-                            if token:
-                                full_reply.append(token)
-                                yield f"data: {json.dumps({'token': token})}\n\n"
-        except httpx.ConnectError:
-            _error_occurred = "connect_error"
-            error_msg = "⚠️ Boss, Ollama chal nahi raha! Terminal me `ollama serve` run karo, phir dubara try karo."
-            full_reply.append(error_msg)
-            log_error("connect_error", error_msg, {"model": selected_model, "user_msg": message[:80]})
-            yield f"data: {json.dumps({'token': error_msg})}\n\n"
-        except httpx.ReadTimeout:
-            _error_occurred = "timeout"
-            error_msg = "⏳ Ollama response dene me bahut time le raha hai. Model busy hai ya bahut bada question hai. Thoda wait karo ya chhota question pucho."
-            full_reply.append(error_msg)
-            log_error("timeout", error_msg, {"model": selected_model, "user_msg": message[:80], "timeout": 180})
-            yield f"data: {json.dumps({'token': error_msg})}\n\n"
-        except httpx.ConnectTimeout:
-            _error_occurred = "connect_timeout"
-            error_msg = "⚠️ Ollama se connect nahi ho pa raha. Check karo ki `ollama serve` chal raha hai aur port 11434 free hai."
-            full_reply.append(error_msg)
-            log_error("connect_timeout", error_msg, {"model": selected_model})
-            yield f"data: {json.dumps({'token': error_msg})}\n\n"
-        except Exception as e:
-            error_str = str(e).lower()
-            if "connect" in error_str or "refused" in error_str or "connection" in error_str:
+        # Send model info as first SSE event so frontend knows which model/provider is running
+        yield f"data: {json.dumps({'model': selected_model, 'task_type': routing.get('task_type', 'chat'), 'provider': active_provider})}\n\n"
+
+        # ── GROQ CLOUD PROVIDER ──
+        if active_provider == "groq":
+            try:
+                async for token in stream_groq_chat(messages, temperature=0.7, max_tokens=1024):
+                    if token.startswith("[ERROR]"):
+                        _error_occurred = "groq_error"
+                        full_reply.append(token)
+                        log_error("groq_error", token, {"model": selected_model, "user_msg": message[:80]})
+                        yield f"data: {json.dumps({'token': token})}\n\n"
+                    else:
+                        full_reply.append(token)
+                        yield f"data: {json.dumps({'token': token})}\n\n"
+            except Exception as e:
+                _error_occurred = "groq_exception"
+                error_msg = f"❌ Groq API error: {str(e)[:200]}"
+                full_reply.append(error_msg)
+                log_error("groq_exception", str(e)[:300], {"model": selected_model})
+                yield f"data: {json.dumps({'token': error_msg})}\n\n"
+
+        # ── OLLAMA LOCAL PROVIDER ──
+        else:
+            try:
+                async with httpx.AsyncClient(timeout=180) as client:
+                    async with client.stream("POST", OLLAMA_URL, json=payload) as resp:
+                        async for line in resp.aiter_lines():
+                            if line:
+                                data = json.loads(line)
+                                token = data.get("message", {}).get("content", "")
+                                if token:
+                                    full_reply.append(token)
+                                    yield f"data: {json.dumps({'token': token})}\n\n"
+            except httpx.ConnectError:
                 _error_occurred = "connect_error"
-                error_msg = "⚠️ Ollama se connection fail ho gaya. `ollama serve` run karo terminal me!"
-            elif "timeout" in error_str:
+                error_msg = "⚠️ Boss, Ollama chal nahi raha! Terminal me `ollama serve` run karo, phir dubara try karo."
+                full_reply.append(error_msg)
+                log_error("connect_error", error_msg, {"model": selected_model, "user_msg": message[:80]})
+                yield f"data: {json.dumps({'token': error_msg})}\n\n"
+            except httpx.ReadTimeout:
                 _error_occurred = "timeout"
-                error_msg = "⏳ Request timeout ho gaya. Ollama slow hai ya model load ho raha hai."
-            elif "model" in error_str and "not found" in error_str:
-                _error_occurred = "model_not_found"
-                error_msg = f"❌ Model '{selected_model}' nahi mila. `ollama pull {selected_model}` run karo pehle."
-            else:
-                _error_occurred = "unknown"
-                error_msg = f"❌ Kuch gadbad ho gayi: {str(e)[:200]}"
-            full_reply.append(error_msg)
-            log_error(_error_occurred, str(e)[:300], {"model": selected_model, "user_msg": message[:80]})
-            yield f"data: {json.dumps({'token': error_msg})}\n\n"
+                error_msg = "⏳ Ollama response dene me bahut time le raha hai. Model busy hai ya bahut bada question hai. Thoda wait karo ya chhota question pucho."
+                full_reply.append(error_msg)
+                log_error("timeout", error_msg, {"model": selected_model, "user_msg": message[:80], "timeout": 180})
+                yield f"data: {json.dumps({'token': error_msg})}\n\n"
+            except httpx.ConnectTimeout:
+                _error_occurred = "connect_timeout"
+                error_msg = "⚠️ Ollama se connect nahi ho pa raha. Check karo ki `ollama serve` chal raha hai aur port 11434 free hai."
+                full_reply.append(error_msg)
+                log_error("connect_timeout", error_msg, {"model": selected_model})
+                yield f"data: {json.dumps({'token': error_msg})}\n\n"
+            except Exception as e:
+                error_str = str(e).lower()
+                if "connect" in error_str or "refused" in error_str or "connection" in error_str:
+                    _error_occurred = "connect_error"
+                    error_msg = "⚠️ Ollama se connection fail ho gaya. `ollama serve` run karo terminal me!"
+                elif "timeout" in error_str:
+                    _error_occurred = "timeout"
+                    error_msg = "⏳ Request timeout ho gaya. Ollama slow hai ya model load ho raha hai."
+                elif "model" in error_str and "not found" in error_str:
+                    _error_occurred = "model_not_found"
+                    error_msg = f"❌ Model '{selected_model}' nahi mila. `ollama pull {selected_model}` run karo pehle."
+                else:
+                    _error_occurred = "unknown"
+                    error_msg = f"❌ Kuch gadbad ho gayi: {str(e)[:200]}"
+                full_reply.append(error_msg)
+                log_error(_error_occurred, str(e)[:300], {"model": selected_model, "user_msg": message[:80]})
+                yield f"data: {json.dumps({'token': error_msg})}\n\n"
 
         # Save to chat (show file label in history)
         display_msg = message + file_label
