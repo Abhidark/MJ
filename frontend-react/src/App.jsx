@@ -8,8 +8,9 @@ import Header from '@/components/layout/Header';
 import MainContent, { ContentRow } from '@/components/layout/MainContent';
 import LoginScreen from '@/components/auth/LoginScreen';
 import SecurityPanel from '@/components/auth/SecurityPanel';
+import ChatPanel from '@/components/chat/ChatPanel';
 
-// ─── Page placeholders (Day 4–10) ───
+// ─── Page placeholders (Day 5–10) ───
 function DashboardView() {
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -19,19 +20,8 @@ function DashboardView() {
           JARVIS DASHBOARD
         </h2>
         <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-          Orb + HUD cards + AI Flow panel — coming Day 4
+          Orb + HUD cards + AI Flow panel — coming Day 5
         </p>
-      </div>
-    </div>
-  );
-}
-
-function ChatView() {
-  return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="card" style={{ padding: 32, textAlign: 'center' }}>
-        <h2 style={{ color: 'var(--cyan)', marginBottom: 8 }}>Chat Panel</h2>
-        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>SSE streaming chat — coming Day 5</p>
       </div>
     </div>
   );
@@ -102,7 +92,7 @@ function AppLayout() {
         <ContentRow>
           <Routes>
             <Route path="/" element={<DashboardView />} />
-            <Route path="/chat" element={<ChatView />} />
+            <Route path="/chat" element={<ChatPanel />} />
             <Route path="/modules" element={<ModulesView />} />
             <Route path="/settings" element={<SettingsView />} />
             <Route path="*" element={<Navigate to="/" replace />} />
