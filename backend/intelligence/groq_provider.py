@@ -137,7 +137,8 @@ async def stream_groq_chat(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        _groq_timeout = httpx.Timeout(connect=5.0, read=30.0, write=5.0, pool=5.0)
+        async with httpx.AsyncClient(timeout=_groq_timeout) as client:
             async with client.stream("POST", GROQ_API_URL, json=payload, headers=headers) as resp:
                 if resp.status_code != 200:
                     error_body = ""

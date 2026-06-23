@@ -3048,9 +3048,85 @@
     .roadmap-panel { width: 100%; border-radius: 0; }
     #user-input { font-size: 14px; }
   }
+/* ===== LOGIN SCREEN ===== */
+#mj-login-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  background: radial-gradient(ellipse at center, #0a1628 0%, #050d1a 60%, #000 100%);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.5s ease;
+}
+#mj-login-overlay.hidden { opacity: 0; pointer-events: none; }
+.mj-login-box {
+  background: rgba(0,20,40,0.85); border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 16px; padding: 40px 36px 32px; min-width: 340px;
+  box-shadow: 0 0 60px rgba(0,212,255,0.08), inset 0 0 30px rgba(0,212,255,0.03);
+  text-align: center; position: relative;
+}
+.mj-login-box::before {
+  content: ''; position: absolute; inset: -1px; border-radius: 17px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.2), transparent 50%, rgba(0,212,255,0.1));
+  z-index: -1;
+}
+.mj-login-orb {
+  width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,212,255,0.6), rgba(0,100,200,0.3), transparent);
+  box-shadow: 0 0 40px rgba(0,212,255,0.3), 0 0 80px rgba(0,212,255,0.1);
+  animation: loginPulse 2s ease-in-out infinite;
+}
+@keyframes loginPulse {
+  0%,100% { transform: scale(1); box-shadow: 0 0 40px rgba(0,212,255,0.3); }
+  50% { transform: scale(1.08); box-shadow: 0 0 60px rgba(0,212,255,0.5); }
+}
+.mj-login-title {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 28px; font-weight: 700; letter-spacing: 6px;
+  color: #fff; margin-bottom: 4px; text-transform: uppercase;
+}
+.mj-login-sub {
+  font-size: 11px; color: rgba(0,212,255,0.5); letter-spacing: 2px;
+  margin-bottom: 28px; text-transform: uppercase;
+}
+.mj-login-input {
+  width: 100%; padding: 12px 16px; border-radius: 8px;
+  background: rgba(0,20,40,0.6); border: 1px solid rgba(0,212,255,0.2);
+  color: #fff; font-size: 15px; font-family: inherit;
+  outline: none; transition: border-color 0.3s;
+  text-align: center; letter-spacing: 3px;
+}
+.mj-login-input:focus { border-color: rgba(0,212,255,0.6); }
+.mj-login-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 1px; }
+.mj-login-btn {
+  width: 100%; padding: 12px; margin-top: 16px; border: none; border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(0,150,255,0.2));
+  color: #fff; font-size: 14px; font-weight: 600; letter-spacing: 2px;
+  cursor: pointer; transition: all 0.3s; text-transform: uppercase;
+  border: 1px solid rgba(0,212,255,0.3);
+}
+.mj-login-btn:hover { background: linear-gradient(135deg, rgba(0,212,255,0.5), rgba(0,150,255,0.35)); }
+.mj-login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.mj-login-error {
+  color: #ff4444; font-size: 12px; margin-top: 12px; min-height: 16px;
+}
+.mj-login-hint {
+  color: rgba(255,255,255,0.15); font-size: 10px; margin-top: 16px;
+  letter-spacing: 1px;
+}
 </style>
 </head>
 <body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="mj-login-overlay">
+  <div class="mj-login-box">
+    <div class="mj-login-orb"></div>
+    <div class="mj-login-title">M J</div>
+    <div class="mj-login-sub">Personal AI Assistant</div>
+    <input type="password" id="mj-login-password" class="mj-login-input" placeholder="Enter Password" autocomplete="off" autofocus>
+    <button id="mj-login-btn" class="mj-login-btn">Authenticate</button>
+    <div id="mj-login-error" class="mj-login-error"></div>
+    <div class="mj-login-hint">Default: jarvis</div>
+  </div>
+</div>
 
 <canvas id="particles"></canvas>
 <div class="hex-grid"></div>
@@ -3178,6 +3254,17 @@
     </div>
   </div>
 
+  <!-- Security / Logout -->
+  <div class="hud-item clickable" id="hud-auth-btn" title="Security — Change Password / Logout" style="cursor:pointer;">
+    <div class="hud-hex">
+      <span class="hud-hex-icon">&#128274;</span>
+    </div>
+    <div class="hud-detail">
+      <div class="hud-detail-label">SECURITY</div>
+      <div class="hud-detail-value" style="font-size:10px;color:var(--text-dim);">Logout / Password</div>
+    </div>
+  </div>
+
   <div class="hud-divider"></div>
 
   <!-- Sidebar Calendar Widget -->
@@ -3292,6 +3379,42 @@
     <span class="roadmap-progress-text" id="roadmap-progress-text">0%</span>
   </div>
   <div class="roadmap-list" id="roadmap-list"></div>
+</div>
+
+<!-- ===== SECURITY PANEL ===== -->
+<div class="roadmap-panel" id="security-panel" style="display:none;">
+  <div class="roadmap-header">
+    <span class="roadmap-title">&#128274; Security Settings</span>
+    <button class="roadmap-close" id="security-close">&#10005;</button>
+  </div>
+  <div style="padding:20px;">
+    <!-- Auth toggle -->
+    <div style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="color:var(--accent);font-size:13px;font-weight:600;letter-spacing:1px;">PASSWORD LOCK</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:10px;margin-top:2px;">Require password on startup</div>
+      </div>
+      <label style="position:relative;width:44px;height:24px;display:inline-block;cursor:pointer;">
+        <input type="checkbox" id="sec-auth-toggle" style="opacity:0;width:0;height:0;">
+        <span id="sec-toggle-track" style="position:absolute;inset:0;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);transition:all 0.3s;"></span>
+        <span id="sec-toggle-thumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#555;transition:all 0.3s;"></span>
+      </label>
+    </div>
+    <div id="sec-auth-section" style="display:none;">
+      <div style="margin-bottom:24px;">
+        <div style="color:var(--accent);font-size:13px;font-weight:600;margin-bottom:12px;letter-spacing:1px;">CHANGE PASSWORD</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:10px;margin-bottom:8px;">Default password: jarvis</div>
+        <input type="password" id="sec-old-pwd" placeholder="Current Password" style="width:100%;padding:10px 14px;margin-bottom:8px;background:rgba(0,20,40,0.6);border:1px solid rgba(0,212,255,0.2);border-radius:6px;color:#fff;font-size:13px;outline:none;">
+        <input type="password" id="sec-new-pwd" placeholder="New Password (min 4 chars)" style="width:100%;padding:10px 14px;margin-bottom:8px;background:rgba(0,20,40,0.6);border:1px solid rgba(0,212,255,0.2);border-radius:6px;color:#fff;font-size:13px;outline:none;">
+        <button id="sec-change-btn" style="width:100%;padding:10px;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(0,150,255,0.15));border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:#fff;font-size:13px;cursor:pointer;letter-spacing:1px;">UPDATE PASSWORD</button>
+        <div id="sec-change-msg" style="color:var(--accent);font-size:11px;margin-top:8px;min-height:14px;"></div>
+      </div>
+      <div style="border-top:1px solid rgba(0,212,255,0.1);padding-top:20px;">
+        <div style="color:#ff6b6b;font-size:13px;font-weight:600;margin-bottom:12px;letter-spacing:1px;">LOGOUT</div>
+        <button id="sec-logout-btn" style="width:100%;padding:10px;background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.3);border-radius:6px;color:#ff6b6b;font-size:13px;cursor:pointer;letter-spacing:1px;">LOGOUT FROM MJ</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== MAIN CONTENT WRAPPER (header + content row) ===== -->
@@ -4067,6 +4190,94 @@
 
 <script>
 const API = window.location.origin;
+
+// ===== AUTH GATE — Must authenticate before loading app =====
+(function(){
+  const overlay = document.getElementById('mj-login-overlay');
+  const passInput = document.getElementById('mj-login-password');
+  const loginBtn = document.getElementById('mj-login-btn');
+  const errorEl = document.getElementById('mj-login-error');
+  if (!overlay) return;
+
+  // Check if already authenticated (token in localStorage)
+  const savedToken = localStorage.getItem('mj_auth_token');
+
+  function hideLogin() {
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.style.display = 'none', 600);
+  }
+
+  async function checkAuth() {
+    // First check if auth is even enabled
+    try {
+      const statusRes = await fetch(API + '/auth/status');
+      const status = await statusRes.json();
+      if (!status.auth_enabled) { hideLogin(); return; }
+    } catch(e) { hideLogin(); return; } // Backend down — let app handle it
+
+    // If we have a saved token, verify it by calling a protected endpoint
+    if (savedToken) {
+      try {
+        const testRes = await fetch(API + '/system-stats', {
+          headers: { 'Authorization': 'Bearer ' + savedToken }
+        });
+        if (testRes.ok) { hideLogin(); return; }
+      } catch(e) {}
+      // Token invalid — clear it
+      localStorage.removeItem('mj_auth_token');
+    }
+
+    // Show login screen
+    overlay.style.display = 'flex';
+    passInput.focus();
+  }
+
+  async function doLogin() {
+    const pwd = passInput.value.trim();
+    if (!pwd) { errorEl.textContent = 'Enter a password'; return; }
+    loginBtn.disabled = true; errorEl.textContent = '';
+    try {
+      const res = await fetch(API + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        localStorage.setItem('mj_auth_token', data.token);
+        hideLogin();
+      } else {
+        errorEl.textContent = data.message || 'Wrong password';
+        passInput.value = ''; passInput.focus();
+      }
+    } catch(e) {
+      errorEl.textContent = 'Server not reachable';
+    }
+    loginBtn.disabled = false;
+  }
+
+  loginBtn.addEventListener('click', doLogin);
+  passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+
+  checkAuth();
+})();
+
+// Inject auth token into all fetch requests
+const _origFetch = window.fetch;
+window.fetch = function(url, opts) {
+  opts = opts || {};
+  const token = localStorage.getItem('mj_auth_token');
+  if (token && typeof url === 'string' && url.startsWith(API)) {
+    opts.headers = opts.headers || {};
+    if (opts.headers instanceof Headers) {
+      if (!opts.headers.has('Authorization')) opts.headers.set('Authorization', 'Bearer ' + token);
+    } else {
+      if (!opts.headers['Authorization']) opts.headers['Authorization'] = 'Bearer ' + token;
+    }
+  }
+  return _origFetch.call(this, url, opts);
+};
+
 const chatBox = document.getElementById("chat-container");
 const input = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");
@@ -5167,11 +5378,17 @@ setInterval(function(){ if (!MJPerf.hidden) loadModelConfig(); }, 60000);
 
 let isVoiceCommand = false;
 
+// AbortController for cancelling stale/hung requests
+let _activeAbort = null;
+
 async function send() {
   const text = input.value.trim();
   console.log("[MJ Voice] send() called — text:", JSON.stringify(text), "| isVoiceCommand:", isVoiceCommand);
   if (!text && !pendingFile) { console.log("[MJ Voice] send() aborted — empty text, no file"); return; }
   if (!text) { console.log("[MJ Voice] send() aborted — empty text"); input.focus(); return; }
+
+  // Cancel any previous in-flight request
+  if (_activeAbort) { try { _activeAbort.abort(); } catch(e){} _activeAbort = null; }
 
   // Auto-show chat panel only for manual typing (not voice)
   if (!isVoiceCommand && !chatManuallyHidden) showChatPanel();
@@ -5194,16 +5411,33 @@ async function send() {
   }
 
   input.value = ""; sendBtn.disabled = true; setOrbState("thinking"); setZeusThinking();
-  const typing = addMsg("Loading model & thinking...", "assistant typing");
-  // Timeout safety — if model loading is slow, show helpful alert
+  const typing = addMsg("Understanding your message...", "assistant typing");
+  const _sendTime = performance.now();
+
+  // AbortController — allows cancellation from timeout or new message
+  const abortCtrl = new AbortController();
+  _activeAbort = abortCtrl;
+
+  // Real timeout — ABORT the fetch if no tokens arrive within limit
   let responseStarted = false;
+  let _tokenTimeout = null;
   const provBadgeText = document.getElementById('zeus-provider-badge')?.textContent || '';
   const isGroqMode = provBadgeText.includes('GROQ');
+  const TIMEOUT_MS = isGroqMode ? 35000 : 60000;  // 35s Groq, 60s Ollama
+
   const stuckTimer = setTimeout(() => {
     if (!responseStarted) {
-      showOrbAlert(isGroqMode ? "WAITING — Groq cloud is processing..." : "MODEL LOADING — Ollama is loading the model, please wait...", "warning", 20000);
+      showOrbAlert(isGroqMode ? "WAITING — Groq cloud is processing..." : "MODEL LOADING — Ollama is loading the model...", "warning", 15000);
     }
-  }, isGroqMode ? 30000 : 15000);
+  }, isGroqMode ? 8000 : 15000);
+
+  // Hard timeout — if no token arrives, abort the request entirely
+  _tokenTimeout = setTimeout(() => {
+    if (!responseStarted) {
+      console.warn("[MJ] Hard timeout — aborting request after " + TIMEOUT_MS + "ms");
+      abortCtrl.abort();
+    }
+  }, TIMEOUT_MS);
 
   try {
     const formData = new FormData();
@@ -5212,8 +5446,8 @@ async function send() {
     clearFile();
 
     console.log("[MJ Voice] Sending to /chat API:", text);
-    const res = await fetch(API + "/chat", { method: "POST", body: formData });
-    console.log("[MJ Voice] /chat response status:", res.status);
+    const res = await fetch(API + "/chat", { method: "POST", body: formData, signal: abortCtrl.signal });
+    console.log("[MJ Voice] /chat response status:", res.status, "latency:", Math.round(performance.now() - _sendTime) + "ms");
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
     typing.textContent = ""; typing.classList.remove("typing");
@@ -5230,15 +5464,26 @@ async function send() {
         if (line.startsWith("data: ") && line !== "data: [DONE]") {
           try {
             const data = JSON.parse(line.slice(6));
+
+            // Stage events from backend pipeline
+            if (data.stage) {
+              if (data.stage === 'calling_ai') {
+                typing.textContent = "Calling AI...";
+                if (data.prep_ms) console.log("[MJ Perf] Pipeline prep:", data.prep_ms + "ms");
+              } else if (data.stage === 'streaming') {
+                // First token arrived — clear the status text
+                typing.textContent = "";
+              }
+            }
+
             // Model info event (first SSE event from backend)
             if (data.model && !data.token) {
-              responseStarted = true; clearTimeout(stuckTimer);
+              responseStarted = true; clearTimeout(stuckTimer); clearTimeout(_tokenTimeout);
               const isGroq = data.provider === 'groq';
               window._mjCurrentProvider = data.provider || 'ollama';
               window._mjCurrentModel = data.model || '';
               const shortModel = isGroq ? 'Groq ☁️' : data.model.split(":")[0];
-              typing.textContent = `Using ${shortModel}... thinking...`;
-              // Update last-used display
+              typing.textContent = `Calling ${shortModel}...`;
               const zluModel = document.getElementById('zlu-model');
               const zluTask = document.getElementById('zlu-task');
               const zluEl = document.getElementById('zeus-last-used');
@@ -5249,9 +5494,8 @@ async function send() {
               continue;
             }
             if (data.token) {
-              if (!responseStarted) { responseStarted = true; clearTimeout(stuckTimer); }
+              if (!responseStarted) { responseStarted = true; clearTimeout(stuckTimer); clearTimeout(_tokenTimeout); }
               rawBuffer += data.token;
-              // Filter <think> blocks ONLY for Qwen3/DeepSeek models (not Groq cloud)
               const needsThinkFilter = window._mjCurrentProvider !== 'groq' && /qwen3|deepseek/i.test(window._mjCurrentModel || '');
               if (needsThinkFilter && rawBuffer.includes("<think>")) insideThink = true;
               if (insideThink) {
@@ -5260,15 +5504,14 @@ async function send() {
                   rawBuffer = rawBuffer.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
                   typing.textContent = rawBuffer;
                 }
-                // Don't show thinking tokens — skip to next
               } else {
                 typing.textContent = rawBuffer;
               }
               chatBox.scrollTop = chatBox.scrollHeight;
             }
-            // Weather widget event — render rich card
+            // Weather widget event
             if (data.weather_widget) {
-              responseStarted = true; clearTimeout(stuckTimer);
+              responseStarted = true; clearTimeout(stuckTimer); clearTimeout(_tokenTimeout);
               const wCard = renderWeatherWidget(data.weather_widget);
               typing.textContent = "";
               typing.appendChild(wCard);
@@ -5286,7 +5529,11 @@ async function send() {
             }
             if (data.model_used) updateZeusPanel(data.model_used, data.task_type || 'chat');
             if (data.perf_time) {
-              console.log("[MJ Perf] Response: " + data.perf_time + "s, model: " + data.model_used);
+              const totalMs = Math.round(performance.now() - _sendTime);
+              console.log("[MJ Perf] Backend: " + data.perf_time + "s | Total round-trip: " + totalMs + "ms");
+            }
+            if (data.timings) {
+              console.log("[MJ Perf] Pipeline timings:", JSON.stringify(data.timings));
             }
             if (data.issues && data.issues.length > 0) {
               for (const issue of data.issues) {
@@ -5307,18 +5554,26 @@ async function send() {
 
     console.log("[MJ Voice] Response complete — starting TTS, emotion:", detectedEmotion);
     setOrbState("speaking");
-    await speakText(typing.textContent, detectedEmotion);
+    // Fire-and-forget TTS — don't block UI re-enable
+    speakText(typing.textContent, detectedEmotion).catch(e => console.log("TTS error:", e));
     loadChatList();
 
   } catch (err) {
     console.error("[MJ Voice] send() FAILED:", err.message, err);
     clearTimeout(stuckTimer);
-    typing.textContent = "";
+    clearTimeout(_tokenTimeout);
     typing.classList.remove("typing");
-    showOrbAlert("SEND FAILED — " + err.message, "error", 8000);
+    if (err.name === 'AbortError') {
+      typing.textContent = "⏳ Request timed out. Please try again.";
+      showOrbAlert("REQUEST TIMED OUT — try a shorter question or check connection", "warning", 8000);
+    } else {
+      typing.textContent = "";
+      showOrbAlert("SEND FAILED — " + err.message, "error", 8000);
+    }
     setOrbState("error"); stopZeusScanning(); setTimeout(() => setOrbState("idle"), 5000);
   }
 
+  _activeAbort = null;
   sendBtn.disabled = false; input.focus();
 }
 
@@ -5678,15 +5933,20 @@ if (SpeechRecognition) {
 let mjAudio = null;
 async function speakText(text, emotion) {
   if (mjAudio) { mjAudio.pause(); mjAudio = null; }
+  if (!text || text.length < 2) { setOrbState(listening ? "listening" : "idle"); return; }
   try {
-    const res = await fetch(API + "/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, emotion: emotion || "neutral" }) });
-    if (!res.ok) return;
+    const _ttsCtrl = new AbortController();
+    const _ttsTimeout = setTimeout(() => _ttsCtrl.abort(), 10000);
+    const res = await fetch(API + "/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, emotion: emotion || "neutral" }), signal: _ttsCtrl.signal });
+    clearTimeout(_ttsTimeout);
+    if (!res.ok) { setOrbState(listening ? "listening" : "idle"); return; }
     const data = await res.json();
     mjAudio = new Audio(API + data.audio_url);
     setOrbState("speaking");
     mjAudio.onended = () => { setOrbState(listening ? "listening" : "idle"); };
-    mjAudio.play();
-  } catch (e) { console.log("TTS error:", e); setOrbState(listening ? "listening" : "idle"); }
+    mjAudio.onerror = () => { setOrbState(listening ? "listening" : "idle"); };
+    mjAudio.play().catch(() => { setOrbState(listening ? "listening" : "idle"); });
+  } catch (e) { console.log("TTS error:", e.message || e); setOrbState(listening ? "listening" : "idle"); }
 }
 
 // ===== REAL SYSTEM STATS =====
@@ -6915,7 +7175,7 @@ input.focus();
 
   const roadmap = [
     { phase: "Phase 1 — Foundation", items: [
-      { v:"V1", name:"JARVIS Core", desc:"Chat, Voice, FastAPI, Ollama, Logging, Settings", pct:72, features:"Chat UI ✅ | Voice In ✅ | Voice Out ✅ | FastAPI ✅ | Ollama ✅ | Local LLM ✅ | Logging ✅ | Settings ✅ | React ❌ | Auth ❌" },
+      { v:"V1", name:"JARVIS Core", desc:"Chat, Voice, FastAPI, Ollama, Logging, Settings, Auth", pct:85, features:"Chat UI ✅ | Voice In ✅ | Voice Out ✅ | FastAPI ✅ | Ollama ✅ | Local LLM ✅ | Logging ✅ | Settings ✅ | Auth ✅ | Login Screen ✅ | Change Password ✅ | React ❌" },
       { v:"V2", name:"Memory Engine", desc:"Short/long-term memory, profile, search", pct:45, features:"Long-Term Memory ✅ | Chat History ✅ | Short-Term ⚠️ | User Profile ⚠️ | Memory Search ⚠️ | Timeline ❌ | Qdrant ❌ | PostgreSQL ❌" },
       { v:"V3", name:"Tool Engine", desc:"Calculator, files, weather, search, email", pct:75, features:"Calculator ✅ | Notes/Todos ✅ | File Manager ✅ | Weather ✅ | Web Search ✅ | Email ✅ | Clipboard ✅ | Calendar ❌" },
       { v:"V4", name:"Agent Framework", desc:"Registry, lifecycle, message bus, events", pct:65, features:"Agent Registry ✅ | Agent Lifecycle ✅ | Message Bus ⚠️ | Event System ⚠️ | Shared Memory ⚠️ | Task Queue ❌" },
@@ -7007,6 +7267,123 @@ input.focus();
   closeBtn.addEventListener("click", function() {
     panel.classList.remove("open");
   });
+})();
+
+// ===== SECURITY PANEL =====
+(function(){
+  const btn = document.getElementById("hud-auth-btn");
+  const panel = document.getElementById("security-panel");
+  const closeBtn = document.getElementById("security-close");
+  const authToggle = document.getElementById("sec-auth-toggle");
+  const authSection = document.getElementById("sec-auth-section");
+  const toggleTrack = document.getElementById("sec-toggle-track");
+  const toggleThumb = document.getElementById("sec-toggle-thumb");
+  if (!btn || !panel) return;
+
+  function updateToggleUI(on) {
+    if (on) {
+      toggleTrack.style.background = "rgba(0,212,255,0.3)";
+      toggleTrack.style.borderColor = "rgba(0,212,255,0.5)";
+      toggleThumb.style.left = "23px";
+      toggleThumb.style.background = "var(--accent, #00d4ff)";
+      authSection.style.display = "block";
+    } else {
+      toggleTrack.style.background = "rgba(255,255,255,0.1)";
+      toggleTrack.style.borderColor = "rgba(255,255,255,0.15)";
+      toggleThumb.style.left = "3px";
+      toggleThumb.style.background = "#555";
+      authSection.style.display = "none";
+    }
+  }
+
+  // Load current auth status
+  async function loadAuthStatus() {
+    try {
+      const res = await fetch(API + "/auth/status");
+      const data = await res.json();
+      authToggle.checked = data.auth_enabled;
+      updateToggleUI(data.auth_enabled);
+    } catch(e) {}
+  }
+
+  btn.addEventListener("click", function() {
+    const showing = panel.style.display === "none";
+    panel.style.display = showing ? "block" : "none";
+    panel.classList.toggle("open", showing);
+    if (showing) loadAuthStatus();
+  });
+  closeBtn.addEventListener("click", function() {
+    panel.style.display = "none";
+    panel.classList.remove("open");
+  });
+
+  // Toggle auth on/off
+  authToggle.addEventListener("change", async function() {
+    const enabling = authToggle.checked;
+    const pwd = enabling ? "jarvis" : prompt("Enter current password to disable auth:");
+    if (!pwd) { authToggle.checked = !enabling; return; }
+    try {
+      const res = await fetch(API + "/auth/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: enabling, password: pwd })
+      });
+      const data = await res.json();
+      if (data.success) {
+        updateToggleUI(enabling);
+        if (enabling) alert("Auth enabled! Default password: jarvis — change it below.");
+      } else {
+        authToggle.checked = !enabling;
+        alert(data.message || "Failed");
+      }
+    } catch(e) { authToggle.checked = !enabling; }
+  });
+
+  // Change password
+  document.getElementById("sec-change-btn").addEventListener("click", async function() {
+    const oldPwd = document.getElementById("sec-old-pwd").value.trim();
+    const newPwd = document.getElementById("sec-new-pwd").value.trim();
+    const msg = document.getElementById("sec-change-msg");
+    if (!oldPwd || !newPwd) { msg.textContent = "Fill both fields"; msg.style.color = "#ff4444"; return; }
+    try {
+      const res = await fetch(API + "/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
+      });
+      const data = await res.json();
+      msg.textContent = data.message || (data.success ? "Done!" : "Failed");
+      msg.style.color = data.success ? "var(--accent)" : "#ff4444";
+      if (data.success) {
+        localStorage.removeItem("mj_auth_token");
+        setTimeout(() => location.reload(), 1500);
+      }
+    } catch(e) { msg.textContent = "Server error"; msg.style.color = "#ff4444"; }
+  });
+
+  // Logout
+  document.getElementById("sec-logout-btn").addEventListener("click", async function() {
+    try { await fetch(API + "/auth/logout", { method: "POST" }); } catch(e) {}
+    localStorage.removeItem("mj_auth_token");
+    location.reload();
+  });
+})();
+
+// ===== GLOBAL 401 HANDLER — redirect to login on auth failure =====
+(function(){
+  const _realFetch = window.fetch;
+  window.fetch = async function(...args) {
+    const response = await _realFetch.apply(this, args);
+    if (response.status === 401) {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+      // Don't redirect for auth endpoints themselves
+      if (!url.includes('/auth/')) {
+        localStorage.removeItem('mj_auth_token');
+        location.reload();
+      }
+    }
+    return response;
+  };
 })();
 
 // ===== AI FLOW PANEL RESIZE =====

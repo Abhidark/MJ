@@ -1,6 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, RedirectResponse
+from fastapi.responses import StreamingResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from datetime import datetime
@@ -14,9 +14,15 @@ import base64
 import os
 import time
 import re
+import asyncio
 
 # Add backend dir to path for human_layer import
 sys.path.insert(0, str(Path(__file__).parent))
+from auth import (
+    setup_default_password, verify_password, change_password,
+    create_session, validate_session, invalidate_session,
+    is_auth_enabled, get_session_count, toggle_auth,
+)
 from human_layer.human_brain import MJHumanBrain
 from voice_layer.tts_engine import generate_speech, test_voice, cleanup_old_audio
 from voice_layer.voice_config import AVAILABLE_VOICES, load_voice_settings, save_voice_settings
@@ -101,6 +107,9 @@ from self_healer.alert_system import (
 
 app = FastAPI()
 
+# Initialize auth (creates default password "jarvis" if no config exists)
+setup_default_password()
+
 # Auto-detect installed models and best provider on startup
 try:
     sync_config_with_installed()
@@ -146,6 +155,100 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ===== AUTH MIDDLEWARE =====
+# Protects all API routes except /auth/*, /static/*, and /
+# Frontend sends token via "Authorization: Bearer <token>" header or "mj_token" cookie
+
+# Routes that don't need auth
+_PUBLIC_ROUTES = {"/auth/login", "/auth/status", "/", "/static", "/docs", "/openapi.json"}
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    path = request.url.path
+
+    # Allow public routes and static files
+    if path in _PUBLIC_ROUTES or path.startswith("/static") or path.startswith("/auth"):
+        return await call_next(request)
+
+    # Check if auth is enabled
+    if not is_auth_enabled():
+        return await call_next(request)
+
+    # Extract token from header or cookie
+    auth_header = request.headers.get("authorization", "")
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    if not token:
+        token = request.cookies.get("mj_token", "")
+
+    if not token or not validate_session(token):
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated. Please login."})
+
+    return await call_next(request)
+
+
+# ===== AUTH ENDPOINTS =====
+
+class LoginRequest(BaseModel):
+    password: str
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+class ToggleAuthRequest(BaseModel):
+    enabled: bool
+    password: str
+
+
+@app.get("/auth/status")
+async def auth_status():
+    """Check if auth is enabled and if user is logged in."""
+    return {"auth_enabled": is_auth_enabled(), "sessions": get_session_count()}
+
+
+@app.post("/auth/login")
+async def login(req: LoginRequest):
+    """Login with password, returns session token."""
+    if verify_password(req.password):
+        token = create_session()
+        resp = JSONResponse(content={"success": True, "token": token, "message": "Welcome back, Boss!"})
+        resp.set_cookie("mj_token", token, max_age=86400, httponly=False, samesite="lax")
+        return resp
+    return JSONResponse(status_code=401, content={"success": False, "message": "Wrong password"})
+
+
+@app.post("/auth/logout")
+async def logout(request: Request):
+    """Logout — invalidate session."""
+    auth_header = request.headers.get("authorization", "")
+    token = auth_header[7:] if auth_header.startswith("Bearer ") else request.cookies.get("mj_token", "")
+    if token:
+        invalidate_session(token)
+    resp = JSONResponse(content={"success": True, "message": "Logged out"})
+    resp.delete_cookie("mj_token")
+    return resp
+
+
+@app.post("/auth/change-password")
+async def auth_change_password(req: ChangePasswordRequest):
+    """Change password (requires current password)."""
+    result = change_password(req.old_password, req.new_password)
+    if result["success"]:
+        resp = JSONResponse(content=result)
+        resp.delete_cookie("mj_token")
+        return resp
+    return JSONResponse(status_code=400, content=result)
+
+
+@app.post("/auth/toggle")
+async def auth_toggle(req: ToggleAuthRequest):
+    """Enable or disable auth."""
+    return toggle_auth(req.enabled, req.password)
+
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 # MODEL is now dynamic — selected by Zeus router from installed Ollama models
@@ -1131,61 +1234,65 @@ async def chat(
                     _log.getLogger("mj.chat").warning(f"Zeus routing error: {_zeus_err}")
                     # Fall through to normal LLM flow
 
+    # ============================================================
+    # PERFORMANCE-OPTIMIZED PIPELINE
+    # Sync functions run directly (they're fast: 1-15ms each)
+    # Async search + KB run in parallel via asyncio.gather
+    # Pipeline timing sent to frontend via SSE for accurate status
+    # ============================================================
+    _pipeline_start = time.time()
+    _timings = {}
+
     chat_id = get_active_chat_id()
     if not chat_id:
         chat_id = str(uuid.uuid4())[:8]
         set_active_chat_id(chat_id)
 
+    # Sync pre-LLM work — fast file I/O (~10-20ms total)
     chat_data = load_chat(chat_id)
-
-    # Auto-remember facts from user message
     new_facts = auto_remember(message)
-
-    # Notify plugins (passive hook)
     notify_plugins(message)
-
     core_facts = load_core_memory()
+    context_memory_prompt = get_context_prompt()
 
-    memory_context = ""
-    if core_facts:
-        memory_context = "User facts: " + ", ".join(core_facts)
-
-    # === INTELLIGENCE LAYER (Optimized — parallel where possible) ===
-    import asyncio as _aio
-
-    # Quick regex checks first (instant)
+    # Quick regex checks — instant, no I/O (<1ms total)
     search_query = needs_web_search_v2(message)
     kb_needed = needs_kb_search(message)
     reasoning_type = needs_deep_reasoning(message)
-    context_memory_prompt = get_context_prompt()
 
-    # Run web search + KB search in parallel (if both needed)
+    # Run web search + KB search in parallel (these are the slow ones)
     search_context = ""
     kb_context = ""
 
     async def _do_search():
         if search_query:
-            data = await deep_search(search_query, max_results=3)  # Reduced from 5
-            return format_search_for_llm(data)
+            try:
+                data = await asyncio.wait_for(deep_search(search_query, max_results=3), timeout=5.0)
+                return format_search_for_llm(data)
+            except (asyncio.TimeoutError, Exception):
+                return ""
         return ""
 
     async def _do_kb():
         if kb_needed:
-            results = search_knowledge(message, top_k=2)  # Reduced from 3
+            results = search_knowledge(message, top_k=2)
             return format_kb_context(results)
         elif not search_query:
-            results = search_knowledge(message, top_k=1)  # Reduced from 2
-            if results and results[0]["score"] > 0.15:  # Stricter threshold
+            results = search_knowledge(message, top_k=1)
+            if results and results[0]["score"] > 0.15:
                 return format_kb_context(results)
         return ""
 
-    search_context, kb_context = await _aio.gather(_do_search(), _do_kb())
+    _gather_start = time.time()
+    search_context, kb_context = await asyncio.gather(_do_search(), _do_kb())
+    _timings["gather"] = round(time.time() - _gather_start, 3)
 
-    # Process through Human Brain
-    brain_result = mj_brain.process(
-        user_text=message,
-        memory_context=memory_context
-    )
+    memory_context = ""
+    if core_facts:
+        memory_context = "User facts: " + ", ".join(core_facts)
+
+    # Process through Human Brain (<1ms — pure regex)
+    brain_result = mj_brain.process(user_text=message, memory_context=memory_context)
 
     # Build system prompt
     system_content = MJ_BASE_PROMPT
@@ -1210,7 +1317,7 @@ async def chat(
         system_content += context_memory_prompt
 
     if reasoning_type:
-        system_content += f"\n\nDEEP REASONING MODE: Use step-by-step {reasoning_type} reasoning for this question."
+        system_content += f"\n\nDEEP REASONING MODE: Use step-by-step {reasoning_type} reasoning. Think carefully before answering."
 
     # Append file context to user message for LLM
     user_prompt = brain_result["response_prompt"] + file_context
@@ -1220,19 +1327,11 @@ async def chat(
     selected_model = get_model_for_task(message, has_image=has_image)
     routing = get_routing_info(message, has_image=has_image)
 
-    # Deep reasoning — SKIP for speed. The main model handles reasoning via system prompt.
-    # Only trigger for explicit "analyze deeply" / "think step by step" requests.
-    # Previously this ran 3-4 EXTRA LLM calls before the actual response — massive delay.
-    if reasoning_type and not file_context:
-        system_content += f"\n\nDEEP REASONING MODE: Use step-by-step {reasoning_type} reasoning. Think carefully before answering."
-
-    # Rebuild messages with updated system content
-    # Limit chat history to last 10 messages for speed (long history = slow inference)
+    # Limit chat history to last 10 messages for speed
     recent_history = chat_data["messages"][-10:] if len(chat_data["messages"]) > 10 else chat_data["messages"]
     messages = [{"role": "system", "content": system_content}]
     messages.extend(recent_history)
-    # For Qwen3 models: append /no_think to skip internal thinking (huge speed boost)
-    # Only use thinking for deep reasoning requests
+
     final_user_prompt = user_prompt
     if "qwen3" in selected_model.lower() and not reasoning_type:
         final_user_prompt = user_prompt + " /no_think"
@@ -1245,7 +1344,6 @@ async def chat(
     # Detect provider
     active_provider = get_active_provider()
 
-    # For Groq: override model with Groq model name
     if active_provider == "groq":
         groq_model = get_groq_model()
         selected_model = f"groq:{groq_model}"
@@ -1264,18 +1362,28 @@ async def chat(
         },
     }
 
+    _timings["prep"] = round(time.time() - _pipeline_start, 3)
+
     full_reply = []
     _perf_start = time.time()
 
     async def stream_response():
         _error_occurred = None
-        # Send model info as first SSE event so frontend knows which model/provider is running
-        yield f"data: {json.dumps({'model': selected_model, 'task_type': routing.get('task_type', 'chat'), 'provider': active_provider})}\n\n"
+        _first_token_time = None
+
+        # Send model info + pipeline timings as first SSE event
+        yield f"data: {json.dumps({'model': selected_model, 'task_type': routing.get('task_type', 'chat'), 'provider': active_provider, 'stage': 'calling_ai', 'prep_ms': int(_timings.get('prep', 0) * 1000)})}\n\n"
 
         # ── GROQ CLOUD PROVIDER ──
         if active_provider == "groq":
             try:
+                _api_start = time.time()
+                token_count = 0
                 async for token in stream_groq_chat(messages, temperature=0.7, max_tokens=1024):
+                    if _first_token_time is None:
+                        _first_token_time = time.time()
+                        _timings["first_token"] = round(_first_token_time - _api_start, 3)
+                        yield f"data: {json.dumps({'stage': 'streaming'})}\n\n"
                     if token.startswith("[ERROR]"):
                         _error_occurred = "groq_error"
                         full_reply.append(token)
@@ -1283,6 +1391,7 @@ async def chat(
                         yield f"data: {json.dumps({'token': token})}\n\n"
                     else:
                         full_reply.append(token)
+                        token_count += 1
                         yield f"data: {json.dumps({'token': token})}\n\n"
             except Exception as e:
                 _error_occurred = "groq_exception"
@@ -1294,13 +1403,20 @@ async def chat(
         # ── OLLAMA LOCAL PROVIDER ──
         else:
             try:
-                async with httpx.AsyncClient(timeout=180) as client:
+                _api_start = time.time()
+                # Separate connect timeout (8s) from read timeout (120s)
+                _ollama_timeout = httpx.Timeout(connect=8.0, read=120.0, write=10.0, pool=10.0)
+                async with httpx.AsyncClient(timeout=_ollama_timeout) as client:
                     async with client.stream("POST", OLLAMA_URL, json=payload) as resp:
                         async for line in resp.aiter_lines():
                             if line:
                                 data = json.loads(line)
                                 token = data.get("message", {}).get("content", "")
                                 if token:
+                                    if _first_token_time is None:
+                                        _first_token_time = time.time()
+                                        _timings["first_token"] = round(_first_token_time - _api_start, 3)
+                                        yield f"data: {json.dumps({'stage': 'streaming'})}\n\n"
                                     full_reply.append(token)
                                     yield f"data: {json.dumps({'token': token})}\n\n"
             except httpx.ConnectError:
@@ -1313,7 +1429,7 @@ async def chat(
                 _error_occurred = "timeout"
                 error_msg = "⏳ Ollama response dene me bahut time le raha hai. Model busy hai ya bahut bada question hai. Thoda wait karo ya chhota question pucho."
                 full_reply.append(error_msg)
-                log_error("timeout", error_msg, {"model": selected_model, "user_msg": message[:80], "timeout": 180})
+                log_error("timeout", error_msg, {"model": selected_model, "user_msg": message[:80], "timeout": 120})
                 yield f"data: {json.dumps({'token': error_msg})}\n\n"
             except httpx.ConnectTimeout:
                 _error_occurred = "connect_timeout"
@@ -1343,7 +1459,6 @@ async def chat(
         display_msg = message + file_label
         chat_data["messages"].append({"role": "user", "content": display_msg})
         reply_text = "".join(full_reply)
-        # Strip <think>...</think> blocks from Qwen3 models before saving
         import re as _re
         reply_text = _re.sub(r'<think>[\s\S]*?</think>', '', reply_text).strip()
         chat_data["messages"].append({"role": "assistant", "content": reply_text})
@@ -1353,7 +1468,7 @@ async def chat(
 
         save_chat(chat_id, chat_data)
 
-        # Record interaction for context memory learning
+        # Record interaction (fast — just file append)
         try:
             record_interaction(message, reply_text, brain_result.get("emotion", "neutral"))
         except Exception:
@@ -1366,7 +1481,6 @@ async def chat(
             "context_memory": bool(context_memory_prompt),
         }
 
-        # Performance tracking
         _perf_time = round(time.time() - _perf_start, 2)
         _token_count = len(full_reply)
         perf_issues = log_performance(
@@ -1375,12 +1489,12 @@ async def chat(
             success=(_error_occurred is None), error_msg=_error_occurred
         )
 
-        # Send issues to frontend for orb alert
         issue_alerts = []
         for issue in (perf_issues or []):
             issue_alerts.append({"type": issue["type"], "msg": issue["message"], "severity": issue["severity"]})
 
-        yield f"data: {json.dumps({'emotion': brain_result['emotion'], 'auto_memory': new_facts, 'model_used': routing['model'], 'task_type': routing['task_type'], 'intelligence': intelligence_info, 'perf_time': _perf_time, 'issues': issue_alerts})}\n\n"
+        _timings["total"] = round(time.time() - _pipeline_start, 3)
+        yield f"data: {json.dumps({'emotion': brain_result['emotion'], 'auto_memory': new_facts, 'model_used': routing['model'], 'task_type': routing['task_type'], 'intelligence': intelligence_info, 'perf_time': _perf_time, 'issues': issue_alerts, 'timings': _timings})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
