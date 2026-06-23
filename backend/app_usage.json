@@ -1,13 +1,15 @@
 {
   "date": "2026-06-23",
   "apps": {
-    "Unknown": 6.174739,
-    "Google Chrome": 1149.735351,
-    "Snipping Tool Overlay": 22.119583,
+    "Unknown": 25.449316,
+    "Google Chrome": 1676.897863,
+    "Snipping Tool Overlay": 42.033986999999996,
     "File Explorer": 5.723972,
     "Snipping Tool": 49.36129699999999,
-    "New notification": 5.43594,
-    "Claude": 27.499055
+    "New notification": 13.858857,
+    "Claude": 49.686606999999995,
+    "VS Code": 17.767277999999997,
+    "Microsoft Teams": 6.150706
   },
-  "session_start": "2026-06-23T11:55:17.397711"
+  "session_start": "2026-06-23T14:33:22.661873"
 }

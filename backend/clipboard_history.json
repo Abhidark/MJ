@@ -1,5 +1,11 @@
 [
   {
+    "content": "git add .\ngit commit -m \"Fix: voice pipeline now sends transcript to AI after wake activation\"\ngit push origin main",
+    "time": "01:21 PM",
+    "timestamp": "2026-06-23T13:21:43.374529",
+    "preview": "git add . git commit -m \"Fix: voice pipeline now sends transcript to AI after wa"
+  },
+  {
     "content": "Copy and paste the prompt below into Claude.\n\n```\nYou are a Senior QA Engineer with 12+ years of experience in Manual Testing, Automation Testing, Performance Testing, Database Testing, UI/UX Review, Accessibility, and Security Testing.\n\nYour task is to perform a COMPLETE END-TO-END QA of the entire application. Do not stop after finding a few bugs. Test every page, every workflow, every button, every form, every API interaction, every filter, every table, every export, every modal, every dashbo",
     "time": "11:16 AM",
     "timestamp": "2026-06-23T11:16:35.323716",

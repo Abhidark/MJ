@@ -1,13 +1,18 @@
 """
 File Manager commands for MJ.
-Supports: list files, count, open folder, search, file info, delete old files.
+Supports: list, count, open, search, size, create, delete, move, copy, rename.
 """
 
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from datetime import datetime
+try:
+    from send2trash import send2trash as _send2trash
+except ImportError:
+    _send2trash = None  # Fallback: permanent delete if send2trash not installed
 
 
 # Common user folders
@@ -82,6 +87,75 @@ def parse_file_command(text: str) -> dict | None:
             if fname in lower:
                 return {"action": "folder_size", "folder": str(fpath), "name": fname}
 
+    # ---- CREATE FILE / FOLDER ----
+    create_patterns = [
+        r"(?:create|banao|bana do|make|new)\s+(?:a\s+)?(?:file|folder|directory)\s+(?:named?\s+)?(.+?)(?:\s+(?:in|me|mein)\s+(.+))?$",
+        r"(.+?)\s+(?:naam|name)\s+(?:ka|ki|se)\s+(?:file|folder)\s+(?:banao|bana|create)\s*(?:in\s+(.+))?$",
+    ]
+    for pat in create_patterns:
+        m = re.search(pat, lower)
+        if m:
+            name = m.group(1).strip().strip('"\'')
+            dest_text = m.group(2).strip() if m.group(2) else "desktop"
+            dest = _resolve_folder(dest_text)
+            if dest:
+                is_folder = any(w in lower for w in ["folder", "directory"])
+                return {"action": "create_item", "folder": str(dest), "item_name": name, "is_folder": is_folder}
+
+    # ---- DELETE FILE ----
+    delete_patterns = [
+        r"(?:delete|remove|hatao|mita|mita do|del)\s+(?:the\s+)?(?:file|folder)?\s*(.+?)(?:\s+(?:from|se|in|me)\s+(.+))?$",
+        r"(.+?)\s+(?:ko|file|folder)\s+(?:delete|hatao|mita|remove)\s*(?:(?:from|se)\s+(.+))?$",
+    ]
+    for pat in delete_patterns:
+        m = re.search(pat, lower)
+        if m:
+            name = m.group(1).strip().strip('"\'')
+            src_text = m.group(2).strip() if m.group(2) else "desktop"
+            src = _resolve_folder(src_text)
+            if src and name:
+                return {"action": "delete_item", "folder": str(src), "item_name": name}
+
+    # ---- RENAME FILE ----
+    rename_patterns = [
+        r"(?:rename|naam badlo|naam change)\s+(.+?)\s+(?:to|se|ko)\s+(.+?)(?:\s+(?:in|me)\s+(.+))?$",
+    ]
+    for pat in rename_patterns:
+        m = re.search(pat, lower)
+        if m:
+            old_name = m.group(1).strip().strip('"\'')
+            new_name = m.group(2).strip().strip('"\'')
+            folder_text = m.group(3).strip() if m.group(3) else "desktop"
+            folder = _resolve_folder(folder_text)
+            if folder and old_name and new_name:
+                return {"action": "rename_item", "folder": str(folder), "old_name": old_name, "new_name": new_name}
+
+    # ---- MOVE FILE ----
+    move_patterns = [
+        r"(?:move|shift|transfer|bhejo|le jao)\s+(.+?)\s+(?:to|me|mein|ko)\s+(.+)",
+    ]
+    for pat in move_patterns:
+        m = re.search(pat, lower)
+        if m:
+            src_name = m.group(1).strip().strip('"\'')
+            dest_text = m.group(2).strip()
+            dest = _resolve_folder(dest_text)
+            if dest:
+                return {"action": "move_item", "item_name": src_name, "dest": str(dest), "dest_name": dest.name}
+
+    # ---- COPY FILE ----
+    copy_patterns = [
+        r"(?:copy|duplicate|naqal|copy karo)\s+(.+?)\s+(?:to|me|mein|ko)\s+(.+)",
+    ]
+    for pat in copy_patterns:
+        m = re.search(pat, lower)
+        if m:
+            src_name = m.group(1).strip().strip('"\'')
+            dest_text = m.group(2).strip()
+            dest = _resolve_folder(dest_text)
+            if dest:
+                return {"action": "copy_item", "item_name": src_name, "dest": str(dest), "dest_name": dest.name}
+
     return None
 
 
@@ -100,6 +174,16 @@ def execute_file_command(cmd: dict) -> dict:
             return search_files(cmd["folder"], cmd["query"], cmd["name"])
         elif action == "folder_size":
             return folder_size(cmd["folder"], cmd["name"])
+        elif action == "create_item":
+            return create_item(cmd["folder"], cmd["item_name"], cmd.get("is_folder", False))
+        elif action == "delete_item":
+            return delete_item(cmd["folder"], cmd["item_name"])
+        elif action == "rename_item":
+            return rename_item(cmd["folder"], cmd["old_name"], cmd["new_name"])
+        elif action == "move_item":
+            return move_item(cmd["item_name"], cmd["dest"], cmd["dest_name"])
+        elif action == "copy_item":
+            return copy_item(cmd["item_name"], cmd["dest"], cmd["dest_name"])
         else:
             return {"success": False, "message": f"Unknown file action: {action}"}
     except Exception as e:
@@ -200,6 +284,125 @@ def folder_size(folder: str, name: str) -> dict:
 
     total = sum(f.stat().st_size for f in p.rglob("*") if f.is_file())
     return {"success": True, "message": f"{name.title()} folder ka size: {_format_size(total)}."}
+
+
+def create_item(folder: str, item_name: str, is_folder: bool = False) -> dict:
+    """Create a new file or folder."""
+    p = Path(folder) / item_name
+    if p.exists():
+        kind = "Folder" if p.is_dir() else "File"
+        return {"success": False, "message": f"{kind} '{item_name}' already exists."}
+
+    try:
+        if is_folder:
+            p.mkdir(parents=True, exist_ok=True)
+            return {"success": True, "message": f"Folder '{item_name}' bana diya: {p}"}
+        else:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch()
+            return {"success": True, "message": f"File '{item_name}' bana diya: {p}"}
+    except PermissionError:
+        return {"success": False, "message": f"Permission denied — '{item_name}' create nahi ho paya."}
+
+
+def delete_item(folder: str, item_name: str) -> dict:
+    """Delete a file or folder (sends to Recycle Bin if possible)."""
+    p = Path(folder) / item_name
+    if not p.exists():
+        # Try glob match
+        matches = list(Path(folder).glob(f"*{item_name}*"))
+        if len(matches) == 1:
+            p = matches[0]
+        elif len(matches) > 1:
+            names = [m.name for m in matches[:5]]
+            return {"success": False, "message": f"Multiple matches: {', '.join(names)}. Exact name do."}
+        else:
+            return {"success": False, "message": f"'{item_name}' nahi mila {Path(folder).name} me."}
+
+    try:
+        if _send2trash:
+            _send2trash(str(p))
+            return {"success": True, "message": f"'{p.name}' Recycle Bin me bhej diya."}
+        raise RuntimeError("send2trash not available")
+    except Exception:
+        # Fallback: permanent delete
+        try:
+            if p.is_dir():
+                shutil.rmtree(str(p))
+            else:
+                p.unlink()
+            return {"success": True, "message": f"'{p.name}' permanently delete ho gaya."}
+        except PermissionError:
+            return {"success": False, "message": f"Permission denied — '{p.name}' delete nahi ho paya."}
+
+
+def rename_item(folder: str, old_name: str, new_name: str) -> dict:
+    """Rename a file or folder."""
+    old_path = Path(folder) / old_name
+    if not old_path.exists():
+        return {"success": False, "message": f"'{old_name}' nahi mila {Path(folder).name} me."}
+
+    new_path = Path(folder) / new_name
+    if new_path.exists():
+        return {"success": False, "message": f"'{new_name}' pehle se exist karta hai."}
+
+    try:
+        old_path.rename(new_path)
+        return {"success": True, "message": f"'{old_name}' ka naam '{new_name}' kar diya."}
+    except PermissionError:
+        return {"success": False, "message": f"Permission denied — rename nahi ho paya."}
+
+
+def move_item(item_name: str, dest: str, dest_name: str) -> dict:
+    """Move file/folder to destination."""
+    # Find source in known folders
+    src_path = _find_item(item_name)
+    if not src_path:
+        return {"success": False, "message": f"'{item_name}' nahi mila kisi folder me."}
+
+    dest_path = Path(dest) / src_path.name
+    if dest_path.exists():
+        return {"success": False, "message": f"'{src_path.name}' already exists in {dest_name}."}
+
+    try:
+        shutil.move(str(src_path), str(dest_path))
+        return {"success": True, "message": f"'{src_path.name}' ko {dest_name} me move kar diya."}
+    except PermissionError:
+        return {"success": False, "message": f"Permission denied — move nahi ho paya."}
+
+
+def copy_item(item_name: str, dest: str, dest_name: str) -> dict:
+    """Copy file/folder to destination."""
+    src_path = _find_item(item_name)
+    if not src_path:
+        return {"success": False, "message": f"'{item_name}' nahi mila kisi folder me."}
+
+    dest_path = Path(dest) / src_path.name
+    if dest_path.exists():
+        return {"success": False, "message": f"'{src_path.name}' already exists in {dest_name}."}
+
+    try:
+        if src_path.is_dir():
+            shutil.copytree(str(src_path), str(dest_path))
+        else:
+            shutil.copy2(str(src_path), str(dest_path))
+        return {"success": True, "message": f"'{src_path.name}' ko {dest_name} me copy kar diya."}
+    except PermissionError:
+        return {"success": False, "message": f"Permission denied — copy nahi ho paya."}
+
+
+def _find_item(name: str) -> Path | None:
+    """Search known folders for a file/folder by name."""
+    for folder_path in USER_FOLDERS.values():
+        candidate = folder_path / name
+        if candidate.exists():
+            return candidate
+    # Try glob in each folder
+    for folder_path in USER_FOLDERS.values():
+        matches = list(folder_path.glob(f"*{name}*"))
+        if len(matches) == 1:
+            return matches[0]
+    return None
 
 
 def _resolve_folder(text: str) -> Path | None:

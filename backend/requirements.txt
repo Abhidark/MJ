@@ -19,6 +19,10 @@ PyPDF2
 pdfplumber
 python-docx
 
+# File Manager (Recycle Bin support)
+send2trash
+
 # Image generation (Pollinations.ai uses httpx — no extra dep)
 # OCR (uses Windows PowerShell — no extra dep)
 # Web search (uses httpx + DuckDuckGo — no extra dep)
+# Live data (cricket/weather/stocks/news — all use httpx, no extra dep)

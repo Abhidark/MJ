@@ -7,6 +7,7 @@ No API keys needed — uses free sources.
 import httpx
 import re
 import json
+import xml.etree.ElementTree as ET
 from typing import Optional
 
 
@@ -172,6 +173,137 @@ async def get_live_weather(city: str = "Delhi") -> str:
         return f"Weather fetch failed: {str(e)[:100]}"
 
 
+STOCK_ALIASES = {
+    "reliance": "RELIANCE.NS", "tcs": "TCS.NS", "infosys": "INFY.NS",
+    "hdfc": "HDFCBANK.NS", "sbi": "SBIN.NS", "icici": "ICICIBANK.NS",
+    "wipro": "WIPRO.NS", "hcl": "HCLTECH.NS", "adani": "ADANIENT.NS",
+    "tata motors": "TATAMOTORS.NS", "tatamotors": "TATAMOTORS.NS",
+    "tata steel": "TATASTEEL.NS", "tatasteel": "TATASTEEL.NS",
+    "bajaj": "BAJFINANCE.NS", "maruti": "MARUTI.NS", "airtel": "BHARTIARTL.NS",
+    "sensex": "^BSESN", "nifty": "^NSEI", "nifty 50": "^NSEI",
+    "apple": "AAPL", "google": "GOOGL", "microsoft": "MSFT",
+    "amazon": "AMZN", "tesla": "TSLA", "meta": "META", "nvidia": "NVDA",
+}
+
+
+async def get_live_stock_price(query: str) -> str:
+    """Fetch stock price from Yahoo Finance (no API key needed)."""
+    try:
+        lower = query.lower().strip()
+        symbol = STOCK_ALIASES.get(lower, lower.upper())
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=5d"
+            resp = await client.get(url, headers=headers)
+            data = resp.json()
+
+        result_data = data.get("chart", {}).get("result", [])
+        if not result_data:
+            return f"📈 '{query}' ka stock data nahi mila. Symbol check karo."
+
+        meta = result_data[0].get("meta", {})
+        price = meta.get("regularMarketPrice", 0)
+        prev_close = meta.get("chartPreviousClose", 0)
+        currency = meta.get("currency", "INR")
+        name = meta.get("shortName", symbol)
+
+        change = price - prev_close if prev_close else 0
+        change_pct = (change / prev_close * 100) if prev_close else 0
+        arrow = "🟢 +" if change >= 0 else "🔴 "
+
+        # Get day high/low from indicators
+        indicators = result_data[0].get("indicators", {}).get("quote", [{}])[0]
+        highs = [h for h in (indicators.get("high") or []) if h is not None]
+        lows = [l for l in (indicators.get("low") or []) if l is not None]
+        day_high = max(highs[-1:]) if highs else 0
+        day_low = min(lows[-1:]) if lows else 0
+
+        result = f"📈 {name} ({symbol})\n"
+        result += f"Price: {currency} {price:,.2f}\n"
+        result += f"Change: {arrow}{change:,.2f} ({change_pct:+.2f}%)\n"
+        if day_high and day_low:
+            result += f"Day Range: {currency} {day_low:,.2f} - {day_high:,.2f}\n"
+        result += f"Prev Close: {currency} {prev_close:,.2f}"
+
+        return result
+
+    except Exception as e:
+        return f"📈 Stock data fetch nahi ho paya: {str(e)[:100]}"
+
+
+async def get_live_news(topic: str = "india") -> str:
+    """Fetch latest news headlines from Google News RSS (no API key needed)."""
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+
+        # Build Google News RSS URL
+        if topic.lower() in ["india", "top", "latest", "aaj", "today", "headlines"]:
+            url = "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en"
+        else:
+            url = f"https://news.google.com/rss/search?q={topic}&hl=en-IN&gl=IN&ceid=IN:en"
+
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            resp = await client.get(url, headers=headers)
+
+        # Parse RSS XML
+        root = ET.fromstring(resp.text)
+        items = root.findall(".//item")
+
+        if not items:
+            return f"📰 '{topic}' se koi news nahi mili."
+
+        result = f"📰 Latest News — {topic.title()}:\n\n"
+        for i, item in enumerate(items[:8], 1):
+            title = item.findtext("title", "")
+            source = item.findtext("source", "")
+            pub_date = item.findtext("pubDate", "")
+            # Clean up date
+            if pub_date:
+                pub_date = pub_date.split("+")[0].strip()
+                pub_date = pub_date.replace("GMT", "").strip()
+
+            result += f"{i}. {title}"
+            if source:
+                result += f" — {source}"
+            result += "\n"
+
+        result += "\nSource: Google News"
+        return result
+
+    except Exception as e:
+        return f"📰 News fetch nahi ho paya: {str(e)[:100]}"
+
+
+def extract_stock_from_text(text: str) -> str:
+    """Extract stock name/symbol from query."""
+    lower = text.lower()
+    for alias in STOCK_ALIASES:
+        if alias in lower:
+            return alias
+    # Try to find a ticker-like word (all caps, 2-5 chars)
+    tickers = re.findall(r'\b([A-Z]{2,5})\b', text)
+    if tickers:
+        return tickers[0]
+    return ""
+
+
+def extract_news_topic(text: str) -> str:
+    """Extract news topic from query."""
+    lower = text.lower()
+    # Remove common filler words
+    for filler in ["latest", "aaj ka", "aaj ki", "today", "news", "headlines",
+                    "kya hai", "batao", "dikhao", "bata", "show", "get", "khabar", "samachar"]:
+        lower = lower.replace(filler, "")
+    topic = lower.strip()
+    return topic if len(topic) > 1 else "india"
+
+
 def detect_live_data_request(text: str) -> Optional[str]:
     """
     Detect if user wants live data (not just web search).
@@ -204,6 +336,28 @@ def detect_live_data_request(text: str) -> Optional[str]:
     for pat in weather_patterns:
         if re.search(pat, lower):
             return "weather"
+
+    # Stock / market patterns
+    stock_patterns = [
+        r"(?:stock|share|price|rate)\s*(?:of|ka|ki)?\s*(?:kya hai|bata|check|show)?",
+        r"(?:kya|kitna|kitni|what)\s*(?:hai|is)?\s*(?:price|rate|stock|share)",
+        r"(?:sensex|nifty|market)\s*(?:kya hai|kitna|check|status|today|aaj)?",
+        r"\b(?:reliance|tcs|infosys|hdfc|sbi|icici|wipro|adani|tata|bajaj|maruti|airtel)\b",
+        r"\b(?:apple|google|microsoft|amazon|tesla|meta|nvidia)\b\s*(?:stock|share|price)?",
+    ]
+    for pat in stock_patterns:
+        if re.search(pat, lower):
+            return "stock"
+
+    # News patterns
+    news_patterns = [
+        r"(?:news|khabar|samachar|headlines?)\s*(?:bata|dikha|kya hai|show|today|aaj)?",
+        r"(?:aaj|today|latest|top)\s*(?:ka|ki|ke)?\s*(?:news|khabar|samachar|headlines?)",
+        r"(?:kya ho raha|what.s happening|kya chal raha)",
+    ]
+    for pat in news_patterns:
+        if re.search(pat, lower):
+            return "news"
 
     return None
 

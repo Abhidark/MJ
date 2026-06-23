@@ -47,7 +47,11 @@ from intelligence.context_memory import (
     record_interaction, get_context_prompt, get_memory_stats
 )
 from intelligence.multi_model import needs_deep_reasoning, chain_of_thought, multi_perspective
-from intelligence.live_data import detect_live_data_request, get_live_cricket_scores, get_live_weather, extract_city_from_text
+from intelligence.live_data import (
+    detect_live_data_request, get_live_cricket_scores, get_live_weather,
+    extract_city_from_text, get_live_stock_price, get_live_news,
+    extract_stock_from_text, extract_news_topic
+)
 from intelligence.error_learner import log_error as el_log_error, log_performance, get_diagnostics, get_live_issues
 from intelligence.ocr_engine import ocr_from_file, ocr_screenshot, detect_ocr_request
 from intelligence.smart_suggestions import get_all_suggestions, detect_suggestion_request
@@ -867,6 +871,12 @@ async def chat(
         elif live_type == "weather":
             city = extract_city_from_text(message)
             live_result = await get_live_weather(city)
+        elif live_type == "stock":
+            stock_query = extract_stock_from_text(message)
+            live_result = await get_live_stock_price(stock_query) if stock_query else None
+        elif live_type == "news":
+            topic = extract_news_topic(message)
+            live_result = await get_live_news(topic)
         else:
             live_result = None
 

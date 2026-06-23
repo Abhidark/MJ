@@ -49,6 +49,46 @@
       "tokens": 0,
       "success": true,
       "error": null
+    },
+    {
+      "timestamp": "2026-06-23T12:57:13.149282",
+      "user_msg_preview": "file manager",
+      "model": "qwen2.5:1.5b",
+      "task_type": "chat",
+      "response_time_sec": 22.68,
+      "tokens": 68,
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2026-06-23T12:58:45.044031",
+      "user_msg_preview": "Tell me a joke",
+      "model": "qwen2.5:1.5b",
+      "task_type": "chat",
+      "response_time_sec": 6.04,
+      "tokens": 40,
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2026-06-23T13:09:46.944464",
+      "user_msg_preview": "naam kya hai",
+      "model": "qwen2.5:1.5b",
+      "task_type": "chat",
+      "response_time_sec": 31.89,
+      "tokens": 293,
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2026-06-23T13:23:15.100918",
+      "user_msg_preview": "Gud mornig",
+      "model": "qwen2.5:1.5b",
+      "task_type": "chat",
+      "response_time_sec": 35.08,
+      "tokens": 219,
+      "success": true,
+      "error": null
     }
   ]
 }

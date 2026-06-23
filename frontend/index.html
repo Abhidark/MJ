@@ -1224,6 +1224,63 @@
     text-align: center;
     letter-spacing: 0.5px;
   }
+  /* ===== FOCUS TIMER WIDGET ===== */
+  .focus-timer-widget { text-align: center; }
+  .focus-timer-ring {
+    position: relative; width: 90px; height: 90px; margin: 8px auto;
+  }
+  .focus-timer-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .focus-timer-ring .ring-bg {
+    fill: none; stroke: rgba(0,255,255,0.08); stroke-width: 4;
+  }
+  .focus-timer-ring .ring-progress {
+    fill: none; stroke: var(--cyan, #00e5ff); stroke-width: 4;
+    stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+  }
+  .focus-timer-ring.break .ring-progress { stroke: #4caf50; }
+  .focus-timer-ring .timer-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 18px; font-family: 'Orbitron', monospace; color: #fff;
+    letter-spacing: 1px;
+  }
+  .focus-timer-ring .timer-label {
+    position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+    font-size: 8px; text-transform: uppercase; letter-spacing: 1px;
+    color: rgba(0,255,255,0.5);
+  }
+  .focus-timer-controls {
+    display: flex; justify-content: center; gap: 6px; margin-top: 6px;
+  }
+  .focus-timer-controls button {
+    background: rgba(0,255,255,0.08); border: 1px solid rgba(0,255,255,0.2);
+    color: var(--cyan, #00e5ff); border-radius: 4px; padding: 3px 10px;
+    font-size: 10px; cursor: pointer; font-family: inherit;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .focus-timer-controls button:hover {
+    background: rgba(0,255,255,0.18); border-color: rgba(0,255,255,0.5);
+  }
+  .focus-timer-controls button.active {
+    background: rgba(0,255,255,0.2); border-color: var(--cyan, #00e5ff);
+  }
+  .focus-timer-mode {
+    display: flex; justify-content: center; gap: 4px; margin-top: 6px;
+  }
+  .focus-timer-mode button {
+    background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.4); border-radius: 3px; padding: 2px 7px;
+    font-size: 9px; cursor: pointer; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .focus-timer-mode button.active {
+    color: var(--cyan, #00e5ff); border-color: rgba(0,255,255,0.3);
+  }
+  .focus-timer-sessions {
+    font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 4px;
+    letter-spacing: 0.5px;
+  }
+
   @media (max-width: 900px) {
     .sidebar-widget { display: none; }
   }
@@ -1790,24 +1847,30 @@
 
   /* ===== ALERT TOASTS ===== */
   .alert-toast-container {
-    position: fixed; top: 20px; right: 20px; z-index: 9999;
-    display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+    position: fixed; top: 70px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 12px; pointer-events: none;
+    max-width: 380px; width: 380px;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    /* right is set dynamically by updateAlertPosition() */
   }
   .alert-toast {
     padding: 14px 18px; border-radius: var(--radius-sm);
-    font-size: 13px; min-width: 300px; max-width: 400px;
-    animation: atoast-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), atoast-out 0.4s ease 4.6s forwards;
+    font-size: 13px; width: 100%;
+    animation: atoast-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
     pointer-events: auto; display: flex; align-items: center; gap: 12px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     font-family: 'Inter', sans-serif;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .alert-toast.dismissing {
+    opacity: 0; transform: translateX(40px) scale(0.95);
   }
   .alert-toast-critical { background: rgba(60,0,0,0.92); border: 1px solid rgba(231,76,60,0.6); color: #ff8888; }
   .alert-toast-error { background: rgba(50,15,0,0.92); border: 1px solid rgba(255,107,53,0.5); color: #ffaa88; }
   .alert-toast-warning { background: rgba(50,40,0,0.92); border: 1px solid rgba(243,156,18,0.5); color: #ffdd66; }
   .alert-toast-info { background: rgba(0,20,50,0.92); border: 1px solid rgba(52,152,219,0.5); color: #88ccff; }
-  @keyframes atoast-in { from { transform: translateX(120%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
-  @keyframes atoast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+  @keyframes atoast-in { from { transform: translateY(-20px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
 
   /* ===== QUICK ACTIONS ===== */
   .quick-actions {
@@ -3037,6 +3100,30 @@
     </div>
     <div class="sb-cal-grid" id="sb-cal-grid"></div>
     <div class="sb-cal-selected-date" id="sb-cal-selected"></div>
+  </div>
+
+  <!-- Focus Timer Widget -->
+  <div class="sidebar-widget focus-timer-widget" id="sidebar-focus-timer">
+    <div class="sidebar-widget-title">&#9201; Focus Timer</div>
+    <div class="focus-timer-ring" id="ft-ring">
+      <svg viewBox="0 0 90 90">
+        <circle class="ring-bg" cx="45" cy="45" r="40"></circle>
+        <circle class="ring-progress" id="ft-progress" cx="45" cy="45" r="40"></circle>
+      </svg>
+      <div class="timer-text" id="ft-time">25:00</div>
+      <div class="timer-label" id="ft-label">FOCUS</div>
+    </div>
+    <div class="focus-timer-controls">
+      <button id="ft-start">&#9654; Start</button>
+      <button id="ft-reset">&#8635; Reset</button>
+    </div>
+    <div class="focus-timer-mode">
+      <button class="active" data-mode="focus">25m</button>
+      <button data-mode="short">5m</button>
+      <button data-mode="long">15m</button>
+      <button data-mode="custom">&#9881;</button>
+    </div>
+    <div class="focus-timer-sessions" id="ft-sessions">Sessions: 0</div>
   </div>
 
   <!-- Uptime -->
@@ -4857,8 +4944,9 @@ let isVoiceCommand = false;
 
 async function send() {
   const text = input.value.trim();
-  if (!text && !pendingFile) return;
-  if (!text) { input.focus(); return; }
+  console.log("[MJ Voice] send() called — text:", JSON.stringify(text), "| isVoiceCommand:", isVoiceCommand);
+  if (!text && !pendingFile) { console.log("[MJ Voice] send() aborted — empty text, no file"); return; }
+  if (!text) { console.log("[MJ Voice] send() aborted — empty text"); input.focus(); return; }
 
   // Auto-show chat panel only for manual typing (not voice)
   if (!isVoiceCommand && !chatManuallyHidden) showChatPanel();
@@ -4896,7 +4984,9 @@ async function send() {
     if (pendingFile) formData.append("file", pendingFile);
     clearFile();
 
+    console.log("[MJ Voice] Sending to /chat API:", text);
     const res = await fetch(API + "/chat", { method: "POST", body: formData });
+    console.log("[MJ Voice] /chat response status:", res.status);
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
     typing.textContent = ""; typing.classList.remove("typing");
@@ -4961,11 +5051,13 @@ async function send() {
       }
     }
 
+    console.log("[MJ Voice] Response complete — starting TTS, emotion:", detectedEmotion);
     setOrbState("speaking");
     await speakText(typing.textContent, detectedEmotion);
     loadChatList();
 
   } catch (err) {
+    console.error("[MJ Voice] send() FAILED:", err.message, err);
     clearTimeout(stuckTimer);
     typing.textContent = "";
     typing.classList.remove("typing");
@@ -5192,7 +5284,13 @@ async function doFirstWakeBriefing() {
     speakText(fallback, "neutral");
     showOrbAlert("WAKE ACTIVE \u2014 Status check failed", "error", 5000);
   }
-  setTimeout(() => { micBtn.classList.remove("wake-active"); setWaveState("idle"); }, 3000);
+  setTimeout(() => {
+    // After briefing, keep MJ active so next speech is processed as a command
+    wakeDetected = true;
+    micBtn.classList.add("wake-active");
+    setMicStatus("MJ active! Speak your command...");
+    setWaveState("wake-active");
+  }, 3000);
 }
 
 if (SpeechRecognition) {
@@ -5214,7 +5312,7 @@ if (SpeechRecognition) {
   function startListening() {
     listening = true; micBtn.classList.add("recording");
     wakeDetected = false; setOrbState("listening");
-    setMicStatus('Say "Hey MJ" to activate...');
+    setMicStatus("Listening...");
     setWaveState("active");
     document.getElementById("wc-voice-val").textContent = "Active";
     recognition.lang = voiceLang.value;
@@ -5240,55 +5338,77 @@ if (SpeechRecognition) {
     const isFinal = e.results[e.results.length - 1].isFinal;
     if (!isFinal) return;
 
+    console.log("[MJ Voice] FINAL transcript:", transcript, "| wakeDetected:", wakeDetected, "| firstWakeDone:", firstWakeDone);
     const hasWake = WAKE_PATTERNS.some(w => lower.includes(w));
 
     if (hasWake) {
-      if (!firstWakeDone) { doFirstWakeBriefing(); return; }
-      // Extract command after wake word
+      console.log("[MJ Voice] Wake word detected in:", lower);
+      // Extract command part (everything after wake word)
       let command = transcript;
       for (const w of WAKE_PATTERNS) {
-        command = command.replace(new RegExp(w, "gi"), "").trim();
+        command = command.replace(new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "gi"), "").trim();
       }
+
+      if (!firstWakeDone) {
+        // First activation — run briefing, then send any attached command
+        doFirstWakeBriefing().then(() => {
+          if (command.length > 1) {
+            setTimeout(() => { input.value = command; isVoiceCommand = true; send(); }, 500);
+          }
+        });
+        return;
+      }
+
       if (command.length > 1) {
+        // Wake word + command in same utterance — send immediately
         setWaveState("processing");
         input.value = command; isVoiceCommand = true; send();
+        // Keep wake active for follow-up commands
+        wakeDetected = true;
         setTimeout(() => setWaveState("active"), 2000);
       } else {
+        // Wake word only — enter active listening state
         wakeDetected = true;
         micBtn.classList.add("wake-active");
         setMicStatus("MJ active! Speak your command...");
         setWaveState("wake-active");
-        // Auto-timeout wake after 15s
         if (wakeTimeout) clearTimeout(wakeTimeout);
         wakeTimeout = setTimeout(() => {
           wakeDetected = false;
           micBtn.classList.remove("wake-active");
           setMicStatus('Say "Hey MJ" to activate...');
           setWaveState("active");
-        }, 15000);
+        }, 30000);
       }
-    } else if (wakeDetected) {
-      setWaveState("processing");
-      input.value = transcript.trim(); wakeDetected = false; isVoiceCommand = true; send();
-      micBtn.classList.remove("wake-active");
-      if (wakeTimeout) { clearTimeout(wakeTimeout); wakeTimeout = null; }
-      setTimeout(() => setWaveState("active"), 2000);
+    } else {
+      // All speech goes directly to chat — no wake word gate
+      const trimmed = transcript.trim();
+      if (trimmed.length > 1) {
+        console.log("[MJ Voice] SENDING voice transcript to chat:", trimmed);
+        setWaveState("processing");
+        input.value = trimmed; isVoiceCommand = true; send();
+        setTimeout(() => setWaveState("active"), 2000);
+      } else {
+        console.log("[MJ Voice] Transcript too short, skipping:", trimmed);
+      }
     }
   };
 
   recognition.onend = () => {
+    console.log("[MJ Voice] recognition.onend — listening:", listening);
     if (listening) {
       setTimeout(() => {
         if (listening) {
-          if (!wakeDetected) setMicStatus('Say "Hey MJ" to activate...');
+          if (!wakeDetected) setMicStatus("Listening...");
           recognition.lang = voiceLang.value;
-          try { recognition.start(); } catch(e) {}
+          try { recognition.start(); console.log("[MJ Voice] Recognition restarted"); } catch(e) { console.error("[MJ Voice] Restart failed:", e); }
         }
       }, 200);
     }
   };
 
   recognition.onerror = (e) => {
+    console.warn("[MJ Voice] recognition.onerror:", e.error);
     if (e.error === "no-speech") { setMicStatus("Listening..."); }
     else if (e.error === "network") { setMicStatus("Network error - retrying..."); }
     else if (e.error !== "aborted") setMicStatus("Mic error: " + e.error);
@@ -6099,14 +6219,46 @@ healthCheck();
 // ===== LIVE ALERT SSE =====
 const alertToastBox = document.getElementById("alert-toast-box");
 const alertIcons = { critical: "🔴", error: "🟠", warning: "🟡", info: "🔵" };
+const ALERT_DISMISS_MS = { critical: 10000, error: 8000, warning: 6000, info: 5000 };
 
-function showAlertToast(alert) {
+// Dynamic positioning — keeps notifications left of right panels
+function updateAlertPosition() {
+  if (!alertToastBox) return;
+  const aiFlow = document.getElementById("ai-flow-panel");
+  const chatPanel = document.getElementById("chat-panel");
+  let rightOffset = 16;
+  if (aiFlow && aiFlow.offsetWidth > 0) rightOffset += aiFlow.offsetWidth;
+  if (chatPanel && !chatPanel.classList.contains("hidden") && chatPanel.offsetWidth > 0) rightOffset += chatPanel.offsetWidth;
+  alertToastBox.style.right = rightOffset + "px";
+}
+updateAlertPosition();
+window.addEventListener("resize", updateAlertPosition);
+
+// Observe chat panel toggle (hidden class)
+(function() {
+  const cp = document.getElementById("chat-panel");
+  if (!cp) return;
+  const obs = new MutationObserver(updateAlertPosition);
+  obs.observe(cp, { attributes: true, attributeFilter: ["class"] });
+})();
+
+function dismissToast(el) {
+  el.classList.add("dismissing");
+  setTimeout(() => { if (el.parentElement) el.remove(); }, 300);
+}
+
+function showAlertToast(alert, severityOverride) {
+  // Support both object and string call: showAlertToast({title, message, severity}) or showAlertToast("msg", "info")
+  if (typeof alert === "string") alert = { title: "Alert", message: alert, severity: severityOverride || "info" };
   const sev = alert.severity || "info";
   const t = document.createElement("div");
   t.className = "alert-toast alert-toast-" + sev;
-  t.innerHTML = `<span style="font-size:16px;">${alertIcons[sev]}</span><div style="flex:1;"><div style="font-weight:600;">${alert.title || "Alert"}</div><div style="font-size:11px;opacity:0.8;">${(alert.message || "").substring(0, 80)}</div></div><span style="cursor:pointer;opacity:0.5;font-size:14px;" onclick="this.parentElement.remove()">✕</span>`;
+  t.innerHTML = `<span style="font-size:16px;">${alertIcons[sev]}</span><div style="flex:1;"><div style="font-weight:600;">${alert.title || "Alert"}</div><div style="font-size:11px;opacity:0.8;">${(alert.message || "").substring(0, 80)}</div></div><span style="cursor:pointer;opacity:0.5;font-size:14px;" onclick="dismissToast(this.parentElement)">✕</span>`;
   alertToastBox.appendChild(t);
-  setTimeout(() => { if (t.parentElement) t.remove(); }, 5000);
+  const timeout = ALERT_DISMISS_MS[sev] || 5000;
+  setTimeout(() => { if (t.parentElement) dismissToast(t); }, timeout);
+  // Cap max visible toasts at 5
+  while (alertToastBox.children.length > 5) alertToastBox.removeChild(alertToastBox.firstChild);
   checkErrors();
 }
 
@@ -7349,6 +7501,124 @@ input.focus();
   });
 
   render();
+})();
+
+/* ===== FOCUS TIMER WIDGET ===== */
+(function() {
+  var MODES = { focus: 25*60, short: 5*60, long: 15*60 };
+  var CIRCUMFERENCE = 2 * Math.PI * 40; // r=40 from SVG
+
+  var timeEl = document.getElementById("ft-time");
+  var labelEl = document.getElementById("ft-label");
+  var progressEl = document.getElementById("ft-progress");
+  var ringEl = document.getElementById("ft-ring");
+  var startBtn = document.getElementById("ft-start");
+  var resetBtn = document.getElementById("ft-reset");
+  var sessionsEl = document.getElementById("ft-sessions");
+  var modeButtons = document.querySelectorAll(".focus-timer-mode button");
+
+  if (!timeEl || !startBtn) return;
+
+  var currentMode = "focus";
+  var totalSeconds = MODES.focus;
+  var remaining = totalSeconds;
+  var running = false;
+  var interval = null;
+  var sessions = parseInt(localStorage.getItem("mj-focus-sessions") || "0");
+
+  sessionsEl.textContent = "Sessions: " + sessions;
+  progressEl.style.strokeDasharray = CIRCUMFERENCE;
+  updateDisplay();
+
+  function updateDisplay() {
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    timeEl.textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+    var pct = 1 - (remaining / totalSeconds);
+    progressEl.style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
+  }
+
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(interval);
+      interval = null;
+      running = false;
+      startBtn.innerHTML = "&#9654; Start";
+      // Session complete
+      if (currentMode === "focus") {
+        sessions++;
+        localStorage.setItem("mj-focus-sessions", sessions);
+        sessionsEl.textContent = "Sessions: " + sessions;
+        if (typeof showAlertToast === "function") {
+          showAlertToast({title: "Focus Complete!", message: "Great work! Take a break.", severity: "info"});
+        }
+        // Auto-switch to break
+        switchMode(sessions % 4 === 0 ? "long" : "short");
+      } else {
+        if (typeof showAlertToast === "function") {
+          showAlertToast({title: "Break Over!", message: "Ready for another focus session?", severity: "info"});
+        }
+        switchMode("focus");
+      }
+      // Play notification sound if available
+      try { new Audio("data:audio/wav;base64,UklGRl9vT19teleXBl").play().catch(function(){}); } catch(e){}
+      return;
+    }
+    remaining--;
+    updateDisplay();
+  }
+
+  startBtn.addEventListener("click", function() {
+    if (running) {
+      // Pause
+      clearInterval(interval);
+      interval = null;
+      running = false;
+      startBtn.innerHTML = "&#9654; Resume";
+    } else {
+      // Start / Resume
+      running = true;
+      startBtn.innerHTML = "&#10074;&#10074; Pause";
+      interval = setInterval(tick, 1000);
+    }
+  });
+
+  resetBtn.addEventListener("click", function() {
+    clearInterval(interval);
+    interval = null;
+    running = false;
+    remaining = totalSeconds;
+    startBtn.innerHTML = "&#9654; Start";
+    updateDisplay();
+  });
+
+  function switchMode(mode) {
+    if (mode === "custom") {
+      var input = prompt("Enter minutes:", "25");
+      if (!input || isNaN(parseInt(input))) return;
+      var mins = Math.max(1, Math.min(120, parseInt(input)));
+      MODES.custom = mins * 60;
+      currentMode = "custom";
+      totalSeconds = MODES.custom;
+    } else {
+      currentMode = mode;
+      totalSeconds = MODES[mode] || MODES.focus;
+    }
+    clearInterval(interval);
+    interval = null;
+    running = false;
+    remaining = totalSeconds;
+    startBtn.innerHTML = "&#9654; Start";
+    labelEl.textContent = currentMode === "focus" || currentMode === "custom" ? "FOCUS" : "BREAK";
+    ringEl.classList.toggle("break", currentMode !== "focus" && currentMode !== "custom");
+    // Update active button
+    modeButtons.forEach(function(b) { b.classList.toggle("active", b.dataset.mode === currentMode); });
+    updateDisplay();
+  }
+
+  modeButtons.forEach(function(btn) {
+    btn.addEventListener("click", function() { switchMode(btn.dataset.mode); });
+  });
 })();
 
 /* ===== RESIZABLE LEFT SIDEBAR ===== */
