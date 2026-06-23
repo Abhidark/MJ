@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// ─── Axios Instance ───
+// --- Axios Instance ---
 const api = axios.create({
   baseURL: '',
   timeout: 30000,
@@ -26,9 +26,7 @@ api.interceptors.response.use(
   }
 );
 
-// ═══════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════
+// --- AUTH ---
 export const authAPI = {
   getStatus: () => api.get('/auth/status'),
   login: (password) => api.post('/auth/login', { password }),
@@ -39,9 +37,7 @@ export const authAPI = {
     api.post('/auth/toggle', { enabled, password }),
 };
 
-// ═══════════════════════════════════════════════
-// CHAT
-// ═══════════════════════════════════════════════
+// --- CHAT ---
 export const chatAPI = {
   sendMessage: async (message, file = null) => {
     const form = new FormData();
@@ -56,18 +52,14 @@ export const chatAPI = {
   deleteChat: (chatId) => api.delete(`/delete-chat/${chatId}`),
 };
 
-// ═══════════════════════════════════════════════
-// MEMORY
-// ═══════════════════════════════════════════════
+// --- MEMORY ---
 export const memoryAPI = {
   getCoreMemory: () => api.get('/core-memory'),
   remember: (fact) => api.post('/remember', { fact }),
   getContextMemory: () => api.get('/context-memory'),
 };
 
-// ═══════════════════════════════════════════════
-// SYSTEM
-// ═══════════════════════════════════════════════
+// --- SYSTEM ---
 export const systemAPI = {
   getStats: () => api.get('/system-stats'),
   getTopProcesses: () => api.get('/top-processes'),
@@ -79,9 +71,7 @@ export const systemAPI = {
   getWakeBriefing: () => api.get('/wake-briefing'),
 };
 
-// ═══════════════════════════════════════════════
-// VOICE
-// ═══════════════════════════════════════════════
+// --- VOICE ---
 export const voiceAPI = {
   speak: (text, emotion = 'neutral') =>
     fetch('/speak', {
@@ -94,17 +84,18 @@ export const voiceAPI = {
   testVoice: (params) => api.post('/test-voice', params),
 };
 
-// ═══════════════════════════════════════════════
-// MODELS
-// ═══════════════════════════════════════════════
+// --- MODELS ---
 export const modelAPI = {
   getModels: () => api.get('/models'),
+  setActive: (model) => api.post('/models/set-active', { model }),
+  toggleAuto: (enabled) => api.post('/models/auto-select', { enabled }),
+  setTaskModel: (task, model) => api.post('/models/set-task-model', { task, model }),
   routePreview: (message) => api.post('/models/route', { message }),
+  getProvider: () => api.get('/provider'),
+  setProvider: (provider) => api.post('/provider/set', { provider }),
 };
 
-// ═══════════════════════════════════════════════
-// ZEUS MODULES
-// ═══════════════════════════════════════════════
+// --- ZEUS MODULES ---
 export const zeusAPI = {
   getModules: () => api.get('/zeus/modules'),
   getModule: (name) => api.get(`/zeus/modules/${name}`),
@@ -112,9 +103,7 @@ export const zeusAPI = {
   executeModule: (name, input) => api.post(`/zeus/modules/${name}/execute`, { input }),
 };
 
-// ═══════════════════════════════════════════════
-// ALERTS & ERRORS
-// ═══════════════════════════════════════════════
+// --- ALERTS & ERRORS ---
 export const alertAPI = {
   getAlerts: () => api.get('/alerts'),
   getActive: () => api.get('/alerts/active'),
@@ -131,9 +120,7 @@ export const errorAPI = {
   clearAll: () => api.post('/errors/clear'),
 };
 
-// ═══════════════════════════════════════════════
-// KNOWLEDGE BASE
-// ═══════════════════════════════════════════════
+// --- KNOWLEDGE BASE ---
 export const knowledgeAPI = {
   getStats: () => api.get('/knowledge-base'),
   search: (query) => api.post('/knowledge-base/search', { query }),
@@ -147,34 +134,26 @@ export const knowledgeAPI = {
   deleteDoc: (docId) => api.delete(`/knowledge-base/${docId}`),
 };
 
-// ═══════════════════════════════════════════════
-// PLUGINS
-// ═══════════════════════════════════════════════
+// --- PLUGINS ---
 export const pluginAPI = {
   getPlugins: () => api.get('/plugins'),
   reload: () => api.post('/plugins/reload'),
 };
 
-// ═══════════════════════════════════════════════
-// PC CONTROL
-// ═══════════════════════════════════════════════
+// --- PC CONTROL ---
 export const pcAPI = {
   execute: (command) => api.post('/execute', { command }),
   notify: (message, title = 'MJ Assistant') =>
     api.post('/notify', { message, title }),
 };
 
-// ═══════════════════════════════════════════════
-// SCHEDULING & REMINDERS
-// ═══════════════════════════════════════════════
+// --- SCHEDULING & REMINDERS ---
 export const scheduleAPI = {
   getReminders: () => api.get('/reminders'),
   getScheduledTasks: () => api.get('/scheduled-tasks'),
 };
 
-// ═══════════════════════════════════════════════
-// OCR & GIT
-// ═══════════════════════════════════════════════
+// --- OCR & GIT ---
 export const ocrAPI = {
   screenOCR: () => api.get('/ocr/screen'),
   fileOCR: (file) => {
@@ -191,9 +170,7 @@ export const gitAPI = {
   status: () => api.get('/git/status'),
 };
 
-// ═══════════════════════════════════════════════
-// MISC
-// ═══════════════════════════════════════════════
+// --- MISC ---
 export const miscAPI = {
   getSuggestions: () => api.get('/suggestions'),
   getClipboardHistory: () => api.get('/clipboard/history'),
@@ -203,6 +180,12 @@ export const miscAPI = {
   getDiagnosticIssues: () => api.get('/diagnostics/issues'),
   getIntelligence: () => api.get('/intelligence'),
   getEmailConfig: () => api.get('/email/config'),
+};
+
+// --- WEATHER ---
+export const weatherAPI = {
+  get: (city = 'Gurgaon', days = 3) => api.get(`/weather?city=${encodeURIComponent(city)}&days=${days}`),
+  post: (params) => api.post('/weather', params),
 };
 
 export default api;

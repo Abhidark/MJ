@@ -1,58 +1,23 @@
-import { useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useSidebarResize } from '@/hooks/useSidebarResize';
-import { useVoice } from '@/hooks/useVoice';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import MainContent, { ContentRow } from '@/components/layout/MainContent';
 import LoginScreen from '@/components/auth/LoginScreen';
 import SecurityPanel from '@/components/auth/SecurityPanel';
 import ChatPanel from '@/components/chat/ChatPanel';
-import Orb from '@/components/orb/Orb';
-import StatusDisplay from '@/components/orb/StatusDisplay';
+import DashboardGrid from '@/components/dashboard/DashboardGrid';
 
-// ─── Dashboard with Orb ───
-function DashboardView() {
-  const navigate = useNavigate();
-
-  const handleTranscript = useCallback((text) => {
-    // Voice command → navigate to chat and send
-    navigate('/chat', { state: { voiceMessage: text } });
-  }, [navigate]);
-
-  const handleWake = useCallback(() => {
-    // First wake → could trigger briefing
-    console.log('[MJ] Wake word detected — first activation');
-  }, []);
-
-  const voice = useVoice({
-    onTranscript: handleTranscript,
-    onWake: handleWake,
-  });
-
-  return (
-    <div className="orb-section">
-      <Orb state={voice.orbState} onClick={voice.handleOrbClick} />
-      <StatusDisplay
-        orbState={voice.orbState}
-        micStatus={voice.micStatus}
-        waveState={voice.waveState}
-        listening={voice.listening}
-        onMicToggle={voice.toggleListening}
-      />
-    </div>
-  );
-}
-
-// ─── Page placeholders (Day 6–10) ───
+// ─── Page placeholders (Day 7–10) ───
 function ModulesView() {
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="card" style={{ padding: 32, textAlign: 'center' }}>
         <h2 style={{ color: 'var(--cyan)', marginBottom: 8 }}>Zeus Modules</h2>
-        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>21 module cards — coming Day 6</p>
+        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>21 module cards — coming Day 7</p>
       </div>
     </div>
   );
@@ -104,12 +69,12 @@ function AppLayout() {
 
       <MainContent isResizing={isResizing}>
         <Header
-          onEditDashboard={() => console.log('TODO: Edit mode')}
+          onEditDashboard={() => console.log('TODO: Dashboard settings')}
           onSettings={() => console.log('TODO: Dashboard settings')}
         />
         <ContentRow>
           <Routes>
-            <Route path="/" element={<DashboardView />} />
+            <Route path="/" element={<DashboardGrid />} />
             <Route path="/chat" element={<ChatPanel />} />
             <Route path="/modules" element={<ModulesView />} />
             <Route path="/settings" element={<SettingsView />} />
