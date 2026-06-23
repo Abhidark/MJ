@@ -3942,6 +3942,46 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// ===== PERFORMANCE MANAGER =====
+// Centralized visibility + frame-throttle system for all animation loops & timers
+const MJPerf = (function() {
+  var _hidden = document.hidden || false;
+  var _lastFrames = {};
+  var _resumeCallbacks = {};
+
+  document.addEventListener("visibilitychange", function() {
+    _hidden = document.hidden;
+    if (!_hidden) {
+      // Wake up all paused rAF loops
+      Object.keys(_resumeCallbacks).forEach(function(k) {
+        try { _resumeCallbacks[k](); } catch(e) {}
+      });
+    }
+  });
+
+  return {
+    get hidden() { return _hidden; },
+
+    // Returns true when enough time has passed for targetFPS; false = skip this frame
+    shouldRender: function(name, targetFPS) {
+      if (_hidden) return false;
+      if (!targetFPS || targetFPS >= 60) return true;
+      var now = performance.now();
+      var interval = 1000 / targetFPS;
+      var last = _lastFrames[name] || 0;
+      if (now - last < interval) return false;
+      _lastFrames[name] = now;
+      return true;
+    },
+
+    // Register a resume callback for when tab becomes visible again
+    onResume: function(name, cb) { _resumeCallbacks[name] = cb; },
+
+    // Check if a DOM element is actually rendered (not display:none)
+    isRendered: function(el) { return el && el.offsetParent !== null; }
+  };
+})();
+
 const canvas = document.getElementById("particles");
 const ctx = canvas.getContext("2d");
 let particles = [];
@@ -3958,7 +3998,10 @@ for (let i = 0; i < 50; i++) {
   });
 }
 
+var _particlesRunning = true;
 function drawParticles() {
+  if (MJPerf.hidden) { _particlesRunning = false; return; }
+  if (!MJPerf.shouldRender("particles", 30)) { requestAnimationFrame(drawParticles); return; }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (const p of particles) {
     p.x += p.vx; p.y += p.vy;
@@ -3971,6 +4014,7 @@ function drawParticles() {
   requestAnimationFrame(drawParticles);
 }
 drawParticles();
+MJPerf.onResume("particles", function() { if (!_particlesRunning) { _particlesRunning = true; requestAnimationFrame(drawParticles); } });
 
 // ===== 3D INTERACTIVE PARTICLE SPHERE ORB (Full Physics Engine) =====
 (function() {
@@ -4184,7 +4228,17 @@ drawParticles();
   };
 
   // Main render loop
+  var _orbRunning = true;
+  var _orbSortedCache = null;
+  var _orbFrameCount = 0;
+
   function renderOrb() {
+    // Visibility: fully stop loop when tab hidden
+    if (MJPerf.hidden) { _orbRunning = false; return; }
+    // Idle throttle: 30fps when idle + no mouse interaction
+    var _orbFPS = (orbState === "idle" && !mouse.hovering && ripples.length === 0) ? 30 : 60;
+    if (!MJPerf.shouldRender("orb", _orbFPS)) { requestAnimationFrame(renderOrb); return; }
+
     octx.clearRect(0, 0, SIZE, SIZE);
 
     // Lerp color
@@ -4304,8 +4358,13 @@ drawParticles();
       p.vx *= damping; p.vy *= damping; p.vz *= damping;
     }
 
-    // Sort back-to-front (painter's algorithm)
-    const sorted = particles.slice().sort((a,b) => b.pz - a.pz);
+    // Sort back-to-front (painter's algorithm) — cache sort in idle state
+    _orbFrameCount++;
+    var _sortEvery = (orbState === "idle" && !mouse.hovering) ? 3 : 1;
+    if (_orbFrameCount % _sortEvery === 0 || !_orbSortedCache) {
+      _orbSortedCache = particles.slice().sort((a,b) => b.pz - a.pz);
+    }
+    const sorted = _orbSortedCache;
 
     // Additive blend for luminous glow
     octx.globalCompositeOperation = "lighter";
@@ -4372,6 +4431,7 @@ drawParticles();
     requestAnimationFrame(renderOrb);
   }
   renderOrb();
+  MJPerf.onResume("orb", function() { if (!_orbRunning) { _orbRunning = true; requestAnimationFrame(renderOrb); } });
 })();
 
 // ===== ORB SETTINGS PANEL WIRING =====
@@ -4791,7 +4851,7 @@ async function loadModelConfig() {
 }
 loadModelConfig();
 // Refresh model list every 60s (picks up newly installed models)
-setInterval(loadModelConfig, 60000);
+setInterval(function(){ if (!MJPerf.hidden) loadModelConfig(); }, 60000);
 
 let isVoiceCommand = false;
 
@@ -5324,7 +5384,7 @@ async function updateRealStats() {
     if (s.uptime && s.uptime !== "unknown") document.getElementById("hud-uptime-val").textContent = s.uptime;
   } catch(e) {}
 }
-updateRealStats(); setInterval(updateRealStats, 5000);
+updateRealStats(); setInterval(function(){ if (!MJPerf.hidden) updateRealStats(); }, 5000);
 
 // ===== SMART SUGGESTIONS =====
 async function updateSuggestions() {
@@ -5355,7 +5415,7 @@ async function updateSuggestions() {
     });
   } catch(e) {}
 }
-updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
+updateSuggestions(); setInterval(function(){ if (!MJPerf.hidden) updateSuggestions(); }, 60000);
 
 // HUD task tracker — updates when orb state changes
 (function() {
@@ -5448,7 +5508,21 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
     aiState = state;
   };
 
+  // Cached DOM refs (avoid getElementById inside 60fps loop)
+  const _afFreqEl = document.getElementById("af-freq");
+  const _afAmpEl = document.getElementById("af-amp");
+  const _afTokensEl = document.getElementById("af-tokens");
+  const _afStreamEl = document.getElementById("af-stream");
+  const _aiFlowPanel = document.getElementById("ai-flow-panel");
+  var _aiFlowRunning = true;
+  var _aiFlowFieldFrame = 0;
+
   function animate() {
+    // Visibility: stop loop when tab hidden
+    if (MJPerf.hidden) { _aiFlowRunning = false; return; }
+    // Panel visibility: skip rendering when AI flow panel is display:none
+    if (!MJPerf.isRendered(_aiFlowPanel)) { requestAnimationFrame(animate); return; }
+
     time += 0.016;
     const isActive = aiState === "thinking" || aiState === "speaking" || aiState === "listening";
 
@@ -5556,10 +5630,10 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
       wc.lineWidth = 0.5;
       wc.beginPath(); wc.moveTo(0,H/2); wc.lineTo(W,H/2); wc.stroke();
 
-      // Stats
+      // Stats (cached DOM refs)
       const freq = isActive ? (12 + Math.sin(time)*4).toFixed(1) : (2 + Math.sin(time*0.3)).toFixed(1);
-      document.getElementById("af-freq").textContent = freq + " Hz";
-      document.getElementById("af-amp").textContent = amp.toFixed(2);
+      if (_afFreqEl) _afFreqEl.textContent = freq + " Hz";
+      if (_afAmpEl) _afAmpEl.textContent = amp.toFixed(2);
     }
 
     // ---- Draw Bars ----
@@ -5583,14 +5657,15 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
         brc.fillRect(x, y, bw, bh);
       }
 
-      // Token counter
-      if (isActive) {
-        const el = document.getElementById("af-tokens");
-        const cur = parseInt(el.textContent) || 0;
-        el.textContent = cur + Math.floor(Math.random()*3);
+      // Token counter (cached DOM refs)
+      if (isActive && _afTokensEl) {
+        const cur = parseInt(_afTokensEl.textContent) || 0;
+        _afTokensEl.textContent = cur + Math.floor(Math.random()*3);
       }
-      document.getElementById("af-stream").textContent = isActive ? (aiState === "thinking" ? "PROCESSING" : "STREAMING") : "IDLE";
-      document.getElementById("af-stream").style.color = isActive ? "rgba(0,255,150,0.8)" : "rgba(0,200,255,0.5)";
+      if (_afStreamEl) {
+        _afStreamEl.textContent = isActive ? (aiState === "thinking" ? "PROCESSING" : "STREAMING") : "IDLE";
+        _afStreamEl.style.color = isActive ? "rgba(0,255,150,0.8)" : "rgba(0,200,255,0.5)";
+      }
     }
 
     // ---- Draw Field ----
@@ -5620,7 +5695,9 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
         fc.fill();
       }
 
-      // Connect nearby
+      // Connect nearby (skip every other frame to save O(n²) work)
+      _aiFlowFieldFrame++;
+      if (_aiFlowFieldFrame % 2 === 0)
       for (let i = 0; i < fieldParts.length; i++) {
         for (let j = i+1; j < fieldParts.length; j++) {
           const dx = fieldParts[i].x - fieldParts[j].x;
@@ -5641,6 +5718,7 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
     requestAnimationFrame(animate);
   }
   animate();
+  MJPerf.onResume("aiflow", function() { if (!_aiFlowRunning) { _aiFlowRunning = true; requestAnimationFrame(animate); } });
 
   // Reset token counter on new messages
   const _origResetTokens = window.sendMessage;
@@ -5868,7 +5946,7 @@ async function fetchWeather() {
     document.getElementById("w-temp").textContent = `${weatherEmoji} ${temp}°C`;
   } catch(e) { document.getElementById("w-temp").textContent = "--°C"; document.getElementById("w-location").textContent = "No access"; }
 }
-fetchWeather(); setInterval(fetchWeather, 600000);
+fetchWeather(); setInterval(function(){ if (!MJPerf.hidden) fetchWeather(); }, 600000);
 
 // ===== FILE UPLOAD =====
 function formatFileSize(bytes) {
@@ -5965,7 +6043,7 @@ document.getElementById("err-fix-all").addEventListener("click", async () => {
   const pending = data.errors.filter(e => e.fix_status === "pending" || e.fix_status === "failed");
   for (const err of pending) await fixError(err.id);
 });
-checkErrors(); setInterval(checkErrors, 10000);
+checkErrors(); setInterval(function(){ if (!MJPerf.hidden) checkErrors(); }, 10000);
 
 // ===== OLLAMA STATUS MONITOR =====
 let ollamaOnline = false;
@@ -6007,7 +6085,7 @@ async function checkOllamaStatus(showMsg = false) {
 
 // Check on load (with message) and then every 30s (silent unless state changes)
 checkOllamaStatus(true);
-setInterval(() => checkOllamaStatus(false), 30000);
+setInterval(function(){ if (!MJPerf.hidden) checkOllamaStatus(false); }, 30000);
 
 // ===== HEALTH CHECK ON LOAD =====
 async function healthCheck() {

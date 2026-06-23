@@ -1,7 +1,8 @@
 """
-MJ Intelligence: RAG Knowledge Base
-- Upload documents (PDF, TXT, MD, CSV, JSON, code files)
-- Chunk and index content
+MJ Intelligence: RAG Knowledge Base v2
+- Upload documents (PDF, TXT, MD, CSV, JSON, DOCX, code files)
+- PDF text extraction (PyPDF2 / pdfplumber)
+- Chunk and index content with page-level citations
 - TF-IDF based semantic search (no external dependencies)
 - Answer questions from YOUR personal knowledge base
 """
@@ -10,10 +11,13 @@ import json
 import re
 import math
 import hashlib
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 from collections import Counter
+
+logger = logging.getLogger("mj.knowledge_base")
 
 
 KB_DIR = Path(__file__).parent.parent / "knowledge_base"
@@ -52,9 +56,77 @@ def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> list:
     return chunks
 
 
+def _extract_text_from_pdf(file_path: str) -> List[Dict]:
+    """Extract text from PDF with page numbers for citations.
+    Returns list of {page: int, text: str} dicts.
+    Tries PyPDF2 first, then pdfplumber, then falls back to basic extraction."""
+    pages = []
+
+    # Try PyPDF2 first (lightweight, pure Python)
+    try:
+        import PyPDF2
+        with open(file_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            for i, page in enumerate(reader.pages):
+                text = page.extract_text() or ""
+                if text.strip():
+                    pages.append({"page": i + 1, "text": text.strip()})
+        if pages:
+            logger.info(f"PDF extracted via PyPDF2: {len(pages)} pages from {file_path}")
+            return pages
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"PyPDF2 failed for {file_path}: {e}")
+
+    # Try pdfplumber (better for complex layouts)
+    try:
+        import pdfplumber
+        with pdfplumber.open(file_path) as pdf:
+            for i, page in enumerate(pdf.pages):
+                text = page.extract_text() or ""
+                if text.strip():
+                    pages.append({"page": i + 1, "text": text.strip()})
+        if pages:
+            logger.info(f"PDF extracted via pdfplumber: {len(pages)} pages from {file_path}")
+            return pages
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"pdfplumber failed for {file_path}: {e}")
+
+    logger.error(f"No PDF library available. Install: pip install PyPDF2 pdfplumber")
+    return []
+
+
+def _extract_text_from_docx(file_path: str) -> str:
+    """Extract text from DOCX files."""
+    try:
+        import docx
+        doc = docx.Document(file_path)
+        paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+        return "\n\n".join(paragraphs)
+    except ImportError:
+        logger.warning("python-docx not installed. Install: pip install python-docx")
+        return ""
+    except Exception as e:
+        logger.warning(f"DOCX extraction failed: {e}")
+        return ""
+
+
 def _extract_text_from_content(content: str, filename: str) -> str:
     """Extract clean text from various file formats."""
     ext = Path(filename).suffix.lower()
+
+    # PDF files need binary reading — content param is the FILE PATH for PDFs
+    if ext == ".pdf":
+        pages = _extract_text_from_pdf(content)  # content = file path for PDF
+        if pages:
+            return "\n\n".join([f"[Page {p['page']}]\n{p['text']}" for p in pages])
+        return ""
+
+    if ext == ".docx":
+        return _extract_text_from_docx(content)  # content = file path for DOCX
 
     if ext == ".json":
         try:
@@ -68,9 +140,7 @@ def _extract_text_from_content(content: str, filename: str) -> str:
         return "\n".join(lines)
 
     if ext in (".md", ".txt"):
-        # Remove markdown images but keep text
         text = re.sub(r'!\[.*?\]\(.*?\)', '', content)
-        # Remove markdown links but keep text
         text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
         return text
 
@@ -80,7 +150,7 @@ def _extract_text_from_content(content: str, filename: str) -> str:
         text = re.sub(r'<[^>]+>', ' ', text)
         return re.sub(r'\s+', ' ', text).strip()
 
-    # Code files — keep as is, useful for code Q&A
+    # Code files — keep as is
     return content
 
 
@@ -167,18 +237,22 @@ def ingest_document(filename: str, content: str, metadata: dict = None) -> dict:
     # Chunk the text
     chunks = _chunk_text(clean_text)
 
-    # Save chunks
+    # Save chunks with citation info
     doc_id = f"doc_{doc_hash}"
     chunk_data = []
     for i, chunk in enumerate(chunks):
         chunk_id = f"{doc_id}_c{i}"
         tokens = _tokenize(chunk)
+        # Extract page number from [Page N] markers if present (PDF sources)
+        page_match = re.search(r'\[Page\s+(\d+)\]', chunk)
+        page_num = int(page_match.group(1)) if page_match else None
         chunk_info = {
             "id": chunk_id,
             "doc_id": doc_id,
             "text": chunk,
             "tokens": tokens,
             "index": i,
+            "page": page_num,
         }
         chunk_data.append(chunk_info)
 
@@ -234,7 +308,9 @@ def search_knowledge(query: str, top_k: int = 3) -> list:
                     "text": c["text"],
                     "tokens": c["tokens"],
                     "doc_id": c["doc_id"],
-                    "source": doc["filename"]
+                    "source": doc["filename"],
+                    "page": c.get("page"),
+                    "chunk_index": c.get("index", 0),
                 })
                 all_tokens_list.append(c["tokens"])
 
@@ -249,11 +325,15 @@ def search_knowledge(query: str, top_k: int = 3) -> list:
     for chunk in all_chunks:
         score = _tfidf_similarity(query_tokens, chunk["tokens"], idf)
         if score > 0:
-            scored.append({
+            result = {
                 "text": chunk["text"],
                 "source": chunk["source"],
-                "score": round(score, 4)
-            })
+                "score": round(score, 4),
+                "chunk_index": chunk.get("chunk_index", 0),
+            }
+            if chunk.get("page"):
+                result["page"] = chunk["page"]
+            scored.append(result)
 
     # Sort by score descending
     scored.sort(key=lambda x: x["score"], reverse=True)
@@ -262,15 +342,20 @@ def search_knowledge(query: str, top_k: int = 3) -> list:
 
 
 def format_kb_context(results: list) -> str:
-    """Format knowledge base results for LLM context."""
+    """Format knowledge base results for LLM context with citations."""
     if not results:
         return ""
 
     parts = ["KNOWLEDGE BASE CONTEXT (from user's uploaded documents):"]
     for i, r in enumerate(results, 1):
-        parts.append(f"\n[Source: {r['source']} | Relevance: {r['score']}]")
+        citation = f"Source: {r['source']}"
+        if r.get("page"):
+            citation += f", Page {r['page']}"
+        citation += f" | Relevance: {r['score']}"
+        parts.append(f"\n[{citation}]")
         parts.append(r["text"])
 
+    parts.append("\nIMPORTANT: When using information from the knowledge base, cite the source filename and page number if available.")
     return "\n".join(parts)
 
 
@@ -334,3 +419,25 @@ def needs_kb_search(text: str) -> bool:
             return True
 
     return False
+
+
+def ingest_file(file_path: str, metadata: dict = None) -> dict:
+    """Ingest a file by path. Handles binary files (PDF, DOCX) automatically.
+    For text files, reads content. For binary files, passes path to extractors."""
+    path = Path(file_path)
+    if not path.exists():
+        return {"status": "error", "message": f"File not found: {file_path}"}
+
+    ext = path.suffix.lower()
+    filename = path.name
+
+    # Binary files — pass file path (not content) to extractor
+    if ext in (".pdf", ".docx"):
+        content = str(path)  # Pass path as string for binary extractors
+    else:
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to read file: {e}"}
+
+    return ingest_document(filename, content, metadata)
