@@ -169,6 +169,26 @@
       "tokens": 17,
       "success": true,
       "error": null
+    },
+    {
+      "timestamp": "2026-06-23T15:50:45.323426",
+      "user_msg_preview": "hlw",
+      "model": "groq:llama-3.3-70b-versatile",
+      "task_type": "chat",
+      "response_time_sec": 1.46,
+      "tokens": 102,
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2026-06-23T16:13:15.894099",
+      "user_msg_preview": "hi",
+      "model": "groq:llama-3.1-8b-instant",
+      "task_type": "chat",
+      "response_time_sec": 2.96,
+      "tokens": 109,
+      "success": true,
+      "error": null
     }
   ]
 }

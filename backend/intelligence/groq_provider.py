@@ -14,10 +14,10 @@ from typing import AsyncGenerator, Optional
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# Groq model preferences (ordered by quality)
+# Groq model preferences (speed first for laptop testing)
 GROQ_MODELS = [
-    "llama-3.3-70b-versatile",      # Best quality, 30 req/min free
-    "llama-3.1-8b-instant",          # Fast, good for chat
+    "llama-3.1-8b-instant",          # DEFAULT — fastest, 20K tokens/min free tier
+    "llama-3.3-70b-versatile",       # Better quality but slower, 6K tokens/min free
     "gemma2-9b-it",                  # Good multilingual (Hindi)
     "mixtral-8x7b-32768",            # Good reasoning
 ]

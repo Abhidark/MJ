@@ -1,5 +1,11 @@
 [
   {
+    "content": "git add .\ngit commit -m \"fix: switch Groq to fast 8b model + skip think-filter for cloud responses\"\ngit push",
+    "time": "04:14 PM",
+    "timestamp": "2026-06-23T16:14:07.854327",
+    "preview": "git add . git commit -m \"fix: switch Groq to fast 8b model + skip think-filter f"
+  },
+  {
     "content": "git add .\ngit commit -m \"Fix: voice pipeline now sends transcript to AI after wake activation\"\ngit push origin main",
     "time": "01:21 PM",
     "timestamp": "2026-06-23T13:21:43.374529",

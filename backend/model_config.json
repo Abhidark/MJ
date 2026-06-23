@@ -9,5 +9,6 @@
     "reasoning": "qwen2.5:7b",
     "vision": "qwen2.5:7b",
     "translation": "qwen2.5:7b"
-  }
+  },
+  "provider": "groq"
 }

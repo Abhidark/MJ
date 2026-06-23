@@ -4983,11 +4983,13 @@ async function send() {
   const typing = addMsg("Loading model & thinking...", "assistant typing");
   // Timeout safety — if model loading is slow, show helpful alert
   let responseStarted = false;
+  const provBadgeText = document.getElementById('zeus-provider-badge')?.textContent || '';
+  const isGroqMode = provBadgeText.includes('GROQ');
   const stuckTimer = setTimeout(() => {
     if (!responseStarted) {
-      showOrbAlert("MODEL LOADING — Ollama is loading the model, please wait...", "warning", 20000);
+      showOrbAlert(isGroqMode ? "WAITING — Groq cloud is processing..." : "MODEL LOADING — Ollama is loading the model, please wait...", "warning", 20000);
     }
-  }, 15000);
+  }, isGroqMode ? 30000 : 15000);
 
   try {
     const formData = new FormData();
@@ -5018,6 +5020,8 @@ async function send() {
             if (data.model && !data.token) {
               responseStarted = true; clearTimeout(stuckTimer);
               const isGroq = data.provider === 'groq';
+              window._mjCurrentProvider = data.provider || 'ollama';
+              window._mjCurrentModel = data.model || '';
               const shortModel = isGroq ? 'Groq ☁️' : data.model.split(":")[0];
               typing.textContent = `Using ${shortModel}... thinking...`;
               // Update last-used display
@@ -5033,8 +5037,9 @@ async function send() {
             if (data.token) {
               if (!responseStarted) { responseStarted = true; clearTimeout(stuckTimer); }
               rawBuffer += data.token;
-              // Filter out <think>...</think> blocks from Qwen3 models
-              if (rawBuffer.includes("<think>")) insideThink = true;
+              // Filter <think> blocks ONLY for Qwen3/DeepSeek models (not Groq cloud)
+              const needsThinkFilter = window._mjCurrentProvider !== 'groq' && /qwen3|deepseek/i.test(window._mjCurrentModel || '');
+              if (needsThinkFilter && rawBuffer.includes("<think>")) insideThink = true;
               if (insideThink) {
                 if (rawBuffer.includes("</think>")) {
                   insideThink = false;
@@ -6200,6 +6205,32 @@ async function checkOllamaStatus(showMsg = false) {
   const statusEl = document.getElementById("w-status");
   const statusLabel = statusEl?.parentElement?.querySelector("div:last-child");
   try {
+    // First check provider — if Groq, skip Ollama check
+    let provider = "ollama";
+    try {
+      const provRes = await fetch(API + "/provider");
+      const provData = await provRes.json();
+      provider = provData.provider || "ollama";
+    } catch(pe) {}
+
+    if (provider === "groq") {
+      // Groq cloud mode — no Ollama needed
+      ollamaOnline = true;
+      if (statusEl) { statusEl.textContent = "ONLINE"; statusEl.style.color = "var(--success)"; }
+      if (statusLabel) statusLabel.textContent = "GROQ ☁️";
+      if (showMsg && ollamaLastNotified === 0) {
+        showOrbAlert("GROQ CLOUD — AI Ready ☁️", "success", 5000);
+        setOrbState("listening");
+      }
+      ollamaLastNotified = Date.now();
+      // Update provider badge
+      const sdpProv = document.getElementById('sdp-provider');
+      if (sdpProv) sdpProv.textContent = 'Groq Cloud ☁️';
+      const sdpStatus = document.getElementById('sdp-ollama-status');
+      if (sdpStatus) { sdpStatus.textContent = 'Groq Active'; sdpStatus.style.color = '#c8a0ff'; }
+      return;
+    }
+
     const res = await fetch(API + "/ollama-status");
     const data = await res.json();
     if (data.status === "online") {

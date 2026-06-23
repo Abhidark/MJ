@@ -428,17 +428,12 @@ def set_provider(provider: str) -> dict:
 def auto_detect_provider() -> str:
     """
     Auto-detect best provider:
-    - If Groq key exists AND Ollama has weak/no models → use Groq
-    - If Ollama has good models (8B+) → use Ollama
-    - Fallback → Groq if available, else Ollama
+    - If Groq API key exists → ALWAYS use Groq (user set it up for a reason)
+    - Only fall back to Ollama if no Groq key
+    - On PC: user won't have .env with Groq key → auto-picks Ollama
+    - On Laptop: user has .env with Groq key → auto-picks Groq
     """
     global _active_provider
-
-    installed = _refresh_installed_models()
-    has_good_ollama = any(
-        any(size in m for size in ["8b", "7b", "14b", "13b", "70b"])
-        for m in installed
-    )
 
     groq_available = False
     try:
@@ -447,12 +442,10 @@ def auto_detect_provider() -> str:
     except ImportError:
         pass
 
-    if has_good_ollama:
-        _active_provider = "ollama"
-    elif groq_available:
+    if groq_available:
         _active_provider = "groq"
     else:
-        _active_provider = "ollama"  # let it fail with a clear error
+        _active_provider = "ollama"
 
     # Save to config
     config = load_model_config()
