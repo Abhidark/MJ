@@ -1,5 +1,17 @@
 [
   {
+    "content": "```text\nTask: Implement a complete real-time Weather feature in the Jarvis project with a modern interactive weather widget.\n\nObjective:\nWhen the user asks anything related to weather, Jarvis should automatically detect the weather intent, fetch live weather information from a weather API, and display a rich weather widget instead of returning only plain text.\n\nRequirements:\n\n1. Integrate a reliable real-time weather API (OpenWeatherMap, WeatherAPI, Tomorrow.io, or another production-ready provi",
+    "time": "04:16 PM",
+    "timestamp": "2026-06-23T16:16:29.806209",
+    "preview": "```text Task: Implement a complete real-time Weather feature in the Jarvis proje"
+  },
+  {
+    "content": "add wather api for the current and real time weather when ask about the waether it open and show full widget typeÿ",
+    "time": "04:15 PM",
+    "timestamp": "2026-06-23T16:15:52.843405",
+    "preview": "add wather api for the current and real time weather when ask about the waether "
+  },
+  {
     "content": "git add .\ngit commit -m \"fix: switch Groq to fast 8b model + skip think-filter for cloud responses\"\ngit push",
     "time": "04:14 PM",
     "timestamp": "2026-06-23T16:14:07.854327",

@@ -1,5 +1,19 @@
 [
   {
+    "id": "alert_20260623_161647_315687",
+    "timestamp": "2026-06-23T16:16:47.315687",
+    "time_display": "04:16:47 PM",
+    "title": "CPU High",
+    "message": "CPU usage is at 87%. Performance may degrade.",
+    "severity": "warning",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
     "id": "alert_20260623_161209_457574",
     "timestamp": "2026-06-23T16:12:09.457574",
     "time_display": "04:12:09 PM",
@@ -9,9 +23,9 @@
     "category": "health",
     "source": "health_monitor",
     "error_id": "",
-    "resolved": false,
-    "resolved_at": "",
-    "resolve_message": ""
+    "resolved": true,
+    "resolved_at": "2026-06-23T16:17:09.462237",
+    "resolve_message": "Auto-resolved after timeout"
   },
   {
     "id": "alert_20260623_161206_522018",

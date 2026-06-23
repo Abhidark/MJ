@@ -1281,6 +1281,96 @@
     letter-spacing: 0.5px;
   }
 
+  /* ── Weather Widget (Chat Inline) ── */
+  .mj-weather {
+    background: linear-gradient(135deg, rgba(0,30,60,0.95), rgba(0,15,40,0.98));
+    border: 1px solid rgba(0,200,255,0.15);
+    border-radius: 16px; padding: 16px; margin: 4px 0;
+    font-family: inherit; color: #e0f0ff; max-width: 420px;
+    box-shadow: 0 4px 24px rgba(0,200,255,0.08), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .mj-weather * { box-sizing: border-box; }
+  .mj-w-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0,200,255,0.1);
+  }
+  .mj-w-city { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; color: #fff; }
+  .mj-w-time { font-size: 10px; color: rgba(0,200,255,0.6); letter-spacing: 0.3px; }
+  .mj-w-main {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 14px;
+  }
+  .mj-w-icon { width: 64px; height: 64px; filter: drop-shadow(0 0 8px rgba(0,200,255,0.3)); }
+  .mj-w-temp { font-size: 42px; font-weight: 700; color: #fff; line-height: 1; }
+  .mj-w-temp span { font-size: 18px; color: rgba(255,255,255,0.5); font-weight: 400; }
+  .mj-w-cond { font-size: 13px; color: rgba(0,220,255,0.8); margin-top: 2px; }
+  .mj-w-feels { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .mj-w-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    margin-bottom: 14px;
+  }
+  .mj-w-stat {
+    background: rgba(0,200,255,0.06); border: 1px solid rgba(0,200,255,0.08);
+    border-radius: 10px; padding: 8px 6px; text-align: center;
+  }
+  .mj-w-stat-icon { font-size: 14px; margin-bottom: 2px; }
+  .mj-w-stat-val { font-size: 13px; font-weight: 600; color: #fff; }
+  .mj-w-stat-label { font-size: 8px; color: rgba(255,255,255,0.35); letter-spacing: 0.5px; text-transform: uppercase; margin-top: 1px; }
+  .mj-w-astro {
+    display: flex; justify-content: space-around; padding: 8px 0;
+    border-top: 1px solid rgba(0,200,255,0.08);
+    border-bottom: 1px solid rgba(0,200,255,0.08);
+    margin-bottom: 12px;
+  }
+  .mj-w-astro-item { text-align: center; }
+  .mj-w-astro-item .icon { font-size: 16px; }
+  .mj-w-astro-item .val { font-size: 11px; color: #fff; }
+  .mj-w-astro-item .lbl { font-size: 8px; color: rgba(255,255,255,0.3); text-transform: uppercase; }
+  .mj-w-hourly {
+    display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px;
+    scrollbar-width: thin; scrollbar-color: rgba(0,200,255,0.2) transparent;
+    margin-bottom: 12px;
+  }
+  .mj-w-hourly::-webkit-scrollbar { height: 3px; }
+  .mj-w-hourly::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.3); border-radius: 4px; }
+  .mj-w-hour {
+    flex: 0 0 52px; text-align: center; padding: 6px 4px;
+    background: rgba(0,200,255,0.05); border-radius: 10px;
+    border: 1px solid rgba(0,200,255,0.06);
+  }
+  .mj-w-hour .t { font-size: 9px; color: rgba(255,255,255,0.4); }
+  .mj-w-hour img { width: 28px; height: 28px; margin: 2px 0; }
+  .mj-w-hour .temp { font-size: 12px; font-weight: 600; color: #fff; }
+  .mj-w-hour .rain { font-size: 8px; color: rgba(0,180,255,0.7); }
+  .mj-w-forecast { margin-top: 4px; }
+  .mj-w-forecast-title {
+    font-size: 10px; color: rgba(0,200,255,0.5); letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .mj-w-day {
+    display: flex; align-items: center; gap: 8px; padding: 5px 0;
+    border-bottom: 1px solid rgba(0,200,255,0.04);
+  }
+  .mj-w-day:last-child { border-bottom: none; }
+  .mj-w-day .date { flex: 0 0 42px; font-size: 11px; color: rgba(255,255,255,0.5); }
+  .mj-w-day img { width: 24px; height: 24px; }
+  .mj-w-day .cond { flex: 1; font-size: 11px; color: rgba(255,255,255,0.6); }
+  .mj-w-day .temps { font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; }
+  .mj-w-day .temps span { color: rgba(255,255,255,0.35); font-weight: 400; }
+  .mj-w-day .rain-pct { font-size: 10px; color: rgba(0,180,255,0.6); flex: 0 0 36px; text-align: right; }
+  .mj-w-aqi {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .mj-w-aqi.good { background: rgba(0,200,80,0.15); color: #0c6; }
+  .mj-w-aqi.moderate { background: rgba(255,200,0,0.15); color: #fc0; }
+  .mj-w-aqi.unhealthy { background: rgba(255,100,50,0.15); color: #f64; }
+  .mj-w-alerts {
+    background: rgba(255,80,50,0.1); border: 1px solid rgba(255,80,50,0.2);
+    border-radius: 8px; padding: 8px 10px; margin-top: 8px;
+    font-size: 11px; color: #ff8866;
+  }
+
   @media (max-width: 900px) {
     .sidebar-widget { display: none; }
   }
@@ -4668,6 +4758,130 @@ async function loadChatList() {
   } catch (e) {}
 }
 
+// ===== WEATHER: Geolocation helper =====
+let _mjUserCoords = null;
+(function() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => { _mjUserCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude }; console.log("[MJ] User location:", _mjUserCoords); },
+      () => { console.log("[MJ] Geolocation denied — weather will use default city"); },
+      { timeout: 8000 }
+    );
+  }
+})();
+
+// ===== WEATHER WIDGET RENDERER =====
+function renderWeatherWidget(w) {
+  const card = document.createElement("div");
+  card.className = "mj-weather";
+
+  // Fix icon URL (WeatherAPI returns //cdn.weatherapi.com/...)
+  const fixIcon = (url) => url ? (url.startsWith("//") ? "https:" + url : url) : "";
+
+  // Day name helper
+  const dayName = (dateStr) => {
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { weekday: "short" });
+  };
+
+  // Current hour for highlighting
+  const nowHour = new Date().getHours();
+
+  // AQI class
+  let aqiClass = "good";
+  if (w.current.aqi_index >= 4) aqiClass = "unhealthy";
+  else if (w.current.aqi_index >= 2) aqiClass = "moderate";
+
+  // Header
+  let html = `
+    <div class="mj-w-header">
+      <div>
+        <div class="mj-w-city">${w.city}${w.region ? ', ' + w.region : ''}</div>
+        <div class="mj-w-time">${w.localtime || ''}</div>
+      </div>
+      ${w.current.aqi !== 'N/A' ? `<span class="mj-w-aqi ${aqiClass}">AQI: ${w.current.aqi}</span>` : ''}
+    </div>`;
+
+  // Main temp + condition
+  html += `
+    <div class="mj-w-main">
+      ${w.current.icon ? `<img class="mj-w-icon" src="${fixIcon(w.current.icon)}" alt="${w.current.condition}">` : '<div class="mj-w-icon" style="font-size:48px;">🌤️</div>'}
+      <div>
+        <div class="mj-w-temp">${Math.round(w.current.temp_c)}<span>°C</span></div>
+        <div class="mj-w-cond">${w.current.condition}</div>
+        <div class="mj-w-feels">Feels like ${Math.round(w.current.feels_like_c)}°C</div>
+      </div>
+    </div>`;
+
+  // Stats grid
+  html += `
+    <div class="mj-w-grid">
+      <div class="mj-w-stat"><div class="mj-w-stat-icon">💧</div><div class="mj-w-stat-val">${w.current.humidity}%</div><div class="mj-w-stat-label">Humidity</div></div>
+      <div class="mj-w-stat"><div class="mj-w-stat-icon">💨</div><div class="mj-w-stat-val">${w.current.wind_kph}</div><div class="mj-w-stat-label">Wind km/h</div></div>
+      <div class="mj-w-stat"><div class="mj-w-stat-icon">👁️</div><div class="mj-w-stat-val">${w.current.visibility_km}</div><div class="mj-w-stat-label">Vis. km</div></div>
+      <div class="mj-w-stat"><div class="mj-w-stat-icon">☀️</div><div class="mj-w-stat-val">${w.current.uv}</div><div class="mj-w-stat-label">UV Index</div></div>
+    </div>`;
+
+  // Astronomy (sunrise/sunset)
+  if (w.astronomy && w.astronomy.sunrise) {
+    html += `
+      <div class="mj-w-astro">
+        <div class="mj-w-astro-item"><div class="icon">🌅</div><div class="val">${w.astronomy.sunrise}</div><div class="lbl">Sunrise</div></div>
+        <div class="mj-w-astro-item"><div class="icon">🌇</div><div class="val">${w.astronomy.sunset}</div><div class="lbl">Sunset</div></div>
+        <div class="mj-w-astro-item"><div class="icon">🌙</div><div class="val">${w.astronomy.moon_phase || '-'}</div><div class="lbl">Moon</div></div>
+        <div class="mj-w-astro-item"><div class="icon">🔽</div><div class="val">${w.current.pressure_mb} mb</div><div class="lbl">Pressure</div></div>
+      </div>`;
+  }
+
+  // Hourly forecast (show next 12 hours from now)
+  if (w.hourly && w.hourly.length > 0) {
+    const filteredHours = w.hourly.filter(h => {
+      const hh = parseInt(h.time.split(":")[0]);
+      return hh >= nowHour;
+    }).slice(0, 12);
+    if (filteredHours.length > 0) {
+      html += `<div class="mj-w-hourly">`;
+      for (const h of filteredHours) {
+        html += `
+          <div class="mj-w-hour">
+            <div class="t">${h.time}</div>
+            ${h.icon ? `<img src="${fixIcon(h.icon)}" alt="">` : ''}
+            <div class="temp">${Math.round(h.temp_c)}°</div>
+            ${parseInt(h.chance_of_rain) > 0 ? `<div class="rain">🌧${h.chance_of_rain}%</div>` : ''}
+          </div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // Multi-day forecast
+  if (w.forecast && w.forecast.length > 0) {
+    html += `<div class="mj-w-forecast"><div class="mj-w-forecast-title">Forecast</div>`;
+    for (const d of w.forecast) {
+      html += `
+        <div class="mj-w-day">
+          <div class="date">${dayName(d.date)}</div>
+          ${d.icon ? `<img src="${fixIcon(d.icon)}" alt="">` : ''}
+          <div class="cond">${d.condition}</div>
+          <div class="rain-pct">${parseInt(d.chance_of_rain) > 0 ? '🌧' + d.chance_of_rain + '%' : ''}</div>
+          <div class="temps">${Math.round(d.max_temp_c)}° <span>${Math.round(d.min_temp_c)}°</span></div>
+        </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Weather alerts
+  if (w.alerts && w.alerts.length > 0) {
+    for (const a of w.alerts) {
+      html += `<div class="mj-w-alerts">⚠️ ${a.headline || a.event}</div>`;
+    }
+  }
+
+  card.innerHTML = html;
+  return card;
+}
+
+
 async function loadMemoryCount() {
   try {
     const res = await fetch(API + "/core-memory"); const data = await res.json();
@@ -5050,6 +5264,14 @@ async function send() {
               } else {
                 typing.textContent = rawBuffer;
               }
+              chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            // Weather widget event — render rich card
+            if (data.weather_widget) {
+              responseStarted = true; clearTimeout(stuckTimer);
+              const wCard = renderWeatherWidget(data.weather_widget);
+              typing.textContent = "";
+              typing.appendChild(wCard);
               chatBox.scrollTop = chatBox.scrollHeight;
             }
             if (data.emotion) detectedEmotion = data.emotion;

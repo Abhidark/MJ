@@ -49,7 +49,8 @@ from intelligence.context_memory import (
 from intelligence.multi_model import needs_deep_reasoning, chain_of_thought, multi_perspective
 from intelligence.live_data import (
     detect_live_data_request, get_live_cricket_scores, get_live_weather,
-    extract_city_from_text, get_live_stock_price, get_live_news,
+    get_weather_data, extract_city_from_text, extract_forecast_type,
+    get_live_stock_price, get_live_news,
     extract_stock_from_text, extract_news_topic
 )
 from intelligence.error_learner import log_error as el_log_error, log_performance, get_diagnostics, get_live_issues
@@ -910,7 +911,21 @@ async def chat(
             live_result = await get_live_cricket_scores()
         elif live_type == "weather":
             city = extract_city_from_text(message)
-            live_result = await get_live_weather(city)
+            forecast_type = extract_forecast_type(message)
+            weather_data = await get_weather_data(city, days=7 if forecast_type == "week" else 3)
+            if weather_data.get("error"):
+                live_result = f"⚠️ {weather_data['error']}"
+            else:
+                # Send as weather_widget SSE event (frontend renders rich widget)
+                c = weather_data["current"]
+                summary = f"🌤️ {weather_data['city']}: {c['temp_c']}°C, {c['condition']}, Humidity {c['humidity']}%"
+                async def weather_widget_stream():
+                    yield f"data: {json.dumps({'weather_widget': weather_data})}\n\n"
+                    yield f"data: {json.dumps({'token': summary})}\n\n"
+                    yield f"data: {json.dumps({'emotion': 'happy'})}\n\n"
+                    yield "data: [DONE]\n\n"
+                _save_cmd_to_chat(message, summary)
+                return StreamingResponse(weather_widget_stream(), media_type="text/event-stream")
         elif live_type == "stock":
             stock_query = extract_stock_from_text(message)
             live_result = await get_live_stock_price(stock_query) if stock_query else None
@@ -1369,6 +1384,31 @@ async def chat(
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+
+# ===== WEATHER ENDPOINT =====
+
+@app.get("/weather")
+async def weather_endpoint(city: str = "Gurgaon", days: int = 3):
+    """Full structured weather data for widget rendering."""
+    data = await get_weather_data(city, days)
+    return data
+
+
+@app.post("/weather")
+async def weather_post_endpoint(req: dict):
+    """Weather with POST body — supports lat/lon and city."""
+    city = req.get("city", "")
+    lat = req.get("lat")
+    lon = req.get("lon")
+    days = req.get("days", 3)
+    # If lat/lon provided, use coordinates
+    if lat and lon:
+        city = f"{lat},{lon}"
+    elif not city:
+        city = "Gurgaon"
+    data = await get_weather_data(city, days)
+    return data
 
 
 # ===== DIAGNOSTICS ENDPOINT =====

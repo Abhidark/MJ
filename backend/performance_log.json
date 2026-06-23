@@ -189,6 +189,26 @@
       "tokens": 109,
       "success": true,
       "error": null
+    },
+    {
+      "timestamp": "2026-06-23T16:15:49.409332",
+      "user_msg_preview": "भारत का नया गाना चलाओ",
+      "model": "groq:llama-3.1-8b-instant",
+      "task_type": "chat",
+      "response_time_sec": 1.41,
+      "tokens": 122,
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2026-06-23T16:17:58.438196",
+      "user_msg_preview": "तुम्हारा नाम क्या है",
+      "model": "groq:llama-3.1-8b-instant",
+      "task_type": "chat",
+      "response_time_sec": 1.04,
+      "tokens": 41,
+      "success": true,
+      "error": null
     }
   ]
 }

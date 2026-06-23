@@ -1,14 +1,37 @@
 """
 MJ Live Data Fetcher
 Fetches real-time data: cricket scores, weather, stock prices, news headlines.
-No API keys needed — uses free sources.
+Weather uses WeatherAPI.com (free tier, 1M calls/month).
 """
 
 import httpx
+import os
 import re
 import json
+import time
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from typing import Optional
+
+# ── Weather cache (avoid repeated API calls) ──
+_weather_cache = {}  # key: city_lower → {data, timestamp}
+WEATHER_CACHE_TTL = 600  # 10 minutes
+
+def _get_weather_api_key() -> Optional[str]:
+    """Load WEATHER_API_KEY from env or .env file."""
+    key = os.environ.get("WEATHER_API_KEY")
+    if key:
+        return key
+    env_file = Path(__file__).parent.parent / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("WEATHER_API_KEY="):
+                key = line.split("=", 1)[1].strip().strip('"').strip("'")
+                if key:
+                    os.environ["WEATHER_API_KEY"] = key
+                    return key
+    return None
 
 
 async def get_live_cricket_scores() -> str:
@@ -143,7 +166,169 @@ def _strip_html(text: str) -> str:
 
 
 async def get_live_weather(city: str = "Delhi") -> str:
-    """Fetch current weather using wttr.in (free, no API key)."""
+    """Fetch weather and return short text summary (for backward compat)."""
+    data = await get_weather_data(city)
+    if data.get("error"):
+        return f"Weather fetch failed: {data['error']}"
+    c = data["current"]
+    return (
+        f"🌤️ Weather in {data['city']}, {data['country']}:\n"
+        f"Temperature: {c['temp_c']}°C (feels like {c['feels_like_c']}°C)\n"
+        f"Condition: {c['condition']}\n"
+        f"Humidity: {c['humidity']}%\n"
+        f"Wind: {c['wind_kph']} km/h\n"
+        f"UV Index: {c['uv']} | AQI: {c.get('aqi', 'N/A')}\n"
+        f"Sunrise: {data['astronomy']['sunrise']} | Sunset: {data['astronomy']['sunset']}"
+    )
+
+
+async def get_weather_data(city: str = "Delhi", days: int = 3) -> dict:
+    """
+    Fetch full structured weather data from WeatherAPI.com.
+    Returns dict with current + hourly + forecast + astronomy + AQI.
+    Cached for 10 minutes per city.
+    """
+    cache_key = city.lower().strip()
+
+    # Check cache
+    if cache_key in _weather_cache:
+        cached = _weather_cache[cache_key]
+        if time.time() - cached["timestamp"] < WEATHER_CACHE_TTL:
+            return cached["data"]
+
+    api_key = _get_weather_api_key()
+
+    # Fallback to wttr.in if no API key
+    if not api_key:
+        return await _weather_fallback_wttr(city)
+
+    try:
+        url = "https://api.weatherapi.com/v1/forecast.json"
+        params = {
+            "key": api_key,
+            "q": city,
+            "days": min(days, 7),
+            "aqi": "yes",
+            "alerts": "yes",
+        }
+
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url, params=params)
+            if resp.status_code == 400:
+                err = resp.json().get("error", {}).get("message", "Invalid city")
+                return {"error": err}
+            if resp.status_code == 403:
+                return {"error": "Weather API key invalid or expired"}
+            resp.raise_for_status()
+            raw = resp.json()
+
+        # Parse into clean structure
+        loc = raw["location"]
+        cur = raw["current"]
+        forecast_days = raw.get("forecast", {}).get("forecastday", [])
+
+        # AQI data
+        aqi_data = cur.get("air_quality", {})
+        aqi_index = aqi_data.get("us-epa-index", None)
+        aqi_labels = {1: "Good", 2: "Moderate", 3: "Unhealthy (Sensitive)", 4: "Unhealthy", 5: "Very Unhealthy", 6: "Hazardous"}
+
+        # Astronomy from first forecast day
+        astro = forecast_days[0].get("astro", {}) if forecast_days else {}
+
+        # Today's hourly forecast
+        today_hours = forecast_days[0].get("hour", []) if forecast_days else []
+        hourly = []
+        for h in today_hours:
+            hourly.append({
+                "time": h["time"].split(" ")[1] if " " in h["time"] else h["time"],
+                "temp_c": h["temp_c"],
+                "condition": h["condition"]["text"],
+                "icon": h["condition"]["icon"],
+                "chance_of_rain": h.get("chance_of_rain", 0),
+                "wind_kph": h["wind_kph"],
+                "humidity": h["humidity"],
+            })
+
+        # Multi-day forecast
+        daily = []
+        for d in forecast_days:
+            day = d["day"]
+            daily.append({
+                "date": d["date"],
+                "max_temp_c": day["maxtemp_c"],
+                "min_temp_c": day["mintemp_c"],
+                "avg_temp_c": day["avgtemp_c"],
+                "condition": day["condition"]["text"],
+                "icon": day["condition"]["icon"],
+                "chance_of_rain": day.get("daily_chance_of_rain", 0),
+                "max_wind_kph": day["maxwind_kph"],
+                "avg_humidity": day["avghumidity"],
+                "uv": day["uv"],
+                "sunrise": d.get("astro", {}).get("sunrise", ""),
+                "sunset": d.get("astro", {}).get("sunset", ""),
+            })
+
+        # Alerts
+        alerts = []
+        for a in raw.get("alerts", {}).get("alert", []):
+            alerts.append({
+                "headline": a.get("headline", ""),
+                "severity": a.get("severity", ""),
+                "event": a.get("event", ""),
+            })
+
+        result = {
+            "city": loc["name"],
+            "region": loc["region"],
+            "country": loc["country"],
+            "lat": loc["lat"],
+            "lon": loc["lon"],
+            "localtime": loc["localtime"],
+            "current": {
+                "temp_c": cur["temp_c"],
+                "temp_f": cur["temp_f"],
+                "feels_like_c": cur["feelslike_c"],
+                "feels_like_f": cur["feelslike_f"],
+                "condition": cur["condition"]["text"],
+                "icon": cur["condition"]["icon"],
+                "wind_kph": cur["wind_kph"],
+                "wind_dir": cur["wind_dir"],
+                "humidity": cur["humidity"],
+                "pressure_mb": cur["pressure_mb"],
+                "visibility_km": cur["vis_km"],
+                "uv": cur["uv"],
+                "cloud": cur["cloud"],
+                "aqi": aqi_labels.get(aqi_index, "N/A") if aqi_index else "N/A",
+                "aqi_index": aqi_index,
+                "is_day": cur["is_day"],
+            },
+            "astronomy": {
+                "sunrise": astro.get("sunrise", ""),
+                "sunset": astro.get("sunset", ""),
+                "moonrise": astro.get("moonrise", ""),
+                "moonset": astro.get("moonset", ""),
+                "moon_phase": astro.get("moon_phase", ""),
+            },
+            "hourly": hourly,
+            "forecast": daily,
+            "alerts": alerts,
+            "cached": False,
+        }
+
+        # Cache it
+        _weather_cache[cache_key] = {"data": result, "timestamp": time.time()}
+        return result
+
+    except httpx.ConnectError:
+        return {"error": "Cannot connect to Weather API. Check internet."}
+    except httpx.ReadTimeout:
+        return {"error": "Weather API timeout. Try again."}
+    except Exception as e:
+        return {"error": f"Weather fetch failed: {str(e)[:150]}"}
+
+
+async def _weather_fallback_wttr(city: str) -> dict:
+    """Fallback to wttr.in when no WeatherAPI.com key is set."""
     try:
         async with httpx.AsyncClient(timeout=8) as client:
             resp = await client.get(
@@ -154,23 +339,38 @@ async def get_live_weather(city: str = "Delhi") -> str:
 
         current = data["current_condition"][0]
         area = data["nearest_area"][0]
-
-        temp = current["temp_C"]
-        feels = current["FeelsLikeC"]
-        desc = current["weatherDesc"][0]["value"]
-        humidity = current["humidity"]
-        wind = current["windspeedKmph"]
-        city_name = area["areaName"][0]["value"]
-
-        return (
-            f"🌤️ Weather in {city_name}:\n"
-            f"Temperature: {temp}°C (feels like {feels}°C)\n"
-            f"Condition: {desc}\n"
-            f"Humidity: {humidity}%\n"
-            f"Wind: {wind} km/h"
-        )
+        return {
+            "city": area["areaName"][0]["value"],
+            "region": area.get("region", [{}])[0].get("value", ""),
+            "country": area.get("country", [{}])[0].get("value", ""),
+            "localtime": "",
+            "current": {
+                "temp_c": float(current["temp_C"]),
+                "temp_f": float(current["temp_F"]),
+                "feels_like_c": float(current["FeelsLikeC"]),
+                "feels_like_f": float(current["FeelsLikeF"]),
+                "condition": current["weatherDesc"][0]["value"],
+                "icon": "",
+                "wind_kph": float(current["windspeedKmph"]),
+                "wind_dir": current.get("winddir16Point", ""),
+                "humidity": int(current["humidity"]),
+                "pressure_mb": float(current.get("pressure", 0)),
+                "visibility_km": float(current.get("visibility", 0)),
+                "uv": float(current.get("uvIndex", 0)),
+                "cloud": int(current.get("cloudcover", 0)),
+                "aqi": "N/A",
+                "aqi_index": None,
+                "is_day": 1,
+            },
+            "astronomy": {"sunrise": "", "sunset": "", "moonrise": "", "moonset": "", "moon_phase": ""},
+            "hourly": [],
+            "forecast": [],
+            "alerts": [],
+            "cached": False,
+            "fallback": True,
+        }
     except Exception as e:
-        return f"Weather fetch failed: {str(e)[:100]}"
+        return {"error": f"Weather fetch failed: {str(e)[:100]}"}
 
 
 STOCK_ALIASES = {
@@ -363,16 +563,54 @@ def detect_live_data_request(text: str) -> Optional[str]:
 
 
 def extract_city_from_text(text: str) -> str:
-    """Extract city name from weather query. Default: Delhi."""
+    """Extract city name from weather query. Default: Gurgaon (user's location)."""
     lower = text.lower()
-    # Common Indian cities
+
+    # Try regex: "weather in <city>", "mausam <city>", "<city> ka mausam"
+    m = re.search(r"(?:weather|mausam|forecast|temperature)\s+(?:in|of|for|ka|ki)\s+([a-zA-Z\s]+)", lower)
+    if m:
+        city = m.group(1).strip().rstrip("?.,!")
+        if len(city) > 1:
+            return city.title()
+
+    m = re.search(r"([a-zA-Z\s]+?)\s+(?:ka|ki|me|mein|mai)\s+(?:weather|mausam|temperature)", lower)
+    if m:
+        city = m.group(1).strip().rstrip("?.,!")
+        if len(city) > 1:
+            return city.title()
+
+    # Known cities list
     cities = [
-        "delhi", "mumbai", "bangalore", "bengaluru", "chennai", "kolkata",
-        "hyderabad", "pune", "jaipur", "lucknow", "ahmedabad", "noida",
-        "gurgaon", "gurugram", "chandigarh", "bhopal", "indore", "patna",
-        "new york", "london", "dubai", "tokyo", "singapore",
+        "delhi", "new delhi", "mumbai", "bangalore", "bengaluru", "chennai",
+        "kolkata", "hyderabad", "pune", "jaipur", "lucknow", "ahmedabad",
+        "noida", "gurgaon", "gurugram", "chandigarh", "bhopal", "indore",
+        "patna", "ranchi", "shimla", "manali", "goa", "varanasi", "agra",
+        "surat", "nagpur", "vadodara", "coimbatore", "kochi", "visakhapatnam",
+        "new york", "london", "dubai", "tokyo", "singapore", "paris",
+        "san francisco", "los angeles", "chicago", "toronto", "sydney",
+        "beijing", "shanghai", "bangkok", "hong kong", "seoul",
     ]
     for city in cities:
         if city in lower:
             return city.title()
-    return "Delhi"
+
+    # Check for "weather in <unknown city>" pattern — pass through as-is
+    m2 = re.search(r"(?:weather|mausam|forecast)\s+(?:in|of|for)\s+([a-zA-Z][a-zA-Z\s]{1,30})", lower)
+    if m2:
+        extracted = m2.group(1).strip().rstrip("?.,!")
+        if len(extracted) > 1:
+            return extracted.title()
+
+    return "auto:ip"  # WeatherAPI.com auto-detects location from IP
+
+
+def extract_forecast_type(text: str) -> str:
+    """Detect if user wants current, today, or multi-day forecast."""
+    lower = text.lower()
+    if any(w in lower for w in ["week", "7 day", "next week", "hafte", "weekly", "agle hafte"]):
+        return "week"
+    if any(w in lower for w in ["tomorrow", "kal", "agle din", "next day"]):
+        return "tomorrow"
+    if any(w in lower for w in ["forecast", "prediction", "aage", "upcoming"]):
+        return "forecast"
+    return "current"
