@@ -1,0 +1,141 @@
+/* ============================================================
+   THEME — all CSS custom properties for the JARVIS HUD look
+   Merges original :root vars with React-specific additions.
+   This file is the SINGLE SOURCE OF TRUTH for design tokens.
+   ============================================================ */
+
+:root {
+  /* ── Core backgrounds ── */
+  --bg:              #020408;
+  --bg2:             #040810;
+  --bg-panel:        #0a1628;
+  --bg-card:         rgba(2,12,25,0.75);
+  --bg-card-hover:   #132640;
+
+  /* ── Primary palette ── */
+  --primary:         #00d4ff;
+  --primary-dim:     #0088aa;
+  --accent:          #00aaff;
+  --accent2:         #0088cc;
+  --cyan:            #00d4ff;
+  --cyan-dim:        rgba(0, 212, 255, 0.15);
+  --cyan-glow:       rgba(0, 212, 255, 0.25);
+  --jarvis-cyan:     #00d4ff;
+  --jarvis-blue:     #0066cc;
+  --jarvis-glow:     rgba(0, 212, 255, 0.15);
+
+  /* ── Semantic colors ── */
+  --success:         #00ff88;
+  --green:           #00e676;
+  --warning:         #ffaa00;
+  --gold:            #ffd700;
+  --error:           #ff3344;
+  --red:             #ff1744;
+  --orange:          #ff9100;
+  --blue:            #00aaff;
+  --purple:          #7c4dff;
+
+  /* ── Glass / Panel ── */
+  --glow:            rgba(0, 212, 255, 0.35);
+  --glow2:           rgba(0, 170, 255, 0.25);
+  --glass:           rgba(0, 150, 255, 0.03);
+  --glass2:          rgba(0, 150, 255, 0.06);
+  --glass-border:    rgba(0, 180, 255, 0.1);
+  --glass-border-hover: rgba(0, 212, 255, 0.25);
+  --panel-bg:        rgba(2, 8, 20, 0.8);
+  --panel-border:    rgba(0, 180, 255, 0.08);
+
+  /* ── Borders ── */
+  --border:          rgba(0, 180, 255, 0.1);
+  --border-hover:    rgba(0, 180, 255, 0.3);
+
+  /* ── Text ── */
+  --text:            #c8dce8;
+  --text-dim:        #4a6a80;
+  --text-bright:     #e0f0ff;
+  --text-muted:      #4a5568;
+
+  /* ── Typography ── */
+  --font:            'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:       'JetBrains Mono', 'Fira Code', monospace;
+  --font-display:    'Orbitron', monospace;
+
+  /* ── Radius ── */
+  --radius:          14px;
+  --radius-sm:       8px;
+  --radius-xs:       4px;
+
+  /* ── Transition ── */
+  --transition:      all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  /* ── Layout ── */
+  --sidebar-w:       210px;
+
+  /* ── Special gradients ── */
+  --arc-reactor:     radial-gradient(circle, rgba(0,212,255,0.15) 0%, rgba(0,100,200,0.05) 40%, transparent 70%);
+}
+
+/* ── Particles canvas ── */
+.particles-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Hex grid background ── */
+.hex-grid-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(0,120,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 30%, rgba(0,212,255,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(0,80,200,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(0,150,255,0.02) 0%, transparent 80%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Scanline overlay ── */
+.scanline-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 4px,
+    rgba(0,180,255,0.008) 4px,
+    rgba(0,180,255,0.008) 5px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* ── Holographic mode (future: toggle via class on body) ── */
+body.holo-active .scanline-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,212,255,0.03) 2px, rgba(0,212,255,0.03) 4px
+  );
+  animation: scanlineScroll 8s linear infinite;
+}
+
+body.holo-active::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+  z-index: 9998;
+}

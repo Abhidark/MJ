@@ -11,7 +11,7 @@ function useLiveClock() {
   return now;
 }
 
-export default function Header({ onEditDashboard, onSettings }) {
+export default function Header({ onEditDashboard, onSettings, onAIFlow, aiFlowOpen }) {
   const now = useLiveClock();
   const { stats } = useSystemStats(5000);
 
@@ -35,7 +35,7 @@ export default function Header({ onEditDashboard, onSettings }) {
           <div>{date}</div>
         </div>
         <div className="widget-mini">
-          <div className="val" style={{ color: 'var(--accent)' }}>--°C</div>
+          <div className="val" style={{ color: 'var(--accent)' }}>--C</div>
           <div>Weather</div>
         </div>
         <div className="widget-mini">
@@ -57,13 +57,13 @@ export default function Header({ onEditDashboard, onSettings }) {
       {/* Right actions */}
       <div className="top-bar-actions">
         <button className="icon-btn" onClick={onEditDashboard} title="Edit Dashboard">
-          {'✎'}
+          {'E'}
         </button>
         <Link to="/dashboard" className="icon-btn" title="System Dashboard">
-          {'\u{1F4CA}'}
+          {'D'}
         </Link>
         <Link to="/settings" className="icon-btn" title="Voice Settings">
-          {'⚙'}
+          {'S'}
         </Link>
         <button
           className="icon-btn"
@@ -73,10 +73,20 @@ export default function Header({ onEditDashboard, onSettings }) {
             else document.exitFullscreen?.();
           }}
         >
-          {'⛶'}
+          {'F'}
         </button>
+        {onAIFlow && (
+          <button
+            className={`icon-btn${aiFlowOpen ? ' active' : ''}`}
+            onClick={onAIFlow}
+            title="AI Flow Panel"
+            style={aiFlowOpen ? { color: '#00d4ff' } : {}}
+          >
+            {'A'}
+          </button>
+        )}
         <button className="icon-btn" onClick={onSettings} title="Dashboard Settings" style={{ color: '#00d4ff' }}>
-          {'⚙'}
+          {'G'}
         </button>
       </div>
     </div>
