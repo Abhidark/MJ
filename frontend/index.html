@@ -528,15 +528,12 @@
   [data-card-id="ai-core"]     { grid-column: 1 / span 4;  grid-row: 1 / span 5; }
   [data-card-id="live-intel"]  { grid-column: 5 / span 4;  grid-row: 1 / span 5; }
   [data-card-id="quick-cmd"]   { grid-column: 9 / span 4;  grid-row: 1 / span 5; }
-  [data-card-id="sys-monitor"] { grid-column: 1 / span 3;  grid-row: 6 / span 3; }
+  [data-card-id="sys-monitor"] { grid-column: 1 / span 3;  grid-row: 6 / span 6; }
   [data-card-id="orb"]         { grid-column: 4 / span 6;  grid-row: 6 / span 6; }
-  [data-card-id="sys-stats"]   { grid-column: 10 / span 3; grid-row: 6 / span 3; }
+  [data-card-id="sys-stats"]   { grid-column: 10 / span 3; grid-row: 6 / span 6; }
   [data-card-id="llm-status"]  { grid-column: 1 / span 12; grid-row: 12 / span 3; }
   [data-card-id="smart-suggest"]{ grid-column: 1 / span 12; grid-row: 15 / span 2; }
   [data-card-id="quick-actions"]{ grid-column: 1 / span 12; grid-row: 17 / span 2; }
-  [data-card-id="notes"]       { grid-column: 1 / span 4;  grid-row: 19 / span 4; }
-  [data-card-id="timer"]       { grid-column: 5 / span 4;  grid-row: 19 / span 4; }
-  [data-card-id="calendar"]    { grid-column: 9 / span 4;  grid-row: 19 / span 4; }
   .card-span-2 { grid-column: span 6; }
   .card-span-row { grid-column: 1 / -1; }
   .dash-card.orb-card { background: transparent !important; border-color: transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
@@ -1097,6 +1094,143 @@
   }
   .os-tip strong { color: rgba(0,212,255,0.7); }
 
+  /* ===== SIDEBAR FOCUS TIME & CALENDAR WIDGETS ===== */
+  .sidebar-widget {
+    width: 185px;
+    background: rgba(0,20,40,0.6);
+    border: 1px solid rgba(0,200,255,0.12);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 2px 0;
+    flex-shrink: 0;
+  }
+  .sidebar-widget-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(0,200,255,0.8);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .focus-display {
+    font-family: 'Courier New', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: #00d4ff;
+    text-align: center;
+    text-shadow: 0 0 12px rgba(0,212,255,0.4);
+    margin: 6px 0;
+    letter-spacing: 2px;
+  }
+  .focus-status {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    width: 100%;
+  }
+  .focus-status[data-state="ready"]     { color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.04); }
+  .focus-status[data-state="running"]   { color: #00ff88; background: rgba(0,255,136,0.08); }
+  .focus-status[data-state="paused"]    { color: #ffd900; background: rgba(255,217,0,0.08); }
+  .focus-status[data-state="completed"] { color: #ff6b6b; background: rgba(255,107,107,0.08); }
+  .focus-btns {
+    display: flex;
+    gap: 4px;
+  }
+  .focus-btn {
+    flex: 1;
+    padding: 5px 0;
+    border: 1px solid rgba(0,200,255,0.15);
+    background: rgba(0,200,255,0.06);
+    color: rgba(255,255,255,0.7);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .focus-btn:hover { background: rgba(0,200,255,0.15); color: #fff; }
+  .focus-btn.primary { background: rgba(0,200,255,0.15); color: #00d4ff; border-color: rgba(0,200,255,0.3); }
+  .focus-btn.primary:hover { background: rgba(0,200,255,0.25); }
+  .sb-cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .sb-cal-nav button {
+    background: none;
+    border: 1px solid rgba(0,200,255,0.15);
+    color: rgba(0,200,255,0.7);
+    border-radius: 4px;
+    width: 22px; height: 22px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .sb-cal-nav button:hover { background: rgba(0,200,255,0.12); color: #fff; }
+  .sb-cal-month {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 0.5px;
+  }
+  .sb-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    text-align: center;
+  }
+  .sb-cal-grid .sb-cal-head {
+    font-size: 9px;
+    color: rgba(0,200,255,0.5);
+    font-weight: 700;
+    padding: 2px 0;
+    letter-spacing: 0.5px;
+  }
+  .sb-cal-grid .sb-cal-day {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    padding: 3px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .sb-cal-grid .sb-cal-day:hover { background: rgba(0,200,255,0.1); color: #fff; }
+  .sb-cal-grid .sb-cal-day.today {
+    background: rgba(0,200,255,0.2);
+    color: #00d4ff;
+    font-weight: 700;
+    box-shadow: 0 0 6px rgba(0,212,255,0.3);
+  }
+  .sb-cal-grid .sb-cal-day.selected {
+    background: rgba(0,200,255,0.3);
+    color: #fff;
+    font-weight: 700;
+  }
+  .sb-cal-grid .sb-cal-day.empty { cursor: default; }
+  .sb-cal-selected-date {
+    margin-top: 6px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  @media (max-width: 900px) {
+    .sidebar-widget { display: none; }
+  }
+
   /* ===== HUD LEFT SIDEBAR ===== */
   .hud-sidebar {
     position: fixed;
@@ -1383,6 +1517,29 @@
     min-height: 18px;
     font-weight: 400;
   }
+  .voice-wave {
+    width: 60px; height: 8px;
+    margin: 4px auto 0;
+    border-radius: 4px;
+    background: rgba(0,180,255,0.08);
+    transition: all 0.3s ease;
+  }
+  .voice-wave.active {
+    background: linear-gradient(90deg, transparent, rgba(0,180,255,0.3), transparent);
+    animation: waveAnim 1.5s ease-in-out infinite;
+  }
+  .voice-wave.wake-active {
+    background: linear-gradient(90deg, transparent, rgba(0,255,136,0.4), transparent);
+    animation: waveAnim 0.8s ease-in-out infinite;
+  }
+  .voice-wave.processing {
+    background: linear-gradient(90deg, transparent, rgba(255,170,0,0.4), transparent);
+    animation: waveAnim 0.5s ease-in-out infinite;
+  }
+  @keyframes waveAnim {
+    0%, 100% { transform: scaleX(0.6); opacity: 0.4; }
+    50% { transform: scaleX(1); opacity: 1; }
+  }
 
   /* ===== BOTTOM WIDGETS ===== */
   /* ===== ZEUS MODEL ROUTER (inside dash-card) ===== */
@@ -1543,18 +1700,24 @@
 
   .widget-card .w-icon { font-size: 20px; margin-bottom: 6px; filter: grayscale(0.2); }
   .widget-card .w-title {
-    font-size: 10px;
+    font-size: 9px;
     color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .widget-card .w-value {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text);
     margin-top: 4px;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* ===== ERROR PANEL ===== */
@@ -1677,7 +1840,7 @@
 
   /* ===== RIGHT AI FLOW PANEL ===== */
   #ai-flow-panel {
-    width: 340px; flex-shrink: 0;
+    width: 340px; min-width: 180px; flex-shrink: 0;
     display: flex; flex-direction: column;
     background: rgba(5,5,12,0.95);
     border-left: 1px solid rgba(0,180,255,0.08);
@@ -2524,86 +2687,6 @@
   .kb-stat { font-size: 11px; color: rgba(255,255,255,0.4); padding: 6px 0; }
   .kb-stat span { color: #00d4ff; font-weight: 600; }
 
-  /* ===== NOTES CARD ===== */
-  .notes-area {
-    width: 100%; min-height: 80px; max-height: 200px;
-    background: rgba(0,10,30,0.6); border: 1px solid rgba(0,180,255,0.1);
-    border-radius: 8px; padding: 8px; color: #ddd;
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    resize: vertical; outline: none;
-  }
-  .notes-area:focus { border-color: rgba(0,180,255,0.3); }
-  .notes-save-indicator {
-    font-size: 9px; color: rgba(0,255,136,0.5);
-    font-family: 'JetBrains Mono', monospace;
-    margin-top: 4px; opacity: 0; transition: opacity 0.3s;
-  }
-  .notes-save-indicator.show { opacity: 1; }
-
-  /* ===== TIMER CARD ===== */
-  .timer-display {
-    font-family: 'Orbitron', monospace;
-    font-size: 32px; color: #00d4ff;
-    text-align: center; padding: 12px 0;
-    letter-spacing: 3px;
-    text-shadow: 0 0 20px rgba(0,212,255,0.3);
-  }
-  .timer-btns {
-    display: flex; gap: 8px; justify-content: center; margin-top: 8px;
-  }
-  .timer-btn {
-    padding: 6px 16px; border-radius: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; text-transform: uppercase;
-    letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
-    border: 1px solid rgba(0,180,255,0.2);
-    background: rgba(0,180,255,0.05); color: #00d4ff;
-  }
-  .timer-btn:hover { background: rgba(0,180,255,0.15); }
-  .timer-btn.active { background: rgba(0,255,136,0.1); border-color: rgba(0,255,136,0.3); color: #00ff88; }
-  .timer-btn.stop { border-color: rgba(231,76,60,0.3); color: #e74c3c; }
-  .timer-presets {
-    display: flex; gap: 6px; justify-content: center; margin-top: 8px;
-  }
-  .timer-preset {
-    padding: 3px 10px; border-radius: 6px; font-size: 9px;
-    background: rgba(0,10,30,0.6); border: 1px solid rgba(0,180,255,0.1);
-    color: rgba(255,255,255,0.4); cursor: pointer; font-family: 'JetBrains Mono', monospace;
-    transition: all 0.2s;
-  }
-  .timer-preset:hover { border-color: rgba(0,180,255,0.3); color: #00d4ff; }
-
-  /* ===== CALENDAR CARD ===== */
-  .cal-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 8px;
-  }
-  .cal-month {
-    font-family: 'Orbitron', monospace; font-size: 11px;
-    color: rgba(0,212,255,0.8); letter-spacing: 2px;
-  }
-  .cal-nav { display: flex; gap: 6px; }
-  .cal-nav button {
-    width: 22px; height: 22px; border-radius: 50%;
-    border: 1px solid rgba(0,180,255,0.15); background: rgba(0,10,30,0.6);
-    color: #00d4ff; cursor: pointer; font-size: 10px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-  .cal-nav button:hover { border-color: rgba(0,180,255,0.4); }
-  .cal-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
-    text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10px;
-  }
-  .cal-day-label { color: rgba(0,212,255,0.4); font-size: 8px; padding: 4px 0; text-transform: uppercase; }
-  .cal-day {
-    padding: 4px; border-radius: 4px; color: rgba(255,255,255,0.5);
-    cursor: pointer; transition: all 0.2s;
-  }
-  .cal-day:hover { background: rgba(0,180,255,0.1); color: #fff; }
-  .cal-day.today { background: rgba(0,212,255,0.15); color: #00d4ff; font-weight: 700; border: 1px solid rgba(0,212,255,0.3); }
-  .cal-day.other-month { color: rgba(255,255,255,0.15); }
-
   /* Voice waveform indicator */
   .voice-wave {
     display: none;
@@ -2696,9 +2779,6 @@
     [data-card-id="llm-status"]  { grid-column: 1 / span 6; grid-row: auto; }
     [data-card-id="smart-suggest"]{ grid-column: 1 / span 6; grid-row: auto; }
     [data-card-id="quick-actions"]{ grid-column: 1 / span 6; grid-row: auto; }
-    [data-card-id="notes"]       { grid-column: 1 / span 3; grid-row: auto; }
-    [data-card-id="timer"]       { grid-column: 4 / span 3; grid-row: auto; }
-    [data-card-id="calendar"]    { grid-column: 1 / span 6; grid-row: auto; }
     .top-bar .logo { font-size: 18px; letter-spacing: 3px; }
     .top-bar-widgets { gap: 10px; }
     .tbw-item { min-width: 90px; }
@@ -2797,38 +2877,6 @@
 <canvas id="particles"></canvas>
 <div class="hex-grid"></div>
 
-    <div class="dash-card" data-card-id="notes">
-      <div class="dash-card-title">&#128221; Quick Notes <span class="expand-arrow">&#9660;</span></div>
-      <textarea class="notes-area" id="mj-notes" placeholder="Type notes here... auto-saved."></textarea>
-      <div class="notes-save-indicator" id="notes-saved">&#10003; Saved</div>
-    </div>
-
-    <div class="dash-card" data-card-id="timer">
-      <div class="dash-card-title">&#9201; Focus Timer <span class="expand-arrow">&#9660;</span></div>
-      <div class="timer-display" id="timer-display">00:00</div>
-      <div class="timer-btns">
-        <button class="timer-btn" id="timer-start">Start</button>
-        <button class="timer-btn stop" id="timer-reset">Reset</button>
-      </div>
-      <div class="timer-presets">
-        <button class="timer-preset" data-mins="5">5m</button>
-        <button class="timer-preset" data-mins="15">15m</button>
-        <button class="timer-preset" data-mins="25">25m</button>
-        <button class="timer-preset" data-mins="45">45m</button>
-      </div>
-    </div>
-
-    <div class="dash-card" data-card-id="calendar">
-      <div class="dash-card-title">&#128197; Calendar <span class="expand-arrow">&#9660;</span></div>
-      <div class="cal-header">
-        <span class="cal-month" id="cal-month"></span>
-        <div class="cal-nav">
-          <button id="cal-prev">&#9664;</button>
-          <button id="cal-next">&#9654;</button>
-        </div>
-      </div>
-      <div class="cal-grid" id="cal-grid"></div>
-    </div>
 
 <div class="scanline"></div>
 
@@ -2950,6 +2998,32 @@
       <div class="hud-detail-label">ROADMAP</div>
       <div class="hud-detail-value" style="font-size:10px;color:#ffd900;">V1 → V25</div>
     </div>
+  </div>
+
+  <div class="hud-divider"></div>
+
+  <!-- Focus Time Widget -->
+  <div class="sidebar-widget" id="sidebar-focus">
+    <div class="sidebar-widget-title">&#127919; Focus Time</div>
+    <div class="focus-display" id="focus-display">25:00</div>
+    <div class="focus-status" id="focus-status" data-state="ready">Ready</div>
+    <div class="focus-btns">
+      <button class="focus-btn primary" id="focus-start">Start</button>
+      <button class="focus-btn" id="focus-pause">Pause</button>
+      <button class="focus-btn" id="focus-reset">Reset</button>
+    </div>
+  </div>
+
+  <!-- Sidebar Calendar Widget -->
+  <div class="sidebar-widget" id="sidebar-calendar">
+    <div class="sidebar-widget-title">&#128197; Calendar</div>
+    <div class="sb-cal-nav">
+      <button id="sb-cal-prev">&#9664;</button>
+      <span class="sb-cal-month" id="sb-cal-month">June 2026</span>
+      <button id="sb-cal-next">&#9654;</button>
+    </div>
+    <div class="sb-cal-grid" id="sb-cal-grid"></div>
+    <div class="sb-cal-selected-date" id="sb-cal-selected"></div>
   </div>
 
   <!-- Uptime -->
@@ -3300,6 +3374,16 @@
         </div>
         <div class="orb-alert" id="orb-alert"></div>
         <div class="orb-mic-status" id="mic-status">Initializing...</div>
+        <div class="voice-wave" id="voice-wave"></div>
+        <select class="voice-lang-select" id="voice-lang" style="position:absolute;bottom:4px;right:4px;background:rgba(0,20,40,0.8);color:var(--text-dim);border:1px solid var(--glass-border);border-radius:4px;font-size:9px;padding:1px 4px;opacity:0.6;cursor:pointer;">
+          <option value="en-US">EN</option>
+          <option value="hi-IN">HI</option>
+          <option value="es-ES">ES</option>
+          <option value="fr-FR">FR</option>
+          <option value="de-DE">DE</option>
+          <option value="ja-JP">JA</option>
+          <option value="zh-CN">ZH</option>
+        </select>
       </div>
       <!-- Orb Settings Panel (positioned below orb) -->
       <div class="orb-settings-panel" id="orb-settings-panel">
@@ -4820,14 +4904,12 @@ document.getElementById("fullscreen-btn").addEventListener("click", () => {
 // Chat panel slide toggle
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
 const chatPanelEl = document.getElementById('chat-panel');
-let chatPanelVisible = false;
+let chatPanelVisible = true;
 let chatManuallyHidden = false;
 
-// Start hidden by default
-chatPanelEl.classList.add('hidden');
-chatToggleBtn.classList.add('panel-hidden');
-chatToggleBtn.innerHTML = '&#9664;';
-chatToggleBtn.title = 'Show Chat';
+// Start visible by default
+chatToggleBtn.innerHTML = '&#9654;';
+chatToggleBtn.title = 'Hide Chat';
 
 function showChatPanel() {
   if (chatPanelVisible) return;
@@ -4901,8 +4983,9 @@ let wakeDetected = false;
 let firstWakeDone = false;
 let wakeTimeout = null;
 
-function setMicStatus(text) { micStatus.textContent = text; }
+function setMicStatus(text) { if (micStatus) micStatus.textContent = text; }
 function setWaveState(state) {
+  if (!voiceWave) return;
   voiceWave.classList.remove("active", "wake-active", "processing");
   if (state) { voiceWave.classList.add("active"); if (state !== "idle") voiceWave.classList.add(state); }
 }
@@ -4913,11 +4996,7 @@ const langMap = {"en":"en-US","hi":"hi-IN","es":"es-ES","fr":"fr-FR","de":"de-DE
 const detectedLang = langMap[browserLang.split("-")[0]] || "en-US";
 // Set saved or detected language
 const savedLang = localStorage.getItem("mj-voice-lang") || detectedLang;
-voiceLang.value = savedLang;
-voiceLang.addEventListener("change", function() {
-  localStorage.setItem("mj-voice-lang", this.value);
-  if (listening && recognition) { recognition.lang = this.value; try { recognition.stop(); } catch(e) {} }
-});
+if (voiceLang) voiceLang.value = savedLang;
 
 // ── Wake word patterns (multi-language) ──
 const WAKE_PATTERNS = [
@@ -4965,6 +5044,15 @@ if (SpeechRecognition) {
   recognition.continuous = false;
   recognition.interimResults = true;
   recognition.maxAlternatives = 3;
+
+  // Language change handler (recognition is in scope here)
+  if (voiceLang) {
+    voiceLang.addEventListener("change", function() {
+      localStorage.setItem("mj-voice-lang", this.value);
+      recognition.lang = this.value;
+      if (listening) { try { recognition.stop(); } catch(e) {} }
+    });
+  }
 
   function startListening() {
     listening = true; micBtn.classList.add("recording");
@@ -5655,124 +5743,6 @@ updateSuggestions(); setInterval(updateSuggestions, 60000); // Refresh every 60s
   }
 })();
 
-// ===== NOTES CARD =====
-(function() {
-  const notes = document.getElementById("mj-notes");
-  const saved = document.getElementById("notes-saved");
-  if (!notes) return;
-  notes.value = localStorage.getItem("mj-quick-notes") || "";
-  let saveTimer = null;
-  notes.addEventListener("input", () => {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      localStorage.setItem("mj-quick-notes", notes.value);
-      saved.classList.add("show");
-      setTimeout(() => saved.classList.remove("show"), 1500);
-    }, 500);
-  });
-})();
-
-// ===== TIMER CARD =====
-(function() {
-  const display = document.getElementById("timer-display");
-  const startBtn = document.getElementById("timer-start");
-  const resetBtn = document.getElementById("timer-reset");
-  if (!display) return;
-  let seconds = 0, interval = null, countDown = false, targetSecs = 0;
-
-  function fmt(s) {
-    const m = Math.floor(s / 60), ss = s % 60;
-    return String(m).padStart(2,"0") + ":" + String(ss).padStart(2,"0");
-  }
-
-  function tick() {
-    if (countDown) {
-      seconds--;
-      if (seconds <= 0) {
-        clearInterval(interval); interval = null;
-        seconds = 0;
-        startBtn.textContent = "Start"; startBtn.classList.remove("active");
-        display.style.color = "#00ff88";
-        if (typeof sendNotification === "function") sendNotification("MJ Timer", "Time is up!");
-        showOrbAlert("TIMER COMPLETE", "success", 5000);
-      }
-    } else {
-      seconds++;
-    }
-    display.textContent = fmt(seconds);
-  }
-
-  startBtn.addEventListener("click", () => {
-    if (interval) {
-      clearInterval(interval); interval = null;
-      startBtn.textContent = "Start"; startBtn.classList.remove("active");
-    } else {
-      interval = setInterval(tick, 1000);
-      startBtn.textContent = "Pause"; startBtn.classList.add("active");
-      display.style.color = "";
-    }
-  });
-
-  resetBtn.addEventListener("click", () => {
-    clearInterval(interval); interval = null;
-    seconds = 0; countDown = false;
-    display.textContent = "00:00"; display.style.color = "";
-    startBtn.textContent = "Start"; startBtn.classList.remove("active");
-  });
-
-  document.querySelectorAll(".timer-preset").forEach(btn => {
-    btn.addEventListener("click", () => {
-      clearInterval(interval); interval = null;
-      seconds = parseInt(btn.dataset.mins) * 60;
-      countDown = true; targetSecs = seconds;
-      display.textContent = fmt(seconds); display.style.color = "";
-      startBtn.textContent = "Start"; startBtn.classList.remove("active");
-    });
-  });
-})();
-
-// ===== CALENDAR CARD =====
-(function() {
-  const monthEl = document.getElementById("cal-month");
-  const gridEl = document.getElementById("cal-grid");
-  const prevBtn = document.getElementById("cal-prev");
-  const nextBtn = document.getElementById("cal-next");
-  if (!gridEl) return;
-
-  let viewDate = new Date();
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const DAYS = ["Su","Mo","Tu","We","Th","Fr","Sa"];
-
-  function render() {
-    const y = viewDate.getFullYear(), m = viewDate.getMonth();
-    monthEl.textContent = MONTHS[m] + " " + y;
-    const firstDay = new Date(y, m, 1).getDay();
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const prevDays = new Date(y, m, 0).getDate();
-    const today = new Date();
-    let html = DAYS.map(d => '<div class="cal-day-label">' + d + '</div>').join("");
-    // Previous month days
-    for (let i = firstDay - 1; i >= 0; i--) {
-      html += '<div class="cal-day other-month">' + (prevDays - i) + '</div>';
-    }
-    // Current month
-    for (let d = 1; d <= daysInMonth; d++) {
-      const isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear();
-      html += '<div class="cal-day' + (isToday ? ' today' : '') + '">' + d + '</div>';
-    }
-    // Next month fill
-    const totalCells = firstDay + daysInMonth;
-    const remaining = (7 - (totalCells % 7)) % 7;
-    for (let d = 1; d <= remaining; d++) {
-      html += '<div class="cal-day other-month">' + d + '</div>';
-    }
-    gridEl.innerHTML = html;
-  }
-
-  prevBtn.addEventListener("click", () => { viewDate.setMonth(viewDate.getMonth() - 1); render(); });
-  nextBtn.addEventListener("click", () => { viewDate.setMonth(viewDate.getMonth() + 1); render(); });
-  render();
-})();
 
 // ===== DESKTOP NOTIFICATIONS =====
 async function sendNotification(title, msg) {
@@ -5998,15 +5968,12 @@ input.focus();
     "ai-core":      { col:1,  row:1,  w:4,  h:5 },
     "live-intel":   { col:5,  row:1,  w:4,  h:5 },
     "quick-cmd":    { col:9,  row:1,  w:4,  h:5 },
-    "sys-monitor":  { col:1,  row:6,  w:3,  h:3 },
+    "sys-monitor":  { col:1,  row:6,  w:3,  h:6 },
     "orb":          { col:4,  row:6,  w:6,  h:6 },
-    "sys-stats":    { col:10, row:6,  w:3,  h:3 },
+    "sys-stats":    { col:10, row:6,  w:3,  h:6 },
     "llm-status":   { col:1,  row:12, w:12, h:3 },
     "smart-suggest":{ col:1,  row:15, w:12, h:2 },
-    "quick-actions":{ col:1,  row:17, w:12, h:2 },
-    "notes":        { col:1,  row:19, w:4,  h:4 },
-    "timer":        { col:5,  row:19, w:4,  h:4 },
-    "calendar":     { col:9,  row:19, w:4,  h:4 }
+    "quick-actions":{ col:1,  row:17, w:12, h:2 }
   };
 
   function getCards() {
@@ -6439,9 +6406,13 @@ input.focus();
   const handle = document.getElementById("aifp-resize-handle");
   if (!panel || !handle) return;
 
-  // Load saved width
+  // Load saved width (validate bounds)
   const savedW = localStorage.getItem("mj-aiflow-width");
-  if (savedW) panel.style.width = savedW;
+  if (savedW) {
+    const pw = parseInt(savedW);
+    if (pw >= 180 && pw <= 600) panel.style.width = savedW;
+    else localStorage.removeItem("mj-aiflow-width");
+  }
 
   handle.addEventListener("mousedown", function(e) {
     e.preventDefault();
@@ -7129,6 +7100,162 @@ input.focus();
     localStorage.removeItem("mj-dash-settings");
     location.reload();
   });
+})();
+
+// ===== SIDEBAR FOCUS TIME WIDGET =====
+(function() {
+  var FOCUS_DURATION = 25 * 60;
+  var remaining = FOCUS_DURATION;
+  var timer = null;
+  var state = "ready";
+
+  var display = document.getElementById("focus-display");
+  var statusEl = document.getElementById("focus-status");
+  var startBtn = document.getElementById("focus-start");
+  var pauseBtn = document.getElementById("focus-pause");
+  var resetBtn = document.getElementById("focus-reset");
+
+  function fmt(s) {
+    var m = Math.floor(s / 60);
+    var sec = s % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
+  }
+
+  function updateUI() {
+    display.textContent = fmt(remaining);
+    statusEl.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+    statusEl.setAttribute("data-state", state);
+  }
+
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(timer);
+      timer = null;
+      state = "completed";
+      remaining = 0;
+      updateUI();
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("Focus Session Complete", { body: "Great work! Take a break." });
+      }
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [523.25, 659.25, 783.99].forEach(function(freq, i) {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          osc.type = "sine";
+          gain.gain.value = 0.1;
+          osc.start(ctx.currentTime + i * 0.2);
+          osc.stop(ctx.currentTime + i * 0.2 + 0.15);
+        });
+      } catch(e) {}
+      return;
+    }
+    remaining--;
+    updateUI();
+  }
+
+  startBtn.addEventListener("click", function() {
+    if (state === "running") return;
+    if (state === "completed") { remaining = FOCUS_DURATION; }
+    state = "running";
+    updateUI();
+    if (timer) clearInterval(timer);
+    timer = setInterval(tick, 1000);
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  });
+
+  pauseBtn.addEventListener("click", function() {
+    if (state !== "running") return;
+    clearInterval(timer);
+    timer = null;
+    state = "paused";
+    updateUI();
+  });
+
+  resetBtn.addEventListener("click", function() {
+    clearInterval(timer);
+    timer = null;
+    remaining = FOCUS_DURATION;
+    state = "ready";
+    updateUI();
+  });
+
+  updateUI();
+})();
+
+// ===== SIDEBAR CALENDAR WIDGET =====
+(function() {
+  var now = new Date();
+  var viewYear = now.getFullYear();
+  var viewMonth = now.getMonth();
+  var selectedDate = null;
+
+  var monthEl = document.getElementById("sb-cal-month");
+  var gridEl = document.getElementById("sb-cal-grid");
+  var selectedEl = document.getElementById("sb-cal-selected");
+  var prevBtn = document.getElementById("sb-cal-prev");
+  var nextBtn = document.getElementById("sb-cal-next");
+
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var DAYS = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+
+  function render() {
+    monthEl.textContent = MONTHS[viewMonth] + " " + viewYear;
+    gridEl.innerHTML = "";
+    DAYS.forEach(function(d) {
+      var span = document.createElement("span");
+      span.className = "sb-cal-head";
+      span.textContent = d;
+      gridEl.appendChild(span);
+    });
+    var firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    firstDay = (firstDay + 6) % 7;
+    var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    var today = new Date();
+    var todayY = today.getFullYear(), todayM = today.getMonth(), todayD = today.getDate();
+    for (var e = 0; e < firstDay; e++) {
+      var empty = document.createElement("span");
+      empty.className = "sb-cal-day empty";
+      gridEl.appendChild(empty);
+    }
+    for (var d = 1; d <= daysInMonth; d++) {
+      var cell = document.createElement("span");
+      cell.className = "sb-cal-day";
+      cell.textContent = d;
+      cell.setAttribute("data-day", d);
+      if (d === todayD && viewMonth === todayM && viewYear === todayY) cell.classList.add("today");
+      if (selectedDate && d === selectedDate.d && viewMonth === selectedDate.m && viewYear === selectedDate.y) cell.classList.add("selected");
+      gridEl.appendChild(cell);
+    }
+  }
+
+  gridEl.addEventListener("click", function(ev) {
+    var t = ev.target;
+    if (!t.classList.contains("sb-cal-day") || t.classList.contains("empty")) return;
+    var day = parseInt(t.getAttribute("data-day"));
+    selectedDate = { y: viewYear, m: viewMonth, d: day };
+    render();
+    var dateObj = new Date(viewYear, viewMonth, day);
+    selectedEl.textContent = "Selected: " + dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  });
+
+  prevBtn.addEventListener("click", function() {
+    viewMonth--;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    render();
+  });
+  nextBtn.addEventListener("click", function() {
+    viewMonth++;
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    render();
+  });
+
+  render();
 })();
 </script>
 </body>

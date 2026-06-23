@@ -1,22 +1,9 @@
 {
-  "date": "2026-06-22",
+  "date": "2026-06-23",
   "apps": {
-    "MJ Assistant Control Panel": 119.08098500000001,
-    "Google Chrome": 1861.7139389999998,
-    "Claude": 6807.377815000001,
-    "Unknown": 1178.18174,
-    "Snipping Tool Overlay": 44.917916999999996,
-    "VS Code": 186.609236,
-    "File Explorer": 28.11497,
-    "http://localhost:8000 wants to": 39.707017,
-    "Snipping Tool": 28.130594000000002,
-    "Microsoft Teams": 5.461779,
-    "uvicorn  main:app --host 0.0.0": 16.402622,
-    "Search": 6.059104,
-    "Windows Default Lock Screen": 5.675137,
-    "New notification": 5.434218,
-    "WPS Office": 107.919277,
-    "Task Switching": 5.46697
+    "Unknown": 6.174739,
+    "Google Chrome": 89.19409,
+    "Snipping Tool Overlay": 5.602611
   },
-  "session_start": "2026-06-22T20:15:15.440769"
+  "session_start": "2026-06-23T07:11:02.755985"
 }

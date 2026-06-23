@@ -19,6 +19,26 @@
       "tokens": 0,
       "success": true,
       "error": null
+    },
+    {
+      "timestamp": "2026-06-22T22:56:55.786983",
+      "user_msg_preview": "bbn",
+      "model": "qwen3:8b",
+      "task_type": "chat",
+      "response_time_sec": 0.66,
+      "tokens": 0,
+      "success": true,
+      "error": null
+    },
+    {
+      "timestamp": "2026-06-23T07:11:45.383219",
+      "user_msg_preview": "gm",
+      "model": "qwen3:8b",
+      "task_type": "chat",
+      "response_time_sec": 0.6,
+      "tokens": 0,
+      "success": true,
+      "error": null
     }
   ]
 }

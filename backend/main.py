@@ -47,7 +47,7 @@ from intelligence.context_memory import (
 )
 from intelligence.multi_model import needs_deep_reasoning, chain_of_thought, multi_perspective
 from intelligence.live_data import detect_live_data_request, get_live_cricket_scores, get_live_weather, extract_city_from_text
-from intelligence.error_learner import log_error, log_performance, get_diagnostics, get_live_issues
+from intelligence.error_learner import log_error as el_log_error, log_performance, get_diagnostics, get_live_issues
 from intelligence.ocr_engine import ocr_from_file, ocr_screenshot, detect_ocr_request
 from intelligence.smart_suggestions import get_all_suggestions, detect_suggestion_request
 
@@ -279,17 +279,19 @@ async def execute_pc_command(req: CommandRequest):
 @app.get("/system-stats")
 async def system_stats():
     """Get real CPU, RAM, Disk stats."""
-    stats = get_system_stats()
+    import asyncio
+    stats = await asyncio.to_thread(get_system_stats)
     # Check for system warnings and create alerts
     check_system_warnings(stats)
     return stats
 
 
 @app.get("/top-processes")
-async def top_processes():
+async def top_processes_stats():
     """Get top processes sorted by CPU/RAM usage."""
+    import asyncio
     from pc_control.system_stats import get_top_processes
-    return {"processes": get_top_processes()}
+    return {"processes": await asyncio.to_thread(get_top_processes)}
 
 
 @app.get("/reminders")
@@ -395,24 +397,27 @@ async def list_tasks_endpoint():
 
 
 @app.get("/processes")
-async def top_processes():
+async def list_processes():
     """Get top processes by CPU usage."""
+    import asyncio
     from pc_control.process_manager import get_top_processes
-    return {"processes": get_top_processes()}
+    return {"processes": await asyncio.to_thread(get_top_processes)}
 
 
 @app.post("/processes/{pid}/kill")
 async def kill_proc(pid: int):
     """Kill a process by PID."""
+    import asyncio
     from pc_control.process_manager import kill_process
-    return kill_process(pid)
+    return await asyncio.to_thread(kill_process, pid)
 
 
 @app.get("/network-stats")
 async def network_stats():
     """Get network usage."""
+    import asyncio
     from pc_control.process_manager import get_network_stats
-    return get_network_stats()
+    return await asyncio.to_thread(get_network_stats)
 
 
 class NotifyRequest(BaseModel):
