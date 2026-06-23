@@ -1,5 +1,11 @@
 [
   {
+    "content": "Use this prompt for Claude Code:\n\n---\n\n# Bug Fix: Left Sidebar Content Does Not Expand While Resizing\n\nThere is a bug in the left sidebar resize functionality.\n\n## Current Issue\n\nWhen I drag the resize handle:\n\n* ? The **left sidebar container width increases**.\n* ? The **content inside the sidebar does not expand**.\n* ? Widgets remain at their old width.\n* ? There is only empty space added to the right side.\n\nThe sidebar and all its child components should resize together.\n\n---\n\n## Expected Beh",
+    "time": "09:51 AM",
+    "timestamp": "2026-06-23T09:51:40.797969",
+    "preview": "Use this prompt for Claude Code:  ---  # Bug Fix: Left Sidebar Content Does Not "
+  },
+  {
     "content": "git add .\ngit commit -m \"Fix backend: psutil stats, async subprocess, duplicate functions, import conflicts\"\ngit push",
     "time": "11:12 PM",
     "timestamp": "2026-06-22T23:12:11.246032",

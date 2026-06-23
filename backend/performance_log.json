@@ -39,6 +39,16 @@
       "tokens": 0,
       "success": true,
       "error": null
+    },
+    {
+      "timestamp": "2026-06-23T10:00:14.103428",
+      "user_msg_preview": "hi",
+      "model": "qwen3:8b",
+      "task_type": "chat",
+      "response_time_sec": 0.69,
+      "tokens": 0,
+      "success": true,
+      "error": null
     }
   ]
 }

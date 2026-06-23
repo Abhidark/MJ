@@ -1096,13 +1096,15 @@
 
   /* ===== SIDEBAR FOCUS TIME & CALENDAR WIDGETS ===== */
   .sidebar-widget {
-    width: 185px;
+    width: calc(100% - 20px);
+    box-sizing: border-box;
     background: rgba(0,20,40,0.6);
     border: 1px solid rgba(0,200,255,0.12);
     border-radius: 8px;
     padding: 10px;
-    margin: 2px 0;
+    margin: 2px 10px;
     flex-shrink: 0;
+    overflow: hidden;
   }
   .sidebar-widget-title {
     font-size: 10px;
@@ -1115,52 +1117,6 @@
     align-items: center;
     gap: 6px;
   }
-  .focus-display {
-    font-family: 'Courier New', monospace;
-    font-size: 28px;
-    font-weight: 700;
-    color: #00d4ff;
-    text-align: center;
-    text-shadow: 0 0 12px rgba(0,212,255,0.4);
-    margin: 6px 0;
-    letter-spacing: 2px;
-  }
-  .focus-status {
-    text-align: center;
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    display: inline-block;
-    width: 100%;
-  }
-  .focus-status[data-state="ready"]     { color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.04); }
-  .focus-status[data-state="running"]   { color: #00ff88; background: rgba(0,255,136,0.08); }
-  .focus-status[data-state="paused"]    { color: #ffd900; background: rgba(255,217,0,0.08); }
-  .focus-status[data-state="completed"] { color: #ff6b6b; background: rgba(255,107,107,0.08); }
-  .focus-btns {
-    display: flex;
-    gap: 4px;
-  }
-  .focus-btn {
-    flex: 1;
-    padding: 5px 0;
-    border: 1px solid rgba(0,200,255,0.15);
-    background: rgba(0,200,255,0.06);
-    color: rgba(255,255,255,0.7);
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    transition: all 0.2s;
-  }
-  .focus-btn:hover { background: rgba(0,200,255,0.15); color: #fff; }
-  .focus-btn.primary { background: rgba(0,200,255,0.15); color: #00d4ff; border-color: rgba(0,200,255,0.3); }
-  .focus-btn.primary:hover { background: rgba(0,200,255,0.25); }
   .sb-cal-nav {
     display: flex;
     align-items: center;
@@ -1235,7 +1191,7 @@
   .hud-sidebar {
     position: fixed;
     left: 0; top: 0;
-    width: 210px;
+    width: var(--sidebar-w, 210px);
     height: 100vh;
     z-index: 50;
     display: flex;
@@ -1248,9 +1204,36 @@
     backdrop-filter: blur(12px);
     overflow-y: auto;
     overflow-x: hidden;
+    transition: width 0.15s ease;
   }
-  .hud-sidebar .hud-detail { opacity: 1; max-width: 140px; margin-left: 8px; }
-  .hud-sidebar .hud-item { justify-content: flex-start; padding-left: 14px; }
+  .hud-sidebar.resizing { transition: none; }
+  .hud-sidebar .hud-detail { opacity: 1; flex: 1; min-width: 0; margin-left: 8px; transition: opacity 0.2s; }
+  .hud-sidebar .hud-item { justify-content: flex-start; padding: 6px 12px; box-sizing: border-box; }
+  .hud-sidebar.sidebar-icons-only .hud-detail { opacity: 0; flex: 0; max-width: 0; margin-left: 0; overflow: hidden; }
+  .hud-sidebar.sidebar-icons-only .hud-item { justify-content: center; padding-left: 0; }
+  .hud-sidebar.sidebar-icons-only .sidebar-widget { display: none; }
+
+  /* Sidebar resize handle */
+  .sidebar-resize-handle {
+    position: fixed;
+    left: var(--sidebar-w, 210px);
+    top: 0;
+    width: 6px;
+    height: 100vh;
+    z-index: 51;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.2s, left 0.15s ease;
+  }
+  .sidebar-resize-handle:hover,
+  .sidebar-resize-handle.active {
+    background: linear-gradient(180deg, rgba(0,200,255,0.3) 0%, rgba(0,120,255,0.15) 50%, rgba(0,200,255,0.3) 100%);
+  }
+  .sidebar-resize-handle.active {
+    width: 8px;
+    box-shadow: 0 0 12px rgba(0,200,255,0.25);
+  }
+  .sidebar-resize-handle.resizing { transition: none; }
 
   .hud-corner-tl {
     position: absolute; top: 0; left: 0;
@@ -1304,8 +1287,8 @@
   .hud-hex-dot.crit { background: #e74c3c; box-shadow: 0 0 6px rgba(231,76,60,0.5); }
 
   .hud-detail {
-    opacity: 1;
-    max-width: 140px;
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     margin-left: 8px;
@@ -1321,7 +1304,7 @@
     color: rgba(0,220,255,0.9);
   }
   .hud-detail-bar {
-    width: 100px; height: 3px;
+    width: 100%; height: 3px;
     background: rgba(255,255,255,0.06);
     border-radius: 2px; margin-top: 3px;
     overflow: hidden;
@@ -1440,7 +1423,8 @@
   .hud-item.clickable:hover { background: rgba(0,200,255,0.04); border-radius: 8px; }
 
   /* Push dashboard content to make room for sidebar */
-  #dashboard { margin-left: 210px; }
+  #dashboard { margin-left: var(--sidebar-w, 210px); transition: margin-left 0.15s ease; }
+  #dashboard.resizing { transition: none; }
 
   .orb-status {
     margin-top: 24px;
@@ -2760,9 +2744,10 @@
 
   /* Medium screens — hide AI Flow, compact sidebar */
   @media (max-width: 1200px) {
-    .hud-sidebar { width: 60px; padding: 10px 0; }
+    .hud-sidebar { width: 60px; padding: 10px 0; --sidebar-w: 60px; }
     .hud-sidebar .hud-detail { display: none; }
     .hud-sidebar .hud-item { justify-content: center; padding-left: 0; }
+    .sidebar-resize-handle { display: none; }
     #dashboard { margin-left: 60px; }
     #ai-flow-panel { display: none; }
     #chat-panel { width: 340px; }
@@ -2787,6 +2772,7 @@
   /* Small screens — compact grid, no sidebar */
   @media (max-width: 900px) {
     .hud-sidebar { display: none; }
+    .sidebar-resize-handle { display: none; }
     #dashboard { margin-left: 0; }
     .dash-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; }
     [data-card-id] { grid-column: 1 / span 4 !important; grid-row: auto !important; }
@@ -3002,18 +2988,6 @@
 
   <div class="hud-divider"></div>
 
-  <!-- Focus Time Widget -->
-  <div class="sidebar-widget" id="sidebar-focus">
-    <div class="sidebar-widget-title">&#127919; Focus Time</div>
-    <div class="focus-display" id="focus-display">25:00</div>
-    <div class="focus-status" id="focus-status" data-state="ready">Ready</div>
-    <div class="focus-btns">
-      <button class="focus-btn primary" id="focus-start">Start</button>
-      <button class="focus-btn" id="focus-pause">Pause</button>
-      <button class="focus-btn" id="focus-reset">Reset</button>
-    </div>
-  </div>
-
   <!-- Sidebar Calendar Widget -->
   <div class="sidebar-widget" id="sidebar-calendar">
     <div class="sidebar-widget-title">&#128197; Calendar</div>
@@ -3037,6 +3011,7 @@
     </div>
   </div>
 </div>
+<div class="sidebar-resize-handle" id="sidebar-resize-handle"></div>
 
 <!-- Process List Panel -->
 <div class="proc-panel" id="proc-panel">
@@ -6242,6 +6217,8 @@ input.focus();
         };
       });
       localStorage.setItem("mj-dash-layout", JSON.stringify({ layout, v: 4 }));
+      // Also persist sidebar width when saving layout
+      try { var sw = getComputedStyle(document.documentElement).getPropertyValue("--sidebar-w"); if (sw) localStorage.setItem("mj-sidebar-width", parseInt(sw)); } catch(e) {}
     } else {
       // Restore saved state
       if (savedState) {
@@ -7102,92 +7079,6 @@ input.focus();
   });
 })();
 
-// ===== SIDEBAR FOCUS TIME WIDGET =====
-(function() {
-  var FOCUS_DURATION = 25 * 60;
-  var remaining = FOCUS_DURATION;
-  var timer = null;
-  var state = "ready";
-
-  var display = document.getElementById("focus-display");
-  var statusEl = document.getElementById("focus-status");
-  var startBtn = document.getElementById("focus-start");
-  var pauseBtn = document.getElementById("focus-pause");
-  var resetBtn = document.getElementById("focus-reset");
-
-  function fmt(s) {
-    var m = Math.floor(s / 60);
-    var sec = s % 60;
-    return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
-  }
-
-  function updateUI() {
-    display.textContent = fmt(remaining);
-    statusEl.textContent = state.charAt(0).toUpperCase() + state.slice(1);
-    statusEl.setAttribute("data-state", state);
-  }
-
-  function tick() {
-    if (remaining <= 0) {
-      clearInterval(timer);
-      timer = null;
-      state = "completed";
-      remaining = 0;
-      updateUI();
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        new Notification("Focus Session Complete", { body: "Great work! Take a break." });
-      }
-      try {
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
-        [523.25, 659.25, 783.99].forEach(function(freq, i) {
-          var osc = ctx.createOscillator();
-          var gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.value = freq;
-          osc.type = "sine";
-          gain.gain.value = 0.1;
-          osc.start(ctx.currentTime + i * 0.2);
-          osc.stop(ctx.currentTime + i * 0.2 + 0.15);
-        });
-      } catch(e) {}
-      return;
-    }
-    remaining--;
-    updateUI();
-  }
-
-  startBtn.addEventListener("click", function() {
-    if (state === "running") return;
-    if (state === "completed") { remaining = FOCUS_DURATION; }
-    state = "running";
-    updateUI();
-    if (timer) clearInterval(timer);
-    timer = setInterval(tick, 1000);
-    if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  });
-
-  pauseBtn.addEventListener("click", function() {
-    if (state !== "running") return;
-    clearInterval(timer);
-    timer = null;
-    state = "paused";
-    updateUI();
-  });
-
-  resetBtn.addEventListener("click", function() {
-    clearInterval(timer);
-    timer = null;
-    remaining = FOCUS_DURATION;
-    state = "ready";
-    updateUI();
-  });
-
-  updateUI();
-})();
-
 // ===== SIDEBAR CALENDAR WIDGET =====
 (function() {
   var now = new Date();
@@ -7256,6 +7147,113 @@ input.focus();
   });
 
   render();
+})();
+
+/* ===== RESIZABLE LEFT SIDEBAR ===== */
+(function() {
+  var SIDEBAR_MIN = 80;
+  var SIDEBAR_DEFAULT = 210;
+  var SIDEBAR_MAX = 380;
+  var ICON_ONLY_THRESHOLD = 120;
+  var STORAGE_KEY = "mj-sidebar-width";
+
+  var sidebar = document.getElementById("hud-sidebar");
+  var handle = document.getElementById("sidebar-resize-handle");
+  var dashboard = document.getElementById("dashboard");
+  if (!sidebar || !handle) return;
+
+  var currentWidth = SIDEBAR_DEFAULT;
+  var isResizing = false;
+
+  function applySidebarWidth(w, animate) {
+    w = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, Math.round(w)));
+    currentWidth = w;
+    document.documentElement.style.setProperty("--sidebar-w", w + "px");
+    // Toggle icon-only mode
+    if (w < ICON_ONLY_THRESHOLD) {
+      sidebar.classList.add("sidebar-icons-only");
+    } else {
+      sidebar.classList.remove("sidebar-icons-only");
+    }
+  }
+
+  function saveSidebarWidth() {
+    try { localStorage.setItem(STORAGE_KEY, String(currentWidth)); } catch(e) {}
+  }
+
+  function loadSidebarWidth() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        var v = parseInt(saved, 10);
+        if (!isNaN(v) && v >= SIDEBAR_MIN && v <= SIDEBAR_MAX) return v;
+      }
+    } catch(e) {}
+    return SIDEBAR_DEFAULT;
+  }
+
+  // Also integrate with layout save — hook into existing save button
+  function hookLayoutSave() {
+    var saveBtn = document.getElementById("dash-save-btn");
+    if (!saveBtn) return;
+    saveBtn.addEventListener("click", function() {
+      saveSidebarWidth();
+    });
+  }
+
+  // Init
+  applySidebarWidth(loadSidebarWidth(), false);
+  hookLayoutSave();
+
+  // Pointer events for smooth dragging
+  handle.addEventListener("pointerdown", function(e) {
+    e.preventDefault();
+    isResizing = true;
+    handle.classList.add("active", "resizing");
+    sidebar.classList.add("resizing");
+    if (dashboard) dashboard.classList.add("resizing");
+    handle.setPointerCapture(e.pointerId);
+
+    var onMove = function(ev) {
+      if (!isResizing) return;
+      requestAnimationFrame(function() {
+        applySidebarWidth(ev.clientX, false);
+      });
+    };
+
+    var onUp = function(ev) {
+      isResizing = false;
+      handle.classList.remove("active", "resizing");
+      sidebar.classList.remove("resizing");
+      if (dashboard) dashboard.classList.remove("resizing");
+      handle.releasePointerCapture(ev.pointerId);
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      saveSidebarWidth();
+    };
+
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+  });
+
+  // Double-click to reset
+  handle.addEventListener("dblclick", function() {
+    applySidebarWidth(SIDEBAR_DEFAULT, true);
+    saveSidebarWidth();
+  });
+
+  // Respect responsive breakpoints — disable custom width on small screens
+  var mql = window.matchMedia("(max-width: 1200px)");
+  function checkMedia() {
+    if (mql.matches) {
+      handle.style.display = "none";
+    } else {
+      handle.style.display = "";
+      applySidebarWidth(currentWidth, false);
+    }
+  }
+  mql.addEventListener("change", checkMedia);
+  checkMedia();
 })();
 </script>
 </body>
