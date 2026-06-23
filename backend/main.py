@@ -24,7 +24,8 @@ from voice_layer.stt_engine import save_and_transcribe, get_stt_status
 from pc_control.command_parser import parse_command
 from pc_control.executor import execute_command
 from pc_control.system_stats import get_system_stats
-from pc_control.web_search import web_search, needs_web_search
+# pc_control.web_search is deprecated — use intelligence.web_browser instead
+# from pc_control.web_search import web_search, needs_web_search
 from pc_control.reminder import parse_reminder, set_reminder, get_active_reminders
 from pc_control.daily_briefing import is_greeting, generate_briefing
 from pc_control.file_manager import parse_file_command, execute_file_command
@@ -1014,6 +1015,56 @@ async def chat(
         file_context = file_result["context"]
         images = file_result["images"]
         file_label = f" [{file_result['filename']}]"
+
+    # =====================================================
+    # ZEUS MODULE ROUTING — for messages that didn't match
+    # any fast-path command above. Zeus finds the best
+    # module (git, image gen, notifications, code, KB, etc.)
+    # and executes it with recovery/fallback.
+    # Only triggers when confidence > 0.7 to avoid false matches.
+    # =====================================================
+    if not file_context:  # Don't intercept file uploads — let LLM handle those
+        zeus_match = zeus.route(message, intent="", context={})
+        if zeus_match:
+            zeus_mod, zeus_conf = zeus_match
+            if zeus_conf >= 0.7:
+                try:
+                    # Use execute_with_recovery for auto-fallback
+                    zeus_result = await zeus.execute_with_recovery(zeus_mod, message, {}, zeus_conf)
+                    zeus_response = zeus_result.get("response", "")
+                    zeus_action = zeus_result.get("action", "")
+                    zeus_data = zeus_result.get("data") or {}
+
+                    # Actions that should return directly (module handled it completely)
+                    direct_actions = {
+                        "git_result", "file_analysis", "code_execution",
+                        "notification_sent", "reminder_set", "reminder_list",
+                        "reminder_cancelled", "reminder_snoozed", "history",
+                        "image_generated", "image_list",
+                    }
+
+                    if zeus_action in direct_actions and zeus_response:
+                        async def zeus_stream():
+                            yield f"data: {json.dumps({'token': zeus_response})}\n\n"
+                            if zeus_data.get("type") == "image_generated" and zeus_data.get("url"):
+                                yield f"data: {json.dumps({'image_url': zeus_data['url']})}\n\n"
+                            meta = zeus_result.get("_meta", {})
+                            yield f"data: {json.dumps({'emotion': 'happy', 'zeus_module': meta.get('module', ''), 'zeus_confidence': meta.get('confidence', 0), 'zeus_duration_ms': meta.get('duration_ms', 0)})}\n\n"
+                            yield "data: [DONE]\n\n"
+                        _save_cmd_to_chat(message, zeus_response)
+                        return StreamingResponse(zeus_stream(), media_type="text/event-stream")
+
+                    # Actions that provide CONTEXT for the LLM (module prepared data, LLM generates response)
+                    # e.g. knowledge_response, code_generate, creative_generate
+                    if zeus_data.get("kb_context"):
+                        file_context += "\n" + zeus_data["kb_context"]
+                    if zeus_data.get("instruction"):
+                        file_context += "\n\n[Module Instruction] " + zeus_data["instruction"]
+
+                except Exception as _zeus_err:
+                    import logging as _log
+                    _log.getLogger("mj.chat").warning(f"Zeus routing error: {_zeus_err}")
+                    # Fall through to normal LLM flow
 
     chat_id = get_active_chat_id()
     if not chat_id:

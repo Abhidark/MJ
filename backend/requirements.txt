@@ -1,7 +1,24 @@
+# === MJ Assistant Backend Dependencies ===
+
+# Core server
 fastapi
-uvicorn
+uvicorn[standard]
 httpx
-edge-tts
-psutil
 pydantic
 starlette
+
+# System monitoring
+psutil
+
+# Voice / TTS / STT
+edge-tts
+# whisper (install separately: pip install openai-whisper) — requires PC GPU
+
+# Knowledge Base (PDF/DOCX support)
+PyPDF2
+pdfplumber
+python-docx
+
+# Image generation (Pollinations.ai uses httpx — no extra dep)
+# OCR (uses Windows PowerShell — no extra dep)
+# Web search (uses httpx + DuckDuckGo — no extra dep)
