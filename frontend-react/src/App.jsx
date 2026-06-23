@@ -1,53 +1,98 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from '@/context/AppContext';
+import { useSidebarResize } from '@/hooks/useSidebarResize';
+import Sidebar from '@/components/layout/Sidebar';
+import Header from '@/components/layout/Header';
+import MainContent, { ContentRow } from '@/components/layout/MainContent';
 
-function ChatPage() {
+// ─── Page placeholders (Day 3–10) ───
+function DashboardView() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="card p-8 text-center">
-        <div className="text-4xl mb-4">&#129302;</div>
-        <h1 className="text-2xl font-bold text-[var(--cyan)] mb-2">MJ Assistant</h1>
-        <p className="text-[var(--text-dim)]">Chat interface — coming Day 2</p>
-        <div className="mt-6 flex gap-3 justify-center text-sm">
-          <a href="/dashboard" className="px-4 py-2 rounded-lg bg-[var(--cyan-dim)] text-[var(--cyan)] hover:bg-[var(--cyan-glow)] transition-colors">Dashboard</a>
-          <a href="/modules" className="px-4 py-2 rounded-lg bg-[var(--cyan-dim)] text-[var(--cyan)] hover:bg-[var(--cyan-glow)] transition-colors">Modules</a>
-          <a href="/settings" className="px-4 py-2 rounded-lg bg-[var(--cyan-dim)] text-[var(--cyan)] hover:bg-[var(--cyan-glow)] transition-colors">Settings</a>
-        </div>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="card" style={{ padding: 32, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>{'\u{1F916}'}</div>
+        <h2 style={{ color: 'var(--cyan)', marginBottom: 8, fontFamily: 'Orbitron, monospace', letterSpacing: 3 }}>
+          JARVIS DASHBOARD
+        </h2>
+        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
+          Orb + HUD cards + AI Flow panel — coming Day 3-4
+        </p>
       </div>
     </div>
   );
 }
 
-function DashboardPage() {
+function ChatView() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="card p-8 text-center">
-        <h1 className="text-2xl font-bold text-[var(--cyan)] mb-2">Dashboard</h1>
-        <p className="text-[var(--text-dim)]">Orb + HUD + AI Flow — coming Day 4</p>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="card" style={{ padding: 32, textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--cyan)', marginBottom: 8 }}>Chat Panel</h2>
+        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>SSE streaming chat — coming Day 5</p>
       </div>
     </div>
   );
 }
 
-function ModulesPage() {
+function ModulesView() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="card p-8 text-center">
-        <h1 className="text-2xl font-bold text-[var(--cyan)] mb-2">Zeus Modules</h1>
-        <p className="text-[var(--text-dim)]">21 module cards — coming Day 6</p>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="card" style={{ padding: 32, textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--cyan)', marginBottom: 8 }}>Zeus Modules</h2>
+        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>21 module cards — coming Day 6</p>
       </div>
     </div>
   );
 }
 
-function SettingsPage() {
+function SettingsView() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="card p-8 text-center">
-        <h1 className="text-2xl font-bold text-[var(--cyan)] mb-2">Settings</h1>
-        <p className="text-[var(--text-dim)]">Voice, Models, Memory — coming Day 8</p>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="card" style={{ padding: 32, textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--cyan)', marginBottom: 8 }}>Settings</h2>
+        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Voice, Models, Memory — coming Day 8</p>
       </div>
     </div>
+  );
+}
+
+// ─── Layout Shell ───
+function AppLayout() {
+  const { width, isResizing, iconsOnly, onMouseDown } = useSidebarResize(210);
+
+  return (
+    <>
+      {/* Background layers */}
+      <div className="hex-grid-bg" />
+      <div className="scanline-overlay" />
+
+      {/* HUD Sidebar */}
+      <Sidebar
+        width={width}
+        iconsOnly={iconsOnly}
+        isResizing={isResizing}
+        onResizeStart={onMouseDown}
+        onOrbSettings={() => console.log('TODO: Orb Settings panel')}
+        onRoadmap={() => console.log('TODO: Roadmap panel')}
+        onSecurity={() => console.log('TODO: Security panel')}
+      />
+
+      {/* Main content area */}
+      <MainContent isResizing={isResizing}>
+        <Header
+          onEditDashboard={() => console.log('TODO: Edit mode')}
+          onSettings={() => console.log('TODO: Dashboard settings')}
+        />
+        <ContentRow>
+          <Routes>
+            <Route path="/" element={<DashboardView />} />
+            <Route path="/chat" element={<ChatView />} />
+            <Route path="/modules" element={<ModulesView />} />
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ContentRow>
+      </MainContent>
+    </>
   );
 }
 
@@ -55,13 +100,7 @@ export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ChatPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/modules" element={<ModulesPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <AppLayout />
       </BrowserRouter>
     </AppProvider>
   );

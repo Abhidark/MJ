@@ -1,0 +1,84 @@
+import { useState, useEffect } from 'react';
+import { useSystemStats } from '@/hooks/useSystemStats';
+import { Link } from 'react-router-dom';
+
+function useLiveClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+export default function Header({ onEditDashboard, onSettings }) {
+  const now = useLiveClock();
+  const { stats } = useSystemStats(5000);
+
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const cpu = stats?.cpu_percent ?? '--';
+  const ram = stats?.ram_percent ?? '--';
+  const ollamaUp = stats?.ollama_status === 'running';
+
+  return (
+    <div className="top-bar">
+      {/* Logo */}
+      <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
+        M<span>J</span>
+      </Link>
+
+      {/* Center widgets */}
+      <div className="top-bar-widgets">
+        <div className="widget-mini">
+          <div className="val time-val">{time}</div>
+          <div>{date}</div>
+        </div>
+        <div className="widget-mini">
+          <div className="val" style={{ color: 'var(--accent)' }}>--°C</div>
+          <div>Weather</div>
+        </div>
+        <div className="widget-mini">
+          <div className="val">{cpu}%</div>
+          <div>CPU</div>
+        </div>
+        <div className="widget-mini">
+          <div className="val">{ram}%</div>
+          <div>RAM</div>
+        </div>
+        <div className="widget-mini">
+          <div className="val" style={{ color: ollamaUp ? 'var(--success)' : 'var(--error)' }}>
+            {ollamaUp ? 'ONLINE' : 'OFFLINE'}
+          </div>
+          <div>SYSTEM</div>
+        </div>
+      </div>
+
+      {/* Right actions */}
+      <div className="top-bar-actions">
+        <button className="icon-btn" onClick={onEditDashboard} title="Edit Dashboard">
+          {'✎'}
+        </button>
+        <Link to="/dashboard" className="icon-btn" title="System Dashboard">
+          {'\u{1F4CA}'}
+        </Link>
+        <Link to="/settings" className="icon-btn" title="Voice Settings">
+          {'⚙'}
+        </Link>
+        <button
+          className="icon-btn"
+          title="Fullscreen"
+          onClick={() => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+            else document.exitFullscreen?.();
+          }}
+        >
+          {'⛶'}
+        </button>
+        <button className="icon-btn" onClick={onSettings} title="Dashboard Settings" style={{ color: '#00d4ff' }}>
+          {'⚙'}
+        </button>
+      </div>
+    </div>
+  );
+}
