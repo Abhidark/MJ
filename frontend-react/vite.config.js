@@ -1,0 +1,57 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    port: 3000,
+    proxy: {
+      '/chat': 'http://localhost:8000',
+      '/chats': 'http://localhost:8000',
+      '/history': 'http://localhost:8000',
+      '/select-chat': 'http://localhost:8000',
+      '/new-chat': 'http://localhost:8000',
+      '/delete-chat': 'http://localhost:8000',
+      '/core-memory': 'http://localhost:8000',
+      '/remember': 'http://localhost:8000',
+      '/execute': 'http://localhost:8000',
+      '/system-stats': 'http://localhost:8000',
+      '/top-processes': 'http://localhost:8000',
+      '/processes': 'http://localhost:8000',
+      '/network-stats': 'http://localhost:8000',
+      '/notify': 'http://localhost:8000',
+      '/reminders': 'http://localhost:8000',
+      '/scheduled-tasks': 'http://localhost:8000',
+      '/health': 'http://localhost:8000',
+      '/errors': 'http://localhost:8000',
+      '/alerts': 'http://localhost:8000',
+      '/models': 'http://localhost:8000',
+      '/plugins': 'http://localhost:8000',
+      '/zeus': 'http://localhost:8000',
+      '/knowledge-base': 'http://localhost:8000',
+      '/context-memory': 'http://localhost:8000',
+      '/intelligence': 'http://localhost:8000',
+      '/diagnostics': 'http://localhost:8000',
+      '/ollama-status': 'http://localhost:8000',
+      '/wake-briefing': 'http://localhost:8000',
+      '/ocr': 'http://localhost:8000',
+      '/git': 'http://localhost:8000',
+      '/suggestions': 'http://localhost:8000',
+      '/gesture': 'http://localhost:8000',
+      '/speak': 'http://localhost:8000',
+      '/voice-settings': 'http://localhost:8000',
+      '/test-voice': 'http://localhost:8000',
+      '/email': 'http://localhost:8000',
+      '/clipboard': 'http://localhost:8000',
+      '/app-usage': 'http://localhost:8000',
+      '/generated-images': 'http://localhost:8000',
+      '/audio': 'http://localhost:8000',
+    },
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
+})
