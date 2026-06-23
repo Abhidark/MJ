@@ -1,32 +1,52 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AppProvider } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useSidebarResize } from '@/hooks/useSidebarResize';
+import { useVoice } from '@/hooks/useVoice';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import MainContent, { ContentRow } from '@/components/layout/MainContent';
 import LoginScreen from '@/components/auth/LoginScreen';
 import SecurityPanel from '@/components/auth/SecurityPanel';
 import ChatPanel from '@/components/chat/ChatPanel';
+import Orb from '@/components/orb/Orb';
+import StatusDisplay from '@/components/orb/StatusDisplay';
 
-// ─── Page placeholders (Day 5–10) ───
+// ─── Dashboard with Orb ───
 function DashboardView() {
+  const navigate = useNavigate();
+
+  const handleTranscript = useCallback((text) => {
+    // Voice command → navigate to chat and send
+    navigate('/chat', { state: { voiceMessage: text } });
+  }, [navigate]);
+
+  const handleWake = useCallback(() => {
+    // First wake → could trigger briefing
+    console.log('[MJ] Wake word detected — first activation');
+  }, []);
+
+  const voice = useVoice({
+    onTranscript: handleTranscript,
+    onWake: handleWake,
+  });
+
   return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="card" style={{ padding: 32, textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>{'\u{1F916}'}</div>
-        <h2 style={{ color: 'var(--cyan)', marginBottom: 8, fontFamily: 'Orbitron, monospace', letterSpacing: 3 }}>
-          JARVIS DASHBOARD
-        </h2>
-        <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-          Orb + HUD cards + AI Flow panel — coming Day 5
-        </p>
-      </div>
+    <div className="orb-section">
+      <Orb state={voice.orbState} onClick={voice.handleOrbClick} />
+      <StatusDisplay
+        orbState={voice.orbState}
+        micStatus={voice.micStatus}
+        waveState={voice.waveState}
+        listening={voice.listening}
+        onMicToggle={voice.toggleListening}
+      />
     </div>
   );
 }
 
+// ─── Page placeholders (Day 6–10) ───
 function ModulesView() {
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -55,7 +75,6 @@ function AppLayout() {
   const { width, isResizing, iconsOnly, onMouseDown } = useSidebarResize(210);
   const [securityOpen, setSecurityOpen] = useState(false);
 
-  // Show loading while checking auth status
   if (checking) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -64,7 +83,6 @@ function AppLayout() {
     );
   }
 
-  // Show login screen if auth required
   if (needsLogin) {
     return <LoginScreen />;
   }
