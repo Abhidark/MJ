@@ -2,9 +2,10 @@
   "date": "2026-06-23",
   "apps": {
     "Unknown": 6.174739,
-    "Google Chrome": 718.6067439999999,
-    "Snipping Tool Overlay": 5.602611,
-    "File Explorer": 5.723972
+    "Google Chrome": 861.143648,
+    "Snipping Tool Overlay": 16.466834,
+    "File Explorer": 5.723972,
+    "Snipping Tool": 32.858373
   },
-  "session_start": "2026-06-23T09:54:40.969953"
+  "session_start": "2026-06-23T10:47:47.966736"
 }

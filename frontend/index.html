@@ -3560,38 +3560,9 @@
     <!-- LLM Status Card (Zeus Panel - all IDs preserved) -->
     <div class="dash-card" data-card-id="llm-status">
       <div class="dash-card-title">LLM Status <span class="zeus-auto-badge" id="zeus-auto-badge">AUTO</span><span class="expand-arrow">&#9660;</span></div>
-      <div class="zeus-models">
-        <div class="zeus-model" id="zm-qwen3-8b" data-model="qwen3:8b">
-          <div class="zm-dot"></div>
-          <div class="zm-icon">&#128172;</div>
-          <div class="zm-info">
-            <div class="zm-name">Qwen3 8B</div>
-            <div class="zm-role">Fast Chat</div>
-          </div>
-        </div>
-        <div class="zeus-model" id="zm-qwen3-14b" data-model="qwen3:14b">
-          <div class="zm-dot"></div>
-          <div class="zm-icon">&#128081;</div>
-          <div class="zm-info">
-            <div class="zm-name">Qwen3 14B</div>
-            <div class="zm-role">Complex</div>
-          </div>
-        </div>
-        <div class="zeus-model" id="zm-deepseek" data-model="deepseek-r1:8b">
-          <div class="zm-dot"></div>
-          <div class="zm-icon">&#129513;</div>
-          <div class="zm-info">
-            <div class="zm-name">DeepSeek R1</div>
-            <div class="zm-role">Reasoning</div>
-          </div>
-        </div>
-        <div class="zeus-model" id="zm-moondream" data-model="moondream">
-          <div class="zm-dot"></div>
-          <div class="zm-icon">&#128065;</div>
-          <div class="zm-info">
-            <div class="zm-name">Moondream</div>
-            <div class="zm-role">Vision</div>
-          </div>
+      <div class="zeus-models" id="zeus-models-container">
+        <div class="zeus-no-models" id="zeus-no-models" style="display:none;">
+          <div style="text-align:center;padding:12px 0;color:rgba(255,100,100,0.7);font-size:11px;letter-spacing:0.5px;">No AI models installed</div>
         </div>
       </div>
       <div class="zeus-last-used" id="zeus-last-used" style="display:none;">
@@ -3601,23 +3572,8 @@
       </div>
       <div class="section-detail-panel" id="sdp-llm">
         <div class="sdp-grid">
-          <div class="sdp-section-title">Model Details</div>
-          <div class="sdp-model-card">
-            <div class="sdp-model-name">Qwen3 8B</div>
-            <div class="sdp-model-meta">4.7 GB - Fast Chat - Default for all tasks</div>
-          </div>
-          <div class="sdp-model-card">
-            <div class="sdp-model-name">Qwen3 14B</div>
-            <div class="sdp-model-meta">8.9 GB - Complex reasoning - Heavy tasks</div>
-          </div>
-          <div class="sdp-model-card">
-            <div class="sdp-model-name">DeepSeek R1</div>
-            <div class="sdp-model-meta">4.7 GB - Chain-of-thought - Math/Logic</div>
-          </div>
-          <div class="sdp-model-card">
-            <div class="sdp-model-name">Moondream</div>
-            <div class="sdp-model-meta">1.7 GB - Vision - Image analysis</div>
-          </div>
+          <div class="sdp-section-title">Installed Models</div>
+          <div id="sdp-model-list"><div class="sdp-model-card"><div class="sdp-model-meta">Loading models...</div></div></div>
           <div class="sdp-section-title">Ollama Status</div>
           <div class="sdp-item"><span class="sdp-item-label">Status</span><span class="sdp-item-value" id="sdp-ollama-status">Checking...</span></div>
           <div class="sdp-item"><span class="sdp-item-label">Active Model</span><span class="sdp-item-value" id="sdp-active-model">--</span></div>
@@ -4562,17 +4518,118 @@ async function loadHistory() {
 
 loadHistory(); loadChatList(); loadMemoryCount();
 
-// ===== ZEUS MODEL ROUTER UI =====
-const zeusModelMap = {
-  'qwen3:8b': 'zm-qwen3-8b',
-  'qwen3:14b': 'zm-qwen3-14b',
-  'deepseek-r1:8b': 'zm-deepseek',
-  'moondream': 'zm-moondream',
-};
+// ===== ZEUS MODEL ROUTER UI (Dynamic) =====
+let zeusModelMap = {};  // Populated dynamically from /models API
+let installedModels = [];  // Cache of installed model names
 const taskIcons = {
   chat: '💬', coding: '💻', creative: '🎨', analysis: '📊',
   reasoning: '🧩', vision: '👁', translation: '🌐',
 };
+
+// Icon picker based on model name
+function getModelIcon(name) {
+  const n = name.toLowerCase();
+  if (n.includes('moondream') || n.includes('llava') || n.includes('vision')) return '👁';
+  if (n.includes('deepseek') || n.includes('r1')) return '🧩';
+  if (n.includes('code') || n.includes('starcoder') || n.includes('codellama')) return '💻';
+  if (n.includes('phi') || n.includes('gemma') || n.includes('mistral') || n.includes('llama')) return '🧠';
+  if (n.includes('qwen')) return '💬';
+  return '🤖';
+}
+
+// Role label based on model name
+function getModelRole(name, modelMap) {
+  // Check if this model is assigned to a task in model_map
+  if (modelMap) {
+    for (const [task, mName] of Object.entries(modelMap)) {
+      if (mName === name) return task.charAt(0).toUpperCase() + task.slice(1);
+    }
+  }
+  const n = name.toLowerCase();
+  if (n.includes('moondream') || n.includes('llava') || n.includes('vision')) return 'Vision';
+  if (n.includes('deepseek') || n.includes('r1')) return 'Reasoning';
+  if (n.includes('code')) return 'Coding';
+  return 'General';
+}
+
+function buildModelId(name) {
+  return 'zm-' + name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+}
+
+function renderModels(models, config) {
+  const container = document.getElementById('zeus-models-container');
+  const noModelsEl = document.getElementById('zeus-no-models');
+  if (!container) return;
+
+  // Remove old dynamic model elements (keep the no-models placeholder)
+  container.querySelectorAll('.zeus-model').forEach(el => el.remove());
+
+  zeusModelMap = {};
+  installedModels = models.map(m => m.name);
+
+  if (models.length === 0) {
+    if (noModelsEl) noModelsEl.style.display = 'block';
+    // Disable chat input
+    if (input) input.placeholder = 'No AI models installed...';
+    return;
+  }
+
+  if (noModelsEl) noModelsEl.style.display = 'none';
+  if (input) input.placeholder = 'Ask MJ anything...';
+
+  const modelMap = config.model_map || {};
+  const activeModel = config.active || config.active_model || '';
+
+  models.forEach(m => {
+    const elId = buildModelId(m.name);
+    zeusModelMap[m.name] = elId;
+
+    const div = document.createElement('div');
+    div.className = 'zeus-model';
+    div.id = elId;
+    div.setAttribute('data-model', m.name);
+    if (m.name === activeModel) div.classList.add('active');
+
+    const shortName = m.name.split(':')[0];
+    const displayName = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+    const sizeTag = m.size ? ' (' + m.size + ')' : '';
+
+    div.innerHTML =
+      '<div class="zm-dot"></div>' +
+      '<div class="zm-icon">' + getModelIcon(m.name) + '</div>' +
+      '<div class="zm-info">' +
+        '<div class="zm-name">' + displayName + sizeTag + '</div>' +
+        '<div class="zm-role">' + getModelRole(m.name, modelMap) + '</div>' +
+      '</div>';
+
+    container.appendChild(div);
+  });
+
+  // If only 1 model, auto-select it
+  if (models.length === 1) {
+    const only = container.querySelector('.zeus-model');
+    if (only) only.classList.add('active');
+  }
+
+  // Also populate the detail panel model list
+  const sdpList = document.getElementById('sdp-model-list');
+  if (sdpList) {
+    sdpList.innerHTML = '';
+    models.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'sdp-model-card';
+      const shortName = m.name.split(':')[0];
+      const displayName = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+      const role = getModelRole(m.name, modelMap);
+      card.innerHTML = '<div class="sdp-model-name">' + displayName + '</div>' +
+        '<div class="sdp-model-meta">' + (m.size || '?') + ' - ' + role + '</div>';
+      sdpList.appendChild(card);
+    });
+    if (models.length === 0) {
+      sdpList.innerHTML = '<div class="sdp-model-card"><div class="sdp-model-meta" style="color:rgba(255,100,100,0.7);">No models installed</div></div>';
+    }
+  }
+}
 
 let lastModelUsed = '';
 let lastTaskType = '';
@@ -4581,41 +4638,39 @@ function updateZeusPanel(modelUsed, taskType) {
   lastModelUsed = modelUsed;
   lastTaskType = taskType;
 
-  // Stop scanning animation
   stopZeusScanning();
 
-  // Clear all states
   document.querySelectorAll('.zeus-model').forEach(el => {
     el.classList.remove('active', 'scanning');
   });
 
-  // Find and activate the used model
-  for (const [model, elId] of Object.entries(zeusModelMap)) {
-    if (modelUsed.includes(model.split(':')[0])) {
-      const el = document.getElementById(elId);
-      if (el) el.classList.add('active');
+  // Find and activate the used model — match by full name or partial
+  const allModels = document.querySelectorAll('.zeus-model');
+  for (const el of allModels) {
+    const dm = el.getAttribute('data-model') || '';
+    if (dm === modelUsed || modelUsed.includes(dm.split(':')[0]) || dm.includes(modelUsed.split(':')[0])) {
+      el.classList.add('active');
       break;
     }
   }
 
   // Update last-used bar
   const lastUsed = document.getElementById('zeus-last-used');
-  lastUsed.style.display = 'flex';
-  document.getElementById('zlu-model').textContent = modelUsed;
-  document.getElementById('zlu-task').textContent = (taskIcons[taskType] || '') + ' ' + (taskType || 'chat').toUpperCase();
+  if (lastUsed) lastUsed.style.display = 'flex';
+  const zluModel = document.getElementById('zlu-model');
+  if (zluModel) zluModel.textContent = modelUsed;
+  const zluTask = document.getElementById('zlu-task');
+  if (zluTask) zluTask.textContent = (taskIcons[taskType] || '') + ' ' + (taskType || 'chat').toUpperCase();
 
-  // Update model widget card
   const wcModel = document.getElementById('wc-model-val');
   if (wcModel) {
     const shortName = modelUsed.split(':')[0];
     wcModel.textContent = shortName.charAt(0).toUpperCase() + shortName.slice(1);
   }
 
-  // Update chat header model indicator
   const chmName = document.getElementById('chm-name');
   if (chmName) chmName.textContent = modelUsed.toUpperCase();
 
-  // Add model badge to the current assistant message
   addModelBadgeToLastMsg(modelUsed, taskType);
 }
 
@@ -4639,15 +4694,16 @@ function setZeusThinking() {
   const chmName = document.getElementById('chm-name');
   if (chmName) chmName.textContent = 'ROUTING...';
 
-  // Cycle through models with scanning effect
   const models = document.querySelectorAll('.zeus-model');
   let idx = 0;
   if (scanInterval) clearInterval(scanInterval);
-  scanInterval = setInterval(() => {
-    models.forEach(el => el.classList.remove('scanning'));
-    models[idx % models.length].classList.add('scanning');
-    idx++;
-  }, 200);
+  if (models.length > 0) {
+    scanInterval = setInterval(() => {
+      models.forEach(el => el.classList.remove('scanning'));
+      models[idx % models.length].classList.add('scanning');
+      idx++;
+    }, 200);
+  }
 }
 
 function stopZeusScanning() {
@@ -4655,11 +4711,20 @@ function stopZeusScanning() {
   document.querySelectorAll('.zeus-model').forEach(el => el.classList.remove('scanning'));
 }
 
-// Load initial model config
+// Load models from backend (dynamic — works on any machine)
 async function loadModelConfig() {
   try {
     const res = await fetch(API + '/models');
     const data = await res.json();
+
+    // Render dynamic model cards
+    renderModels(data.models || [], data);
+
+    // Update active model in detail panel
+    const sdpActive = document.getElementById('sdp-active-model');
+    if (sdpActive && data.active) sdpActive.textContent = data.active;
+
+    // Update auto-select badge
     const badge = document.getElementById('zeus-auto-badge');
     if (badge) {
       badge.textContent = data.auto_select ? 'AUTO' : 'MANUAL';
@@ -4667,9 +4732,18 @@ async function loadModelConfig() {
       badge.style.color = data.auto_select ? 'var(--success)' : 'var(--warning)';
       badge.style.borderColor = data.auto_select ? 'rgba(0,255,136,0.3)' : 'rgba(255,170,0,0.3)';
     }
-  } catch(e) {}
+  } catch(e) {
+    console.log('[MJ] Failed to load models:', e);
+    const noModelsEl = document.getElementById('zeus-no-models');
+    if (noModelsEl) {
+      noModelsEl.style.display = 'block';
+      noModelsEl.innerHTML = '<div style="text-align:center;padding:12px 0;color:rgba(255,100,100,0.7);font-size:11px;">Backend offline — cannot load models</div>';
+    }
+  }
 }
 loadModelConfig();
+// Refresh model list every 60s (picks up newly installed models)
+setInterval(loadModelConfig, 60000);
 
 let isVoiceCommand = false;
 

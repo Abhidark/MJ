@@ -164,36 +164,73 @@ def _is_complex(text: str) -> bool:
     return False
 
 
+def _get_installed_model_names() -> list:
+    """Quick sync check of installed models (cached for 30s)."""
+    import time
+    now = time.time()
+    if hasattr(_get_installed_model_names, '_cache') and now - _get_installed_model_names._time < 30:
+        return _get_installed_model_names._cache
+    try:
+        import httpx as _hx
+        resp = _hx.get(f"{OLLAMA_API}/api/tags", timeout=3)
+        if resp.status_code == 200:
+            names = [m["name"] for m in resp.json().get("models", [])]
+            _get_installed_model_names._cache = names
+            _get_installed_model_names._time = now
+            return names
+    except Exception:
+        pass
+    return _get_installed_model_names._cache if hasattr(_get_installed_model_names, '_cache') else []
+
+
+def _validate_model(selected: str) -> str:
+    """If selected model isn't installed, fallback to first available model."""
+    installed = _get_installed_model_names()
+    if not installed:
+        return selected  # Can't validate, let Ollama handle the error
+    if selected in installed:
+        return selected
+    # Partial match (e.g. "qwen3:8b" matches "qwen3:8b-q4_0")
+    for m in installed:
+        if selected.split(':')[0] in m:
+            return m
+    # Fallback to first installed model
+    return installed[0]
+
+
 def get_model_for_task(text: str, has_image: bool = False) -> str:
     """
     Zeus Model Router — picks the best model for the task.
 
     Priority:
-      1. Image attached → moondream (always)
+      1. Image attached → vision model
       2. Auto-select OFF → use active_model
       3. Detect task type → map to model
-      4. Complexity check → upgrade to 14B if needed
+      4. Complexity check → upgrade to bigger model if needed
+      5. Validate model exists → fallback to installed model if not
     """
     config = load_model_config()
 
-    # Vision override — always use moondream for images
+    # Vision override
     if has_image:
-        return config.get("model_map", {}).get("vision", MODELS["vision"])
+        selected = config.get("model_map", {}).get("vision", MODELS["vision"])
+        return _validate_model(selected)
 
     # Manual mode
     if not config.get("auto_select", True):
-        return config.get("active_model", MODELS["fast_chat"])
+        selected = config.get("active_model", MODELS["fast_chat"])
+        return _validate_model(selected)
 
     # Detect task
     task_type = detect_task_type(text)
     model_map = config.get("model_map", DEFAULT_CONFIG["model_map"])
     selected = model_map.get(task_type, MODELS["fast_chat"])
 
-    # Complexity upgrade: if chat/translation but message is complex → use 14B
+    # Complexity upgrade
     if task_type in ("chat", "translation") and _is_complex(text):
         selected = model_map.get("coding", MODELS["complex"])
 
-    return selected
+    return _validate_model(selected)
 
 
 def get_routing_info(text: str, has_image: bool = False) -> dict:

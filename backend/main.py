@@ -74,7 +74,7 @@ from modules.hestia.module import HestiaModule
 from modules.loki.module import LokiModule
 from modules.chronos.module import ChronosModule
 from modules.phantom.module import PhantomModule
-from human_layer.model_manager import parse_model_command, handle_model_command, get_model_for_task, get_available_models, load_model_config, get_routing_info
+from human_layer.model_manager import parse_model_command, handle_model_command, get_model_for_task, get_available_models, load_model_config, save_model_config, get_routing_info, set_active_model, toggle_auto_select, set_model_for_task
 from plugins.plugin_manager import load_plugins, match_plugin, run_plugin, notify_plugins, parse_plugin_command, handle_plugin_management, get_plugin_list
 from self_healer.error_tracker import log_error, get_recent_errors, get_error_stats, clear_errors
 from self_healer.auto_fixer import attempt_fix, analyze_error
@@ -128,7 +128,7 @@ app.add_middleware(
 )
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "qwen2.5:1.5b"
+# MODEL is now dynamic — selected by Zeus router from installed Ollama models
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 # Supported file types for upload
@@ -374,6 +374,37 @@ async def route_preview(req: ChatRequest):
     """Preview which model Zeus would pick for a message."""
     info = get_routing_info(req.message)
     return info
+
+
+@app.post("/models/set-active")
+async def set_active_model_endpoint(req: dict):
+    """Set the active model for manual mode."""
+    model = req.get("model", "")
+    if not model:
+        return {"success": False, "message": "No model specified"}
+    # Validate model exists in Ollama
+    available = await get_available_models()
+    names = [m["name"] for m in available]
+    if model not in names:
+        return {"success": False, "message": f"Model '{model}' not installed. Available: {', '.join(names)}"}
+    return set_active_model(model)
+
+
+@app.post("/models/auto-select")
+async def toggle_auto_endpoint(req: dict):
+    """Toggle auto model selection on/off."""
+    enabled = req.get("enabled", True)
+    return toggle_auto_select(enabled)
+
+
+@app.post("/models/set-task-model")
+async def set_task_model_endpoint(req: dict):
+    """Set which model handles a specific task type."""
+    task = req.get("task", "")
+    model = req.get("model", "")
+    if not task or not model:
+        return {"success": False, "message": "Task and model required"}
+    return set_model_for_task(task, model)
 
 
 @app.get("/plugins")
@@ -1311,7 +1342,7 @@ async def ollama_status():
                     "status": "online",
                     "models": model_names,
                     "model_count": len(model_names),
-                    "active_model": MODEL if MODEL in model_names else (model_names[0] if model_names else None),
+                    "active_model": load_model_config().get("active_model", model_names[0] if model_names else None),
                     "message": f"Ollama ready — {len(model_names)} models loaded"
                 }
             return {"status": "error", "message": "Ollama responded but with an error", "models": []}
