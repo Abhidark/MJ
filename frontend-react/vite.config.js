@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/auth': 'http://localhost:8000',
       '/chat': 'http://localhost:8000',
       '/chats': 'http://localhost:8000',
       '/history': 'http://localhost:8000',

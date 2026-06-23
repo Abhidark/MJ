@@ -1,11 +1,15 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from '@/context/AppContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useSidebarResize } from '@/hooks/useSidebarResize';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import MainContent, { ContentRow } from '@/components/layout/MainContent';
+import LoginScreen from '@/components/auth/LoginScreen';
+import SecurityPanel from '@/components/auth/SecurityPanel';
 
-// ─── Page placeholders (Day 3–10) ───
+// ─── Page placeholders (Day 4–10) ───
 function DashboardView() {
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -15,7 +19,7 @@ function DashboardView() {
           JARVIS DASHBOARD
         </h2>
         <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-          Orb + HUD cards + AI Flow panel — coming Day 3-4
+          Orb + HUD cards + AI Flow panel — coming Day 4
         </p>
       </div>
     </div>
@@ -57,15 +61,29 @@ function SettingsView() {
 
 // ─── Layout Shell ───
 function AppLayout() {
+  const { needsLogin, checking } = useAuth();
   const { width, isResizing, iconsOnly, onMouseDown } = useSidebarResize(210);
+  const [securityOpen, setSecurityOpen] = useState(false);
+
+  // Show loading while checking auth status
+  if (checking) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="mj-login-orb" />
+      </div>
+    );
+  }
+
+  // Show login screen if auth required
+  if (needsLogin) {
+    return <LoginScreen />;
+  }
 
   return (
     <>
-      {/* Background layers */}
       <div className="hex-grid-bg" />
       <div className="scanline-overlay" />
 
-      {/* HUD Sidebar */}
       <Sidebar
         width={width}
         iconsOnly={iconsOnly}
@@ -73,10 +91,9 @@ function AppLayout() {
         onResizeStart={onMouseDown}
         onOrbSettings={() => console.log('TODO: Orb Settings panel')}
         onRoadmap={() => console.log('TODO: Roadmap panel')}
-        onSecurity={() => console.log('TODO: Security panel')}
+        onSecurity={() => setSecurityOpen(true)}
       />
 
-      {/* Main content area */}
       <MainContent isResizing={isResizing}>
         <Header
           onEditDashboard={() => console.log('TODO: Edit mode')}
@@ -92,6 +109,8 @@ function AppLayout() {
           </Routes>
         </ContentRow>
       </MainContent>
+
+      {securityOpen && <SecurityPanel onClose={() => setSecurityOpen(false)} />}
     </>
   );
 }
@@ -99,9 +118,11 @@ function AppLayout() {
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter>
-        <AppLayout />
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppLayout />
+        </BrowserRouter>
+      </AuthProvider>
     </AppProvider>
   );
 }

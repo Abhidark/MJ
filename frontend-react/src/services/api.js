@@ -27,17 +27,28 @@ api.interceptors.response.use(
 );
 
 // ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+export const authAPI = {
+  getStatus: () => api.get('/auth/status'),
+  login: (password) => api.post('/auth/login', { password }),
+  logout: () => api.post('/auth/logout'),
+  changePassword: (old_password, new_password) =>
+    api.post('/auth/change-password', { old_password, new_password }),
+  toggle: (enabled, password) =>
+    api.post('/auth/toggle', { enabled, password }),
+};
+
+// ═══════════════════════════════════════════════
 // CHAT
 // ═══════════════════════════════════════════════
 export const chatAPI = {
-  /** Send message — returns SSE EventSource URL + FormData for fetch */
   sendMessage: async (message, file = null) => {
     const form = new FormData();
     form.append('message', message);
     if (file) form.append('file', file);
     return fetch('/chat', { method: 'POST', body: form });
   },
-
   getChats: () => api.get('/chats'),
   getHistory: () => api.get('/history'),
   selectChat: (chatId) => api.post(`/select-chat/${chatId}`),
@@ -110,7 +121,6 @@ export const alertAPI = {
   resolve: (id) => api.post(`/alerts/${id}/resolve`),
   clearAll: () => api.post('/alerts/clear'),
   clearResolved: () => api.post('/alerts/clear-resolved'),
-  /** Returns EventSource for SSE stream */
   subscribe: () => new EventSource('/alerts/stream'),
 };
 
