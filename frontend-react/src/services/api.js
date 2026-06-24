@@ -422,4 +422,44 @@ export const frameworkAPI = {
   queueCancel: (taskId) => api.delete(`/framework/queue/${taskId}`),
 };
 
+// ===== Smart Home API (V3 Hestia) =====
+export const smartHomeAPI = {
+  getDevices: () => api.get('/smart-home/devices'),
+  getScenes: () => api.get('/smart-home/scenes'),
+  activateScene: (key) => api.post(`/smart-home/scenes/${key}`),
+  getAutomations: () => api.get('/smart-home/automations'),
+  getRooms: () => api.get('/smart-home/rooms'),
+  addDevice: (device) => api.post('/smart-home/devices', device),
+  controlDevice: (deviceId, action, params = {}) => api.post(`/smart-home/devices/${deviceId}/control`, { action, ...params }),
+};
+
+// ===== Workflow Engine API (V19) =====
+export const workflowAPI = {
+  list: () => api.get('/workflows'),
+  get: (id) => api.get(`/workflows/${id}`),
+  create: (data) => api.post('/workflows', data),
+  update: (id, data) => api.put(`/workflows/${id}`, data),
+  delete: (id) => api.delete(`/workflows/${id}`),
+  toggle: (id, enabled) => api.post(`/workflows/${id}/toggle`, { enabled }),
+  run: (id) => api.post(`/workflows/${id}/run`),
+  getTemplates: () => api.get('/workflows/templates'),
+  installTemplate: (id) => api.post(`/workflows/install/${id}`),
+  getStats: () => api.get('/workflows/stats'),
+  getLogs: (limit = 20) => api.get('/workflows/logs', { params: { limit } }),
+  getTriggers: () => api.get('/workflows/triggers/all'),
+  addTrigger: (workflowId, trigger) => api.post(`/workflows/${workflowId}/trigger`, trigger),
+  removeTrigger: (triggerId) => api.delete(`/workflows/triggers/${triggerId}`),
+  reset: () => api.post('/workflows/reset'),
+};
+
+// ===== Dev Tools API (V9 Hephaestus) =====
+export const devToolsAPI = {
+  getTestResults: () => api.get('/dev/test-results'),
+  runTests: (target = '') => api.post('/dev/run-tests', { target }),
+  debugError: (error) => api.post('/dev/debug', { error }),
+  getDeployStatus: () => api.get('/dev/deploy-status'),
+  gitStatus: () => api.get('/git/status'),
+  gitCommand: (command, path = '') => api.post('/git', { command, path }),
+};
+
 export default api;

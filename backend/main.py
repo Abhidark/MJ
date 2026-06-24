@@ -47,6 +47,7 @@ from intelligence.fact_extractor import extract_and_store
 from intelligence.memory_embeddings import hybrid_search, embed_fact, is_ollama_embed_available
 from intelligence.short_term_memory import short_term
 from intelligence.user_profile import build_user_profile, get_profile_summary
+from intelligence.workflow_engine import workflow_engine
 
 # Intelligence Layer
 from intelligence.web_browser import deep_search, deep_research, format_search_for_llm, format_research_for_llm, needs_web_search_v2
@@ -2752,6 +2753,201 @@ async def ocr_file(filepath: str = Form(...)):
     """Extract text from a given image file."""
     result = ocr_from_file(filepath)
     return result
+
+
+# ===== SMART HOME (V3 HESTIA) =====
+
+@app.get("/smart-home/devices")
+async def smart_home_devices():
+    hestia = zeus.modules.get("hestia")
+    if not hestia:
+        return {"devices": [], "error": "Hestia module not loaded"}
+    return {"devices": hestia.get_all_devices()}
+
+@app.get("/smart-home/scenes")
+async def smart_home_scenes():
+    hestia = zeus.modules.get("hestia")
+    if not hestia:
+        return {"scenes": {}}
+    return {"scenes": hestia.get_all_scenes()}
+
+@app.post("/smart-home/scenes/{scene_key}")
+async def activate_scene(scene_key: str):
+    hestia = zeus.modules.get("hestia")
+    if not hestia:
+        return {"success": False, "error": "Hestia not loaded"}
+    return hestia.activate_scene_by_key(scene_key)
+
+@app.get("/smart-home/automations")
+async def smart_home_automations():
+    hestia = zeus.modules.get("hestia")
+    if not hestia:
+        return {"automations": []}
+    return {"automations": hestia.get_all_automations()}
+
+@app.get("/smart-home/rooms")
+async def smart_home_rooms():
+    hestia = zeus.modules.get("hestia")
+    if not hestia:
+        return {"rooms": {}}
+    rooms = {}
+    for d in hestia.get_all_devices():
+        room = d.get("room", "Unknown")
+        rooms.setdefault(room, []).append(d)
+    return {"rooms": {r: len(devs) for r, devs in rooms.items()}, "details": rooms}
+
+@app.post("/smart-home/devices")
+async def add_smart_device(request: Request):
+    hestia = zeus.modules.get("hestia")
+    if not hestia:
+        return {"success": False, "error": "Hestia not loaded"}
+    data = await request.json()
+    return hestia.add_device(data)
+
+@app.post("/smart-home/devices/{device_id}/control")
+async def control_device(device_id: str, request: Request):
+    hestia = zeus.modules.get("hestia")
+    if not hestia:
+        return {"success": False, "error": "Hestia not loaded"}
+    data = await request.json()
+    action = data.get("action", "status")
+    for d in hestia.devices:
+        if d["id"] == device_id:
+            old = d["status"]
+            if action in ("on", "off"):
+                d["status"] = action
+            elif action == "lock":
+                d["status"] = "locked"
+            elif action == "unlock":
+                d["status"] = "unlocked"
+            for k, v in data.items():
+                if k not in ("action",):
+                    d[k] = v
+            return {"success": True, "device": d, "old_status": old}
+    return {"success": False, "error": "Device not found"}
+
+
+# ===== WORKFLOW ENGINE (V19) =====
+
+@app.get("/workflows")
+async def list_workflows():
+    return workflow_engine.list_workflows()
+
+@app.get("/workflows/templates")
+async def workflow_templates():
+    return workflow_engine.get_templates()
+
+@app.get("/workflows/stats")
+async def workflow_stats():
+    return workflow_engine.get_stats()
+
+@app.get("/workflows/logs")
+async def workflow_logs(limit: int = 20):
+    return workflow_engine.get_execution_log(limit)
+
+@app.get("/workflows/{workflow_id}")
+async def get_workflow(workflow_id: str):
+    w = workflow_engine.get_workflow(workflow_id)
+    if not w:
+        return {"error": f"Workflow '{workflow_id}' not found"}
+    return {"workflow": w}
+
+@app.post("/workflows")
+async def create_workflow(request: Request):
+    data = await request.json()
+    wid = data.get("id", data.get("name", "").lower().replace(" ", "_"))
+    if not wid:
+        return {"success": False, "error": "Workflow ID required"}
+    return workflow_engine.create_workflow(wid, data)
+
+@app.put("/workflows/{workflow_id}")
+async def update_workflow(workflow_id: str, request: Request):
+    data = await request.json()
+    return workflow_engine.update_workflow(workflow_id, data)
+
+@app.delete("/workflows/{workflow_id}")
+async def delete_workflow(workflow_id: str):
+    return workflow_engine.delete_workflow(workflow_id)
+
+@app.post("/workflows/{workflow_id}/toggle")
+async def toggle_workflow(workflow_id: str, request: Request):
+    data = await request.json()
+    return workflow_engine.toggle_workflow(workflow_id, data.get("enabled", True))
+
+@app.post("/workflows/{workflow_id}/run")
+async def run_workflow(workflow_id: str):
+    result = await workflow_engine.execute_workflow(workflow_id, modules=zeus.modules)
+    return result
+
+@app.post("/workflows/install/{template_id}")
+async def install_workflow_template(template_id: str):
+    return workflow_engine.install_template(template_id)
+
+@app.get("/workflows/triggers/all")
+async def list_triggers():
+    return workflow_engine.list_triggers()
+
+@app.post("/workflows/{workflow_id}/trigger")
+async def add_workflow_trigger(workflow_id: str, request: Request):
+    data = await request.json()
+    return workflow_engine.add_trigger(workflow_id, data)
+
+@app.delete("/workflows/triggers/{trigger_id}")
+async def remove_trigger(trigger_id: str):
+    return workflow_engine.remove_trigger(trigger_id)
+
+@app.post("/workflows/reset")
+async def reset_workflows():
+    return workflow_engine.reset_to_defaults()
+
+
+# ===== DEV TOOLS (V9 HEPHAESTUS) =====
+
+@app.get("/dev/test-results")
+async def dev_test_results():
+    """Get test execution history."""
+    try:
+        results_file = Path(__file__).parent / "data" / "test_results.json"
+        if results_file.exists():
+            return {"results": json.loads(results_file.read_text(encoding="utf-8"))}
+        return {"results": []}
+    except Exception as e:
+        return {"results": [], "error": str(e)}
+
+@app.post("/dev/run-tests")
+async def dev_run_tests(request: Request):
+    """Run tests via Hephaestus module."""
+    heph = zeus.modules.get("hephaestus")
+    if not heph:
+        return {"success": False, "error": "Hephaestus not loaded"}
+    data = await request.json()
+    target = data.get("target", "")
+    result = heph.execute(f"run tests {target}", {})
+    return result
+
+@app.post("/dev/debug")
+async def dev_debug(request: Request):
+    """Analyze error/traceback."""
+    heph = zeus.modules.get("hephaestus")
+    if not heph:
+        return {"success": False, "error": "Hephaestus not loaded"}
+    data = await request.json()
+    error_text = data.get("error", "")
+    result = heph._handle_debug(f"debug this error: {error_text}", {})
+    return result
+
+@app.get("/dev/deploy-status")
+async def dev_deploy_status():
+    """Get project deploy readiness status."""
+    root = Path(__file__).parent.parent
+    return {
+        "project": root.name,
+        "has_package_json": (root / "package.json").exists() or (root / "frontend-react" / "package.json").exists(),
+        "has_requirements": (root / "requirements.txt").exists() or (root / "backend" / "requirements.txt").exists(),
+        "has_dockerfile": (root / "Dockerfile").exists(),
+        "has_env": (root / "backend" / ".env").exists(),
+        "has_git": (root / ".git").exists(),
+    }
 
 
 # ===== GIT INTEGRATION =====

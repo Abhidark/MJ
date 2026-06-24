@@ -4,7 +4,7 @@ const ROADMAP = [
   { phase: 'Phase 1 — Foundation', items: [
     { v:'V1', name:'JARVIS Core', desc:'Chat, Voice, FastAPI, Ollama, Logging, Settings, Auth, React', pct:100, features:'Chat UI ✅ | Voice In ✅ | Voice Out ✅ | FastAPI ✅ | Ollama ✅ | Local LLM ✅ | Logging ✅ | Settings ✅ | Auth ✅ | Login Screen ✅ | Change Password ✅ | React ✅' },
     { v:'V2', name:'Memory Engine', desc:'Short/long-term memory, profile, search', pct:80, features:'Long-Term Memory ✅ | Chat History ✅ | Fact Extraction ✅ | Vector Embeddings ✅ | Short-Term Memory ✅ | User Profile ✅ | Hybrid Search ✅ | Session Context ✅ | Qdrant ❌ | PostgreSQL ❌' },
-    { v:'V3', name:'Tool Engine', desc:'Calculator, files, weather, search, email, calendar + 21 modules', pct:95, features:'Calculator ✅ | Notes/Todos ✅ | File Manager ✅ | Weather ✅ | Web Search ✅ | Email ✅ | Clipboard ✅ | Calendar ✅ | Finance ✅ | Entertainment ✅ | Privacy ✅ | Smart Home ⚠️ (demo)' },
+    { v:'V3', name:'Tool Engine', desc:'Calculator, files, weather, search, email, calendar + 21 modules', pct:100, features:'Calculator ✅ | Notes/Todos ✅ | File Manager ✅ | Weather ✅ | Web Search ✅ | Email ✅ | Clipboard ✅ | Calendar ✅ | Finance ✅ | Entertainment ✅ | Privacy ✅ | Smart Home ✅ | Scenes ✅ | Automations ✅' },
     { v:'V4', name:'Agent Framework', desc:'Registry, lifecycle, message bus, events', pct:100, features:'Agent Registry ✅ | Agent Lifecycle ✅ | Message Bus ✅ | Event System ✅ | Shared Memory ✅ | Task Queue ✅' },
     { v:'V5', name:'Constitutional AI', desc:'Safety, validation, hallucination detection', pct:100, features:'Self Critique ✅ | Policy Engine ✅ | Hallucination ✅ | Safety ✅ | Confidence ✅ | Validation ✅' },
   ]},
@@ -12,7 +12,7 @@ const ROADMAP = [
     { v:'V6', name:'Zeus (Master Brain)', desc:'Intent, planning, agent selection', pct:100, features:'Intent Detection ✅ | Agent Selection ✅ | Error Recovery ✅ | Planning ✅ | Task Breakdown ✅ | Workflows ✅' },
     { v:'V7', name:'Hermes (Communication)', desc:'Email, notifications, messaging', pct:100, features:'Gmail ✅ | Notifications ✅ | Outlook ✅ | WhatsApp ✅ | Discord ✅ | Slack ✅ | Telegram ✅ | SMS ✅' },
     { v:'V8', name:'Athena (Knowledge)', desc:'Search, RAG, PDF, research', pct:100, features:'Web Search ✅ | RAG (TF-IDF) ✅ | Deep Research ✅ | PDF Reader ✅ | Knowledge Graph ✅ | Citations ✅' },
-    { v:'V9', name:'Hephaestus (Developer)', desc:'Coding, git, debugging, testing', pct:50, features:'Code Execution ✅ | Git (read-only) ✅ | File Analysis ✅ | Code Gen ✅ | Debugging ⚠️ | Git Write ❌ | Testing ❌ | Deploy ❌' },
+    { v:'V9', name:'Hephaestus (Developer)', desc:'Coding, git, debugging, testing, deploy', pct:85, features:'Code Execution ✅ | Git Read ✅ | Git Write ✅ | File Analysis ✅ | Code Gen ✅ | Debug Engine ✅ | Error Patterns ✅ | Testing Framework ✅ | Deploy Tools ✅ | Docker Info ✅ | CI/CD ⚠️' },
     { v:'V10', name:'Apollo (Creative)', desc:'Image gen, writing, video, design', pct:35, features:'Image Gen (Pollinations) ✅ | 14 Art Styles ✅ | Creative Writing ✅ | Video ❌ | UI Design ❌ | Logo ❌ | Presentation ❌' },
     { v:'V11', name:'Ares (Execution)', desc:'Desktop, keyboard, apps, browser, mouse', pct:100, features:'Desktop Control ✅ | Keyboard ✅ | Windows API ✅ | App Mgmt ✅ | Browser ✅ | Mouse ✅' },
     { v:'V12', name:'Argus (Vision)', desc:'OCR, camera, object detection, screen AI', pct:100, features:'OCR ✅ | Screenshot ✅ | Camera ✅ | Object Detection ✅ | Screen AI ✅' },
@@ -24,7 +24,7 @@ const ROADMAP = [
     { v:'V16', name:'Reflection Engine', desc:'Mistake detection, learning reports', pct:100, features:'Mistake Detection ✅ | Learning Reports ✅ | Suggestions ✅ | Daily Reflection ✅ | Agent Score ✅' },
     { v:'V17', name:'Learning Engine', desc:'Habits, preferences, prompt tuning', pct:100, features:'Preference Learning ✅ | Habit Learning ✅ | Prompt Optimization ✅ | Workflow Learning ✅' },
     { v:'V18', name:'Dashboard 2.0 (Orb UI)', desc:'Orb, HUD, stats, alerts, AI flow', pct:100, features:'Orb ✅ | Live Stats ✅ | CPU/RAM/VRAM ✅ | Notifications ✅ | Voice Viz ✅ | Memory Graph ✅ | Timeline ✅ | Agent Network ✅' },
-    { v:'V19', name:'Workflow Engine', desc:'Morning routine, automation chains', pct:28, features:'Workflow CRUD ✅ | Daily Briefing ✅ | Task Planning ✅ | Sequential Execution ✅ | Morning Routine ❌ | News ❌ | Email Auto ❌ | Scheduled Triggers ❌' },
+    { v:'V19', name:'Workflow Engine', desc:'Morning routine, automation chains, templates', pct:72, features:'Workflow CRUD ✅ | Daily Briefing ✅ | Task Planning ✅ | Sequential Execution ✅ | Morning Routine ✅ | News Digest ✅ | Email Auto-Sort ✅ | Scheduled Triggers ✅ | Templates ✅ | Event Triggers ⚠️ | Parallel Workflows ❌' },
     { v:'V20', name:'Multi-Agent Collaboration', desc:'Agent pipeline, parallel execution', pct:18, features:'Shared Context ✅ | Sequential Chaining ✅ | Message Bus ✅ | Agent Pipeline ⚠️ | Parallel Execution ❌ | Peer-to-Peer ❌' },
   ]},
   { phase: 'Phase 4 — AI Operating System', items: [
