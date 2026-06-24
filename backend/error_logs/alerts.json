@@ -1,5 +1,33 @@
 [
   {
+    "id": "alert_20260624_092649_390533",
+    "timestamp": "2026-06-24T09:26:49.390533",
+    "time_display": "09:26:49 AM",
+    "title": "CPU High",
+    "message": "CPU usage is at 89%. Performance may degrade.",
+    "severity": "warning",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
+    "id": "alert_20260624_092619_312193",
+    "timestamp": "2026-06-24T09:26:19.312193",
+    "time_display": "09:26:19 AM",
+    "title": "Disk Warning",
+    "message": "Disk is 92% full. Consider cleanup.",
+    "severity": "warning",
+    "category": "system",
+    "source": "system_monitor",
+    "error_id": "",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
     "id": "alert_20260623_221129_326952",
     "timestamp": "2026-06-23T22:11:29.326952",
     "time_display": "10:11:29 PM",

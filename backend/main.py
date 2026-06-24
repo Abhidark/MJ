@@ -97,6 +97,12 @@ from intelligence.groq_provider import is_groq_available, stream_groq_chat, get_
 from plugins.plugin_manager import load_plugins, match_plugin, run_plugin, notify_plugins, parse_plugin_command, handle_plugin_management, get_plugin_list
 from self_healer.error_tracker import log_error, get_recent_errors, get_error_stats, clear_errors
 from self_healer.auto_fixer import attempt_fix, analyze_error
+
+# Agent Framework Core
+from core.message_bus import message_bus
+from core.event_system import event_system
+from core.shared_memory import shared_memory
+from core.task_queue import task_queue
 from self_healer.health_monitor import check_health
 from self_healer.middleware import SelfHealingMiddleware
 from self_healer.alert_system import (
@@ -133,6 +139,9 @@ for _cls in _module_classes:
         zeus.register(_cls())
     except Exception:
         pass  # Module failed to init — skip silently
+
+# Emit startup event
+event_system.emit("system.startup", "zeus", {"modules_loaded": len(zeus.modules)})
 
 # Load MJ system prompt from file
 MJ_PROMPT_FILE = Path(__file__).parent / "human_layer" / "prompts" / "mj_system_prompt.txt"
@@ -395,9 +404,30 @@ async def execute_pc_command(req: CommandRequest):
     """Direct PC command execution endpoint."""
     cmd = parse_command(req.command)
     if cmd:
+        action = cmd.get("action", "")
+        if action == "mouse":
+            from pc_control.mouse_control import execute_mouse_command
+            return execute_mouse_command(cmd)
+        elif action == "browser":
+            from pc_control.browser_control import execute_browser_command
+            return execute_browser_command(cmd)
         result = execute_command(cmd)
         return result
     return {"success": False, "message": "Command samajh nahi aaya."}
+
+
+@app.post("/mouse")
+async def mouse_control_endpoint(req: dict):
+    """Direct mouse control API."""
+    from pc_control.mouse_control import execute_mouse_command
+    return execute_mouse_command(req)
+
+
+@app.post("/browser")
+async def browser_control_endpoint(req: dict):
+    """Direct browser control API."""
+    from pc_control.browser_control import execute_browser_command
+    return execute_browser_command(req)
 
 
 @app.get("/system-stats")
@@ -794,6 +824,153 @@ async def zeus_parallel_execute(req: ChatRequest):
         return {"results": [], "message": "No modules matched."}
     results = await zeus.execute_parallel(matches, req.message, {})
     return {"results": results}
+
+
+# ===== AGENT FRAMEWORK API =====
+
+# --- Message Bus ---
+@app.post("/framework/bus/publish")
+async def bus_publish(topic: str = Form(...), sender: str = Form("api"), data: str = Form(None)):
+    """Publish a message to the bus."""
+    payload = json.loads(data) if data else None
+    msg = message_bus.publish(topic, sender, payload)
+    return msg.to_dict()
+
+@app.get("/framework/bus/history")
+async def bus_history(topic: str = None, limit: int = 50):
+    """Get message bus history."""
+    return {"messages": message_bus.get_history(topic, limit)}
+
+@app.get("/framework/bus/stats")
+async def bus_stats():
+    """Get message bus statistics."""
+    return message_bus.get_stats()
+
+# --- Event System ---
+@app.post("/framework/events/emit")
+async def events_emit(name: str = Form(...), source: str = Form("api"), data: str = Form(None)):
+    """Emit a system event."""
+    payload = json.loads(data) if data else None
+    evt = event_system.emit(name, source, payload)
+    return evt.to_dict()
+
+@app.get("/framework/events/history")
+async def events_history(name: str = None, limit: int = 50):
+    """Get event history."""
+    return {"events": event_system.get_history(name, limit)}
+
+@app.get("/framework/events/stats")
+async def events_stats():
+    """Get event system statistics."""
+    return event_system.get_stats()
+
+@app.get("/framework/events/types")
+async def events_types():
+    """List all known event types."""
+    return {"events": event_system.list_events()}
+
+# --- Shared Memory ---
+@app.post("/framework/memory/set")
+async def memory_set(key: str = Form(...), value: str = Form(...),
+                     namespace: str = Form("global"), ttl: int = Form(None)):
+    """Set a shared memory value."""
+    try:
+        val = json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        val = value
+    shared_memory.set(key, val, ttl=ttl if ttl and ttl > 0 else None, namespace=namespace)
+    return {"success": True, "key": key, "namespace": namespace}
+
+@app.get("/framework/memory/get/{key}")
+async def memory_get(key: str, namespace: str = "global"):
+    """Get a shared memory value."""
+    val = shared_memory.get(key, namespace=namespace)
+    return {"key": key, "value": val, "found": val is not None}
+
+@app.get("/framework/memory/all")
+async def memory_all():
+    """Get all shared memory entries."""
+    return {"memory": shared_memory.get_all()}
+
+@app.get("/framework/memory/namespace/{namespace}")
+async def memory_namespace(namespace: str):
+    """Get all keys in a namespace."""
+    return {"namespace": namespace, "data": shared_memory.get_namespace(namespace)}
+
+@app.get("/framework/memory/stats")
+async def memory_stats():
+    """Get shared memory statistics."""
+    return shared_memory.stats()
+
+@app.delete("/framework/memory/{key}")
+async def memory_delete(key: str, namespace: str = "global"):
+    """Delete a shared memory key."""
+    deleted = shared_memory.delete(key, namespace=namespace)
+    return {"success": deleted}
+
+# --- Task Queue ---
+@app.post("/framework/queue/submit")
+async def queue_submit(name: str = Form(...), handler: str = Form(...),
+                       params: str = Form("{}"), priority: int = Form(5),
+                       submitted_by: str = Form("api")):
+    """Submit a task to the queue."""
+    p = json.loads(params)
+    task = task_queue.submit(name, handler, p, priority, submitted_by=submitted_by)
+    return task.to_dict()
+
+@app.post("/framework/queue/process")
+async def queue_process():
+    """Process the next task in the queue."""
+    result = await task_queue.process_next()
+    if not result:
+        return {"message": "Queue is empty."}
+    return result
+
+@app.post("/framework/queue/process-all")
+async def queue_process_all():
+    """Process all tasks in the queue."""
+    results = await task_queue.process_all()
+    return {"processed": len(results), "results": results}
+
+@app.get("/framework/queue")
+async def queue_list():
+    """Get pending tasks in the queue."""
+    return {"queue": task_queue.get_queue()}
+
+@app.get("/framework/queue/stats")
+async def queue_stats():
+    """Get task queue statistics."""
+    return task_queue.get_stats()
+
+@app.get("/framework/queue/history")
+async def queue_history(limit: int = 50):
+    """Get completed task history."""
+    return {"history": task_queue.get_history(limit)}
+
+@app.get("/framework/queue/{task_id}")
+async def queue_task(task_id: str):
+    """Get task details by ID."""
+    task = task_queue.get_task(task_id)
+    if not task:
+        return {"error": "Task not found"}
+    return task
+
+@app.delete("/framework/queue/{task_id}")
+async def queue_cancel(task_id: str):
+    """Cancel a pending task."""
+    cancelled = task_queue.cancel(task_id)
+    return {"success": cancelled}
+
+# --- Framework Overview ---
+@app.get("/framework/status")
+async def framework_status():
+    """Get full agent framework status."""
+    return {
+        "message_bus": message_bus.get_stats(),
+        "event_system": event_system.get_stats(),
+        "shared_memory": shared_memory.stats(),
+        "task_queue": task_queue.get_stats(),
+    }
 
 
 def get_file_type(filename: str) -> str:
