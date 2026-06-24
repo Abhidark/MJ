@@ -229,6 +229,45 @@ export const learningAPI = {
   getStats: () => api.get('/learning/stats'),
 };
 
+// --- VISION ENGINE (V12) ---
+export const visionAPI = {
+  screenshot: (message = '') => api.post('/vision/screenshot', { message }),
+  getMonitors: () => api.get('/vision/monitors'),
+  captureCamera: (cameraIndex = 0) => api.post('/vision/camera', { message: String(cameraIndex) }),
+  listCameras: () => api.get('/vision/cameras'),
+  detectObjects: (imagePath = '') => api.post('/vision/detect', { message: imagePath }),
+  analyzeScreen: (imagePath = '') => api.post('/vision/analyze', { message: imagePath }),
+  compareScreenshots: (path1, path2) => api.post('/vision/compare', { message: `${path1}|${path2}` }),
+  getHistory: (limit = 50, type = '') => api.get(`/vision/history?limit=${limit}${type ? '&type=' + type : ''}`),
+  getDetections: (limit = 20) => api.get(`/vision/detections?limit=${limit}`),
+  getAnalyses: (limit = 10) => api.get(`/vision/analyses?limit=${limit}`),
+  getStats: () => api.get('/vision/stats'),
+};
+
+// --- SENTINEL SECURITY (V15) ---
+export const sentinelAPI = {
+  checkPermission: (user, action, module = '') => api.post('/sentinel/check-permission', { message: `${user}|${action}${module ? '|' + module : ''}` }),
+  getRoles: () => api.get('/sentinel/roles'),
+  createRole: (name, desc, perms) => api.post('/sentinel/roles', { message: `${name}|${desc}|${perms.join(',')}` }),
+  assignRole: (user, role) => api.post('/sentinel/assign-role', { message: `${user}|${role}` }),
+  storeSecret: (key, value, category = 'general') => api.post('/sentinel/vault/store', { message: `${key}|${value}|${category}` }),
+  getSecret: (key) => api.get(`/sentinel/vault/${encodeURIComponent(key)}`),
+  deleteSecret: (key) => api.delete(`/sentinel/vault/${encodeURIComponent(key)}`),
+  listSecrets: () => api.get('/sentinel/vault'),
+  getAudit: (limit = 100, event = '', user = '', status = '') => api.get(`/sentinel/audit?limit=${limit}${event ? '&event=' + event : ''}${user ? '&user=' + user : ''}${status ? '&status=' + status : ''}`),
+  getAuditStats: () => api.get('/sentinel/audit/stats'),
+  cleanAudit: (days = 30) => api.post('/sentinel/audit/clean', { message: String(days) }),
+  scanInput: (text) => api.post('/sentinel/scan', { message: text }),
+  getThreats: (limit = 50, severity = '') => api.get(`/sentinel/threats?limit=${limit}${severity ? '&severity=' + severity : ''}`),
+  getThreatStats: () => api.get('/sentinel/threats/stats'),
+  blockAction: (action) => api.post('/sentinel/block', { message: action }),
+  unblockAction: (action) => api.post('/sentinel/unblock', { message: action }),
+  getHealth: () => api.get('/sentinel/health'),
+  getConfig: () => api.get('/sentinel/config'),
+  updateConfig: (settings) => api.post('/sentinel/config', { message: JSON.stringify(settings) }),
+  getStats: () => api.get('/sentinel/stats'),
+};
+
 // --- PLUGINS ---
 export const pluginAPI = {
   getPlugins: () => api.get('/plugins'),
