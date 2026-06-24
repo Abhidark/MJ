@@ -170,6 +170,19 @@ export const knowledgeAPI = {
   clearCitations: () => api.post('/citations/clear'),
 };
 
+// --- HERMES MESSAGING ---
+export const hermesAPI = {
+  getConfig: () => api.get('/hermes/messaging/config'),
+  updateConfig: (platform, settings) => api.post(`/hermes/messaging/config/${platform}`, settings),
+  send: (message) => api.post('/hermes/messaging/send', { message }),
+  sendTo: (platform, message) => api.post(`/hermes/messaging/send/${platform}`, { message }),
+  broadcast: (message) => api.post('/hermes/messaging/broadcast', { message }),
+  getHistory: (limit = 50, platform = '') => api.get(`/hermes/messaging/history?limit=${limit}${platform ? '&platform=' + platform : ''}`),
+  getStats: () => api.get('/hermes/messaging/stats'),
+  getPlatforms: () => api.get('/hermes/messaging/platforms'),
+  test: (platform) => api.post(`/hermes/messaging/test/${platform}`),
+};
+
 // --- PLUGINS ---
 export const pluginAPI = {
   getPlugins: () => api.get('/plugins'),

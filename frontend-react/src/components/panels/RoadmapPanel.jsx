@@ -10,7 +10,7 @@ const ROADMAP = [
   ]},
   { phase: 'Phase 2 — Specialized Agents', items: [
     { v:'V6', name:'Zeus (Master Brain)', desc:'Intent, planning, agent selection', pct:100, features:'Intent Detection ✅ | Agent Selection ✅ | Error Recovery ✅ | Planning ✅ | Task Breakdown ✅ | Workflows ✅' },
-    { v:'V7', name:'Hermes (Communication)', desc:'Email, notifications, messaging', pct:15, features:'Gmail ✅ | Notifications ✅ | Outlook ⚠️ | WhatsApp ❌ | Discord ❌ | Slack ❌ | Telegram ❌ | SMS ❌' },
+    { v:'V7', name:'Hermes (Communication)', desc:'Email, notifications, messaging', pct:100, features:'Gmail ✅ | Notifications ✅ | Outlook ✅ | WhatsApp ✅ | Discord ✅ | Slack ✅ | Telegram ✅ | SMS ✅' },
     { v:'V8', name:'Athena (Knowledge)', desc:'Search, RAG, PDF, research', pct:100, features:'Web Search ✅ | RAG (TF-IDF) ✅ | Deep Research ✅ | PDF Reader ✅ | Knowledge Graph ✅ | Citations ✅' },
     { v:'V9', name:'Hephaestus (Developer)', desc:'Coding, git, debugging, testing', pct:45, features:'Code Context ✅ | Git (9 cmds) ✅ | Debugging ⚠️ | APIs ⚠️ | Docs ❌ | Testing ❌ | Deploy ❌' },
     { v:'V10', name:'Apollo (Creative)', desc:'Image gen, writing, video, design', pct:30, features:'Image Gen ✅ | Creative Writing ✅ | Video ❌ | UI Design ❌ | Logo ❌ | Presentation ❌' },
