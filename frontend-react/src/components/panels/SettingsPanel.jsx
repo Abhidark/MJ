@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { voiceAPI, modelAPI } from '@/services/api';
 
-// ─── Orb Energy Presets (matches old UI) ───
+// --- Orb Energy Presets (matches old UI) ---
 const ENERGY_PRESETS = [
   { key: 'emerald', name: 'JARVIS', color: '#00d4ff', shadow: 'rgba(0,212,255,0.6)' },
   { key: 'cyan', name: 'Cyan', color: '#00f0ff', shadow: 'rgba(0,240,255,0.6)' },
@@ -10,7 +10,7 @@ const ENERGY_PRESETS = [
   { key: 'gold', name: 'Gold', color: '#ffd900', shadow: 'rgba(255,217,0,0.6)' },
 ];
 
-// ─── Interaction Modes ───
+// --- Interaction Modes ---
 const INTERACTION_MODES = [
   { key: 'repel', label: 'Repel', desc: 'Disperses particles' },
   { key: 'attract', label: 'Attract', desc: 'Pulls to cursor' },
@@ -18,7 +18,7 @@ const INTERACTION_MODES = [
   { key: 'ripple', label: 'Ripple', desc: 'Elastic wave' },
 ];
 
-// ─── Dashboard Themes ───
+// --- Dashboard Themes ---
 const DASH_THEMES = [
   { key: 'default', name: 'JARVIS', bg: 'linear-gradient(135deg,#020c19,#0a1628)', accent: '#00d4ff' },
   { key: 'emerald', name: 'EMERALD', bg: 'linear-gradient(135deg,#021910,#0a2818)', accent: '#00ff88' },
@@ -31,7 +31,7 @@ const DASH_THEMES = [
 export default function SettingsPanel({ onClose }) {
   const [tab, setTab] = useState('orb'); // orb | dashboard | voice | provider
 
-  // ── Orb settings ──
+  // -- Orb settings --
   const [orbPreset, setOrbPreset] = useState(() => localStorage.getItem('mj_orb_preset') || 'emerald');
   const [orbMode, setOrbMode] = useState(() => localStorage.getItem('mj_orb_mode') || 'repel');
   const [orbCount, setOrbCount] = useState(() => parseInt(localStorage.getItem('mj_orb_count')) || 3500);
@@ -42,7 +42,7 @@ export default function SettingsPanel({ onClose }) {
   const [orbHyperGlow, setOrbHyperGlow] = useState(() => localStorage.getItem('mj_orb_glow') === 'true');
   const [orbHoloFX, setOrbHoloFX] = useState(() => localStorage.getItem('mj_orb_holo') !== 'false');
 
-  // ── Dashboard settings ──
+  // -- Dashboard settings --
   const [dashTheme, setDashTheme] = useState(() => localStorage.getItem('mj_dash_theme') || 'default');
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('mj_accent') || '#00d4ff');
   const [cardOpacity, setCardOpacity] = useState(() => parseInt(localStorage.getItem('mj_opacity')) || 75);
@@ -53,7 +53,7 @@ export default function SettingsPanel({ onClose }) {
   const [compactMode, setCompactMode] = useState(() => localStorage.getItem('mj_compact') === 'true');
   const [showSeconds, setShowSeconds] = useState(() => localStorage.getItem('mj_seconds') !== 'false');
 
-  // ── Voice / Provider ──
+  // -- Voice / Provider --
   const [voices, setVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState('');
   const [voiceSpeed, setVoiceSpeed] = useState(1);
@@ -80,7 +80,7 @@ export default function SettingsPanel({ onClose }) {
     load();
   }, []);
 
-  // ── Orb handlers ──
+  // -- Orb handlers --
   const applyOrbPreset = (key) => {
     setOrbPreset(key);
     localStorage.setItem('mj_orb_preset', key);
@@ -110,7 +110,7 @@ export default function SettingsPanel({ onClose }) {
     window.dispatchEvent(new CustomEvent('orb:setting', { detail: { [lsKey]: next } }));
   };
 
-  // ── Dashboard handlers ──
+  // -- Dashboard handlers --
   const applyTheme = (key) => {
     setDashTheme(key);
     localStorage.setItem('mj_dash_theme', key);
@@ -146,7 +146,7 @@ export default function SettingsPanel({ onClose }) {
     setShowSeconds(true); localStorage.setItem('mj_seconds', 'true');
   };
 
-  // ── Voice/Provider handlers ──
+  // -- Voice/Provider handlers --
   const handleSaveVoice = async () => {
     try {
       await voiceAPI.updateSettings({ ...voiceSettings, voice: selectedVoice, speed: voiceSpeed });
@@ -163,7 +163,7 @@ export default function SettingsPanel({ onClose }) {
       <div className="settings-panel">
         <div className="settings-header">
           <span className="settings-title">{'⚙'} Settings</span>
-          <button className="panel-close" onClick={onClose}>{'✕'}</button>
+          <button className="panel-close" onClick={onClose}>x</button>
         </div>
 
         {/* Tab Bar */}
@@ -185,7 +185,7 @@ export default function SettingsPanel({ onClose }) {
         </div>
 
         <div className="settings-body">
-          {/* ─── ORB TAB ─── */}
+          {/* --- ORB TAB --- */}
           {tab === 'orb' && (
             <>
               <div className="settings-section">
@@ -270,7 +270,7 @@ export default function SettingsPanel({ onClose }) {
             </>
           )}
 
-          {/* ─── DASHBOARD TAB ─── */}
+          {/* --- DASHBOARD TAB --- */}
           {tab === 'dashboard' && (
             <>
               <div className="settings-section">
@@ -343,7 +343,7 @@ export default function SettingsPanel({ onClose }) {
             </>
           )}
 
-          {/* ─── VOICE TAB ─── */}
+          {/* --- VOICE TAB --- */}
           {tab === 'voice' && (
             <div className="settings-section">
               <div className="settings-label">VOICE</div>
@@ -368,7 +368,7 @@ export default function SettingsPanel({ onClose }) {
             </div>
           )}
 
-          {/* ─── PROVIDER TAB ─── */}
+          {/* --- PROVIDER TAB --- */}
           {tab === 'provider' && (
             <div className="settings-section">
               <div className="settings-label">AI PROVIDER</div>

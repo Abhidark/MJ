@@ -1,18 +1,18 @@
 /* ============================================================
-   THEME — all CSS custom properties for the JARVIS HUD look
+   THEME -- all CSS custom properties for the JARVIS HUD look
    Merges original :root vars with React-specific additions.
    This file is the SINGLE SOURCE OF TRUTH for design tokens.
    ============================================================ */
 
 :root {
-  /* ── Core backgrounds ── */
+  /* -- Core backgrounds -- */
   --bg:              #020408;
   --bg2:             #040810;
   --bg-panel:        #0a1628;
   --bg-card:         rgba(2,12,25,0.75);
-  --bg-card-hover:   #132640;
+  --bg-card-hover:   rgba(19,38,64,0.85);
 
-  /* ── Primary palette ── */
+  /* -- Primary palette -- */
   --primary:         #00d4ff;
   --primary-dim:     #0088aa;
   --accent:          #00aaff;
@@ -24,7 +24,7 @@
   --jarvis-blue:     #0066cc;
   --jarvis-glow:     rgba(0, 212, 255, 0.15);
 
-  /* ── Semantic colors ── */
+  /* -- Semantic colors -- */
   --success:         #00ff88;
   --green:           #00e676;
   --warning:         #ffaa00;
@@ -35,47 +35,57 @@
   --blue:            #00aaff;
   --purple:          #7c4dff;
 
-  /* ── Glass / Panel ── */
+  /* -- Glass / Panel -- */
   --glow:            rgba(0, 212, 255, 0.35);
   --glow2:           rgba(0, 170, 255, 0.25);
-  --glass:           rgba(0, 150, 255, 0.03);
-  --glass2:          rgba(0, 150, 255, 0.06);
-  --glass-border:    rgba(0, 180, 255, 0.1);
-  --glass-border-hover: rgba(0, 212, 255, 0.25);
-  --panel-bg:        rgba(2, 8, 20, 0.8);
+  --glass:           rgba(0, 150, 255, 0.04);
+  --glass2:          rgba(0, 150, 255, 0.08);
+  --glass-border:    rgba(0, 180, 255, 0.12);
+  --glass-border-hover: rgba(0, 212, 255, 0.3);
+  --panel-bg:        rgba(2, 8, 20, 0.85);
   --panel-border:    rgba(0, 180, 255, 0.08);
 
-  /* ── Borders ── */
+  /* -- Borders -- */
   --border:          rgba(0, 180, 255, 0.1);
   --border-hover:    rgba(0, 180, 255, 0.3);
 
-  /* ── Text ── */
+  /* -- Text -- */
   --text:            #c8dce8;
   --text-dim:        #4a6a80;
   --text-bright:     #e0f0ff;
   --text-muted:      #4a5568;
 
-  /* ── Typography ── */
+  /* -- Typography -- */
   --font:            'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono:       'JetBrains Mono', 'Fira Code', monospace;
   --font-display:    'Orbitron', monospace;
 
-  /* ── Radius ── */
+  /* -- Radius -- */
   --radius:          14px;
   --radius-sm:       8px;
   --radius-xs:       4px;
+  --radius-lg:       20px;
 
-  /* ── Transition ── */
-  --transition:      all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* -- Transition -- */
+  --transition:      all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-fast: all 0.15s ease;
+  --transition-slow: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-  /* ── Layout ── */
+  /* -- Layout -- */
   --sidebar-w:       210px;
 
-  /* ── Special gradients ── */
+  /* -- Shadows -- */
+  --shadow-sm:       0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md:       0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg:       0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow:     0 0 20px rgba(0, 212, 255, 0.1), 0 0 40px rgba(0, 212, 255, 0.05);
+
+  /* -- Special gradients -- */
   --arc-reactor:     radial-gradient(circle, rgba(0,212,255,0.15) 0%, rgba(0,100,200,0.05) 40%, transparent 70%);
+  --glass-gradient:  linear-gradient(135deg, rgba(0,150,255,0.08) 0%, rgba(0,80,200,0.02) 100%);
 }
 
-/* ── Particles canvas ── */
+/* -- Particles canvas -- */
 .particles-canvas {
   position: fixed;
   top: 0;
@@ -86,7 +96,7 @@
   pointer-events: none;
 }
 
-/* ── Hex grid background ── */
+/* -- Hex grid background -- */
 .hex-grid-bg {
   position: fixed;
   top: 0;
@@ -102,7 +112,7 @@
   pointer-events: none;
 }
 
-/* ── Scanline overlay ── */
+/* -- Scanline overlay -- */
 .scanline-overlay {
   position: fixed;
   top: 0;
@@ -121,7 +131,7 @@
   mix-blend-mode: overlay;
 }
 
-/* ── Holographic mode (future: toggle via class on body) ── */
+/* -- Holographic mode (toggle via class on body) -- */
 body.holo-active .scanline-overlay {
   background: repeating-linear-gradient(
     0deg,

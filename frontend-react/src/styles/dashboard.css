@@ -175,9 +175,10 @@
 .dash-card {
   background: rgba(2,12,25,0.75);
   border: 1px solid rgba(0,180,255,0.1);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: var(--card-radius, 12px);
+  padding: var(--card-pad, 12px);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -307,7 +308,7 @@
   position: relative;
 }
 
-.sysmon-gauge svg { width: 70px; height: 70px; }
+.sysmon-gauge svg { width: var(--gauge-size, 70px); height: var(--gauge-size, 70px); }
 
 .sysmon-val {
   position: absolute;
@@ -863,34 +864,5 @@
   font-weight: 600;
 }
 
-/* ═══════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════ */
-@media (max-width: 1200px) {
-  .zeus-models {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 900px) {
-  .dash-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-  .sysmon-gauges {
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 600px) {
-  .dash-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 0 8px 8px;
-  }
-  .dash-grid > * {
-    grid-column: 1 / -1 !important;
-    grid-row: auto !important;
-  }
-  .sysmon-gauge svg { width: 55px; height: 55px; }
-  .sysmon-val { font-size: 10px; }
-}
+/* Responsive rules moved to responsive.css */
+e.css */

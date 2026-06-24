@@ -48,6 +48,9 @@ from intelligence.memory_embeddings import hybrid_search, embed_fact, is_ollama_
 from intelligence.short_term_memory import short_term
 from intelligence.user_profile import build_user_profile, get_profile_summary
 from intelligence.workflow_engine import workflow_engine
+from intelligence.multi_agent import multi_agent
+from intelligence.db_readiness import get_db_status
+from human_layer.model_manager import get_cost_stats, set_budget_limit, log_token_usage, cost_aware_route
 
 # Intelligence Layer
 from intelligence.web_browser import deep_search, deep_research, format_search_for_llm, format_research_for_llm, needs_web_search_v2
@@ -3199,6 +3202,168 @@ async def serve_generated_images(file_path: str):
     return JSONResponse({"error": "Not found"}, status_code=404)
 
 
+# ===== MULTI-AGENT COLLABORATION (V20) =====
+
+@app.get("/pipelines")
+async def list_pipelines():
+    return multi_agent.list_pipelines()
+
+@app.get("/pipelines/templates")
+async def pipeline_templates():
+    return multi_agent.get_templates()
+
+@app.get("/pipelines/stats")
+async def pipeline_stats():
+    return multi_agent.get_stats()
+
+@app.get("/pipelines/logs")
+async def pipeline_logs(limit: int = 20):
+    return multi_agent.get_logs(limit)
+
+@app.get("/pipelines/{pipeline_id}")
+async def get_pipeline(pipeline_id: str):
+    p = multi_agent.get_pipeline(pipeline_id)
+    if not p:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return {"id": pipeline_id, **p}
+
+@app.post("/pipelines")
+async def create_pipeline(request: Request):
+    data = await request.json()
+    pid = data.pop("id", f"pipe_{int(time.time())}")
+    return multi_agent.create_pipeline(pid, data)
+
+@app.delete("/pipelines/{pipeline_id}")
+async def delete_pipeline(pipeline_id: str):
+    return multi_agent.delete_pipeline(pipeline_id)
+
+@app.post("/pipelines/{pipeline_id}/run")
+async def run_pipeline(pipeline_id: str):
+    return await multi_agent.run_pipeline(pipeline_id, modules=zeus.modules)
+
+@app.post("/pipelines/install/{template_id}")
+async def install_pipeline_template(template_id: str):
+    return multi_agent.install_template(template_id)
+
+@app.post("/pipelines/reset")
+async def reset_pipelines():
+    return multi_agent.reset_to_defaults()
+
+# -- Agent Groups --
+
+@app.get("/agent-groups")
+async def list_agent_groups():
+    return multi_agent.groups.list_groups()
+
+@app.post("/agent-groups")
+async def create_agent_group(request: Request):
+    data = await request.json()
+    return multi_agent.groups.create_group(data.get("id", f"grp_{int(time.time())}"), data.get("name", ""), data.get("agents", []), data.get("purpose", ""))
+
+@app.delete("/agent-groups/{group_id}")
+async def delete_agent_group(group_id: str):
+    return multi_agent.groups.delete_group(group_id)
+
+# -- Agent Mailbox --
+
+@app.post("/agent-mail/send")
+async def agent_mail_send(request: Request):
+    data = await request.json()
+    return multi_agent.mailbox.send(data.get("from", "zeus"), data.get("to", ""), data.get("message", ""), data.get("data"))
+
+@app.get("/agent-mail/{agent_name}")
+async def agent_mail_receive(agent_name: str, unread: bool = True):
+    return {"messages": multi_agent.mailbox.receive(agent_name, unread)}
+
+@app.get("/agent-mail-stats")
+async def agent_mail_stats():
+    return multi_agent.mailbox.get_stats()
+
+
+# ===== CHRONOS CALENDAR & PLANNER (V14) =====
+
+@app.get("/calendar/events")
+async def calendar_events(date: str = ""):
+    from modules.chronos.module import calendar_engine
+    return {"events": calendar_engine.get_events(date)}
+
+@app.get("/calendar/upcoming")
+async def calendar_upcoming(days: int = 7):
+    from modules.chronos.module import calendar_engine
+    return {"events": calendar_engine.get_upcoming(days)}
+
+@app.post("/calendar/events")
+async def add_calendar_event(request: Request):
+    from modules.chronos.module import calendar_engine
+    data = await request.json()
+    event = calendar_engine.add_event(data.get("title", ""), data.get("date", ""), data.get("start_time", ""), data.get("end_time", ""), data.get("category", "general"))
+    return event
+
+@app.delete("/calendar/events/{event_id}")
+async def delete_calendar_event(event_id: str):
+    from modules.chronos.module import calendar_engine
+    return calendar_engine.delete_event(event_id)
+
+@app.get("/planner/today")
+async def daily_plan():
+    from modules.chronos.module import daily_planner
+    return daily_planner.get_plan()
+
+@app.get("/productivity/stats")
+async def productivity_stats():
+    from modules.chronos.module import productivity_tracker
+    return productivity_tracker.get_stats()
+
+
+# ===== EPISODIC MEMORY (V13) =====
+
+@app.get("/memory/episodes")
+async def memory_episodes(query: str = "", limit: int = 10, days: int = 30):
+    from modules.mnemosyne.module import episodic_memory
+    return {"episodes": episodic_memory.recall(query, limit, days)}
+
+@app.get("/memory/timeline")
+async def memory_timeline(days: int = 7):
+    from modules.mnemosyne.module import episodic_memory
+    return episodic_memory.get_timeline(days)
+
+@app.get("/memory/compression")
+async def memory_compression_stats():
+    from modules.mnemosyne.module import memory_compressor
+    return memory_compressor.get_stats()
+
+@app.post("/memory/compress")
+async def compress_memories():
+    from modules.mnemosyne.module import memory_compressor
+    all_facts = memory_store.get_all()
+    facts_text = [f.content for f in all_facts]
+    return memory_compressor.compress_old_facts(facts_text)
+
+
+# ===== COST OPTIMIZATION (V22) =====
+
+@app.get("/provider/costs")
+async def provider_costs():
+    return get_cost_stats()
+
+@app.post("/provider/budget")
+async def set_provider_budget(request: Request):
+    data = await request.json()
+    return set_budget_limit(data.get("limit", 5.0))
+
+@app.post("/provider/cost-route")
+async def cost_route(request: Request):
+    data = await request.json()
+    return cost_aware_route(data.get("task_type", "chat"))
+
+
+# ===== DATABASE READINESS (V2) =====
+
+@app.get("/db/status")
+async def db_status():
+    return get_db_status()
+
+
 # SPA catch-all: serve React index.html for client-side routes
 @app.get("/{path:path}")
 async def spa_catch_all(path: str):
@@ -3215,7 +3380,9 @@ async def spa_catch_all(path: str):
         "docs", "openapi.json",
         "vision", "sentinel", "safety", "reflection", "learning",
         "messaging", "message-bus", "events", "shared-memory", "task-queue",
-        "mouse", "browser-control", "calendar",
+        "mouse", "browser-control", "calendar", "pipelines", "agent-groups",
+        "agent-mail", "agent-mail-stats", "planner", "productivity", "db",
+        "smart-home", "workflows", "dev",
     }
     if first_segment in backend_prefixes:
         return JSONResponse({"error": "Not found"}, status_code=404)

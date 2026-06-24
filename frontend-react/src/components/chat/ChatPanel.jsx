@@ -5,7 +5,7 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import ChatHistory from './ChatHistory';
 
-// ─── Stage indicator text ───
+// --- Stage indicator text ---
 function stageText(stage) {
   if (stage === 'understanding') return 'Understanding your message...';
   if (stage === 'calling_ai') return 'Calling AI...';
@@ -69,7 +69,7 @@ export default function ChatPanel({ sideMode = false }) {
         </button>
       )}
 
-      {/* Main chat panel — hidden when collapsed */}
+      {/* Main chat panel -- hidden when collapsed */}
       <div className={`chat-panel${sideMode ? ' side-mode' : ''}${collapsed ? ' chat-hidden' : ''}`}>
         <ChatHistory
           chats={chats}

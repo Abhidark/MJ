@@ -1,9 +1,610 @@
 /* ============================================================
-   RESPONSIVE -- consolidated media queries for all breakpoints
-   Supplements component-level @media rules in individual CSS.
+   RESPONSIVE -- multi-resolution support
+   Breakpoints: 4K (3840+), 2K (2560+), FHD (1920 base),
+                HD (1366-), Tablet (768-), Mobile (480-)
+   Uses CSS custom properties for fluid scaling.
    ============================================================ */
 
-/* ── Accessibility: reduced motion ── */
+/* -- Base scale tokens (FHD 1920x1080 = 1x) -- */
+:root {
+  --scale: 1;
+  --font-base: 13px;
+  --font-sm: 11px;
+  --font-xs: 10px;
+  --font-xxs: 9px;
+  --font-lg: 16px;
+  --font-xl: 22px;
+  --font-code: 12px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 14px;
+  --space-lg: 20px;
+  --space-xl: 28px;
+  --orb-size: 320px;
+  --orb-ring1: 360px;
+  --orb-ring2: 390px;
+  --orb-ring1-offset: -20px;
+  --orb-ring2-offset: -35px;
+  --gauge-size: 70px;
+  --avatar-size: 30px;
+  --icon-btn-size: 38px;
+  --sidebar-base: 210px;
+  --card-radius: 12px;
+  --card-pad: 12px;
+  --topbar-pad-y: 10px;
+  --topbar-pad-x: 20px;
+  --chat-pad: 20px;
+  --input-pad: 14px;
+  --msg-pad-y: 12px;
+  --msg-pad-x: 16px;
+}
+
+/* ============================================================
+   4K (3840px and above) -- scale 1.5x
+   ============================================================ */
+@media (min-width: 3840px) {
+  :root {
+    --scale: 1.5;
+    --font-base: 20px;
+    --font-sm: 16px;
+    --font-xs: 15px;
+    --font-xxs: 13px;
+    --font-lg: 24px;
+    --font-xl: 34px;
+    --font-code: 18px;
+    --space-xs: 6px;
+    --space-sm: 12px;
+    --space-md: 20px;
+    --space-lg: 30px;
+    --space-xl: 42px;
+    --orb-size: 480px;
+    --orb-ring1: 540px;
+    --orb-ring2: 580px;
+    --orb-ring1-offset: -30px;
+    --orb-ring2-offset: -50px;
+    --gauge-size: 105px;
+    --avatar-size: 46px;
+    --icon-btn-size: 56px;
+    --sidebar-base: 320px;
+    --card-radius: 18px;
+    --card-pad: 18px;
+    --topbar-pad-y: 16px;
+    --topbar-pad-x: 32px;
+    --chat-pad: 30px;
+    --input-pad: 20px;
+    --msg-pad-y: 18px;
+    --msg-pad-x: 24px;
+  }
+
+  /* Sidebar */
+  .hud-sidebar { padding: 24px 0; gap: 10px; }
+  .hud-hex { width: 64px; height: 64px; }
+  .hud-hex-icon { font-size: 24px; }
+  .hud-detail-label { font-size: 12px; letter-spacing: 2px; }
+  .hud-detail-value { font-size: 18px; }
+  .hud-detail-bar { height: 5px; }
+  .hud-item { min-height: 72px; padding: 10px 18px; }
+  .hud-divider { width: 50px; margin: 6px 0; }
+  .hud-corner-tl, .hud-corner-bl { width: 30px; height: 30px; border-width: 3px; }
+
+  /* Sidebar widgets */
+  .sidebar-widget { padding: 16px; border-radius: 12px; margin: 4px 14px; }
+  .sidebar-widget-title { font-size: 14px; letter-spacing: 2px; margin-bottom: 12px; }
+  .sb-cal-day { font-size: 14px; padding: 5px 0; }
+  .sb-cal-head { font-size: 12px; }
+  .sb-cal-month { font-size: 15px; }
+  .sb-cal-nav button { width: 32px; height: 32px; font-size: 16px; }
+  .focus-timer-ring { width: 130px; height: 130px; }
+  .focus-timer-ring .timer-text { font-size: 26px; }
+  .focus-timer-ring .timer-label { font-size: 11px; }
+  .focus-timer-controls button { padding: 5px 16px; font-size: 14px; }
+  .focus-timer-mode button { font-size: 12px; padding: 4px 10px; }
+
+  /* Topbar */
+  .top-bar .logo { font-size: 34px; letter-spacing: 8px; }
+  .widget-mini { font-size: 16px; }
+  .widget-mini .val { font-size: 20px; }
+  .widget-mini .val.time-val { font-size: 24px; }
+  .top-bar-widgets { gap: 42px; }
+  .top-bar-actions { gap: 12px; }
+  .icon-btn { width: 56px; height: 56px; font-size: 22px; border-radius: 12px; }
+
+  /* Chat */
+  .chat-header { padding: 20px 30px; }
+  .chat-header h2 { font-size: 18px; letter-spacing: 4px; }
+  .chat-header-btns button { padding: 8px 18px; font-size: 14px; }
+  .chat-header-btns button .btn-icon { font-size: 18px; }
+  .msg { font-size: 20px; line-height: 1.7; }
+  .msg-row { gap: 16px; }
+  .avatar { width: 46px; height: 46px; font-size: 15px; border-radius: 14px; }
+  .timestamp { font-size: 14px; gap: 10px; }
+  .model-badge { font-size: 13px; padding: 3px 12px; border-radius: 6px; }
+  .msg-code-pre { font-size: 18px; padding: 18px 24px; }
+  .msg-code-lang { font-size: 14px; }
+  .msg-code-copy { font-size: 14px; padding: 4px 12px; }
+  .msg-code-header { padding: 10px 18px; }
+  .md-inline-code { font-size: 18px; padding: 2px 10px; }
+  .md-h1 { font-size: 24px; }
+  .md-h2 { font-size: 21px; }
+  .md-h3 { font-size: 20px; }
+  .chat-textarea { font-size: 20px; min-height: 60px; max-height: 180px; padding: 18px 24px; }
+  .send-btn { padding: 18px 34px; font-size: 18px; }
+  .attach-btn { padding: 18px 20px; font-size: 20px; }
+  .ch-item { padding: 14px 20px; font-size: 18px; }
+  .ch-search-input { font-size: 16px; }
+
+  /* Chat model bar */
+  .chat-model-bar { padding: 10px 30px; font-size: 14px; gap: 12px; }
+  .cmb-dot { width: 10px; height: 10px; }
+  .cmb-provider, .cmb-task { font-size: 12px; padding: 3px 8px; }
+
+  /* Chat stage */
+  .chat-stage-indicator { padding: 12px 24px; font-size: 16px; gap: 12px; }
+  .stage-dot { width: 10px; height: 10px; }
+
+  /* Chat empty */
+  .chat-empty-orb { width: 90px; height: 90px; }
+  .chat-empty-title { font-size: 22px; letter-spacing: 6px; }
+  .chat-empty-sub { font-size: 18px; }
+
+  /* Chat collapse */
+  .chat-collapse-btn { width: 36px; height: 80px; font-size: 16px; }
+
+  /* Chat side panel */
+  .chat-side-panel { width: 600px; min-width: 420px; }
+  .chat-side-close { width: 38px; height: 38px; font-size: 18px; }
+
+  /* Orb */
+  .orb-container { width: 480px; height: 480px; }
+  .orb { width: 480px; height: 480px; }
+  .orb-ring { top: -30px; left: -30px; width: 540px; height: 540px; }
+  .orb-ring::before { width: 12px; height: 12px; }
+  .orb-ring-2 { top: -50px; left: -50px; width: 580px; height: 580px; }
+  .orb-status { font-size: 16px; letter-spacing: 6px; gap: 14px; }
+  .orb-status .state { width: 12px; height: 12px; }
+  .orb-mic-status { font-size: 18px; max-width: 480px; }
+  .orb-mic-btn { padding: 10px 24px; font-size: 16px; border-radius: 28px; }
+  .orb-alert { font-size: 16px; max-width: 540px; }
+  .voice-wave { width: 90px; height: 12px; }
+  .orb-section { padding: 30px; }
+  .orb-status-area { gap: 10px; margin-top: 36px; }
+
+  /* Dashboard */
+  .dash-grid { gap: 18px; padding: 0 24px 24px; }
+  .dash-card { padding: 18px; border-radius: 18px; }
+  .dash-card-title { font-size: 15px; letter-spacing: 3px; margin-bottom: 12px; }
+  .dct-icon { font-size: 18px; }
+  .dash-card-title .expand-arrow { font-size: 15px; }
+  .dash-toolbar { padding: 10px 24px; min-height: 52px; }
+  .dash-toolbar button { padding: 8px 22px; font-size: 16px; }
+
+  /* System stats */
+  .sysmon-gauge svg { width: 105px; height: 105px; }
+  .sysmon-val { font-size: 18px; }
+  .sysmon-label { font-size: 13px; letter-spacing: 2px; }
+  .sysmon-detail-row { font-size: 15px; padding: 5px 6px; }
+  .sysmon-gauges { gap: 14px; padding: 12px 0; }
+
+  /* Models */
+  .zeus-model { padding: 12px 16px; gap: 12px; border-radius: 12px; }
+  .zeus-models { gap: 10px; }
+  .zm-name { font-size: 16px; }
+  .zm-size { font-size: 14px; }
+  .zm-role { font-size: 13px; }
+  .zm-icon { font-size: 20px; }
+  .zm-dot { width: 10px; height: 10px; }
+  .zeus-auto-badge { font-size: 13px; padding: 4px 12px; }
+  .model-badges { gap: 10px; }
+
+  /* Quick actions */
+  .qa-btn { padding: 12px 22px; font-size: 15px; border-radius: 28px; gap: 8px; }
+  .qa-icon { font-size: 18px; }
+
+  /* Memory graph */
+  .memgraph-total-num { font-size: 42px; }
+  .memgraph-total-label { font-size: 12px; letter-spacing: 3px; }
+  .memgraph-row-label { font-size: 14px; min-width: 130px; }
+  .memgraph-bar { height: 6px; }
+  .memgraph-row-val { font-size: 16px; }
+  .memgraph-row-icon { font-size: 18px; }
+
+  /* Timeline */
+  .timeline-label { font-size: 13px; }
+  .timeline-text { font-size: 16px; }
+  .timeline-time { font-size: 13px; }
+  .timeline-icon { font-size: 14px; }
+  .timeline-dot { width: 12px; height: 12px; }
+  .timeline-filter-btn { font-size: 13px; padding: 5px 14px; }
+
+  /* Agent network */
+  .agentnet-row-name { font-size: 16px; }
+  .agentnet-row-role { font-size: 13px; }
+  .agentnet-row-pct { font-size: 14px; }
+  .agentnet-stat { font-size: 14px; }
+  .agentnet-stat span { font-size: 19px; }
+  .agentnet-toggle-btn { font-size: 13px; padding: 5px 16px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+
+  /* File preview */
+  .file-preview-name { font-size: 18px; }
+  .file-preview-size { font-size: 16px; }
+  .file-preview-icon { font-size: 28px; }
+  .file-preview-thumb { width: 56px; height: 56px; }
+  .file-remove-btn { font-size: 20px; padding: 8px 14px; }
+
+  /* Drop overlay */
+  .drop-overlay-icon { font-size: 72px; }
+  .drop-overlay-text { font-size: 20px; letter-spacing: 4px; }
+
+  /* Delete confirm */
+  .cdc-box { padding: 42px 36px; max-width: 420px; }
+  .cdc-icon { font-size: 54px; }
+  .cdc-title { font-size: 16px; }
+  .cdc-desc { font-size: 16px; }
+  .cdc-btns button { padding: 12px 0; font-size: 14px; }
+
+  /* Resize handle */
+  .sidebar-resize-handle { width: 8px; }
+}
+
+/* ============================================================
+   2K / QHD (2560px - 3839px) -- scale 1.25x
+   ============================================================ */
+@media (min-width: 2560px) and (max-width: 3839px) {
+  :root {
+    --scale: 1.25;
+    --font-base: 16px;
+    --font-sm: 13px;
+    --font-xs: 12px;
+    --font-xxs: 11px;
+    --font-lg: 20px;
+    --font-xl: 28px;
+    --font-code: 15px;
+    --space-xs: 5px;
+    --space-sm: 10px;
+    --space-md: 17px;
+    --space-lg: 25px;
+    --space-xl: 35px;
+    --orb-size: 400px;
+    --orb-ring1: 450px;
+    --orb-ring2: 490px;
+    --orb-ring1-offset: -25px;
+    --orb-ring2-offset: -45px;
+    --gauge-size: 88px;
+    --avatar-size: 38px;
+    --icon-btn-size: 46px;
+    --sidebar-base: 260px;
+    --card-radius: 15px;
+    --card-pad: 15px;
+    --topbar-pad-y: 13px;
+    --topbar-pad-x: 26px;
+    --chat-pad: 25px;
+    --input-pad: 17px;
+    --msg-pad-y: 15px;
+    --msg-pad-x: 20px;
+  }
+
+  /* Sidebar */
+  .hud-sidebar { padding: 20px 0; gap: 8px; }
+  .hud-hex { width: 52px; height: 52px; }
+  .hud-hex-icon { font-size: 20px; }
+  .hud-detail-label { font-size: 10px; }
+  .hud-detail-value { font-size: 15px; }
+  .hud-detail-bar { height: 4px; }
+  .hud-item { min-height: 62px; padding: 8px 15px; }
+
+  /* Sidebar widgets */
+  .sidebar-widget { padding: 13px; margin: 3px 12px; }
+  .sidebar-widget-title { font-size: 12px; margin-bottom: 10px; }
+  .sb-cal-day { font-size: 12px; padding: 4px 0; }
+  .sb-cal-head { font-size: 11px; }
+  .sb-cal-month { font-size: 13px; }
+  .sb-cal-nav button { width: 27px; height: 27px; font-size: 14px; }
+  .focus-timer-ring { width: 110px; height: 110px; }
+  .focus-timer-ring .timer-text { font-size: 22px; }
+  .focus-timer-controls button { padding: 4px 13px; font-size: 12px; }
+
+  /* Topbar */
+  .top-bar .logo { font-size: 28px; letter-spacing: 6px; }
+  .widget-mini { font-size: 13px; }
+  .widget-mini .val { font-size: 17px; }
+  .widget-mini .val.time-val { font-size: 20px; }
+  .top-bar-widgets { gap: 35px; }
+  .top-bar-actions { gap: 10px; }
+  .icon-btn { width: 46px; height: 46px; font-size: 18px; border-radius: 10px; }
+
+  /* Chat */
+  .chat-header { padding: 17px 25px; }
+  .chat-header h2 { font-size: 15px; letter-spacing: 4px; }
+  .chat-header-btns button { padding: 7px 15px; font-size: 12px; }
+  .msg { font-size: 16px; line-height: 1.65; }
+  .msg-row { gap: 13px; }
+  .avatar { width: 38px; height: 38px; font-size: 12px; border-radius: 12px; }
+  .timestamp { font-size: 12px; }
+  .model-badge { font-size: 11px; padding: 2px 10px; }
+  .msg-code-pre { font-size: 15px; padding: 15px 20px; }
+  .msg-code-lang { font-size: 12px; }
+  .msg-code-copy { font-size: 12px; padding: 3px 10px; }
+  .md-inline-code { font-size: 15px; padding: 2px 8px; }
+  .md-h1 { font-size: 20px; }
+  .md-h2 { font-size: 17px; }
+  .md-h3 { font-size: 16px; }
+  .chat-textarea { font-size: 16px; min-height: 50px; max-height: 150px; padding: 15px 20px; }
+  .send-btn { padding: 15px 28px; font-size: 15px; }
+  .attach-btn { padding: 15px 17px; font-size: 17px; }
+  .ch-item { padding: 12px 17px; font-size: 15px; }
+  .ch-search-input { font-size: 13px; }
+
+  /* Chat model bar */
+  .chat-model-bar { padding: 8px 25px; font-size: 12px; }
+  .cmb-dot { width: 8px; height: 8px; }
+  .cmb-provider, .cmb-task { font-size: 10px; padding: 2px 7px; }
+
+  /* Chat stage */
+  .chat-stage-indicator { padding: 10px 20px; font-size: 14px; }
+  .stage-dot { width: 8px; height: 8px; }
+
+  /* Chat empty */
+  .chat-empty-orb { width: 75px; height: 75px; }
+  .chat-empty-title { font-size: 18px; letter-spacing: 5px; }
+  .chat-empty-sub { font-size: 15px; }
+
+  /* Chat collapse */
+  .chat-collapse-btn { width: 30px; height: 68px; font-size: 13px; }
+
+  /* Chat side panel */
+  .chat-side-panel { width: 500px; min-width: 360px; }
+
+  /* Orb */
+  .orb-container { width: 400px; height: 400px; }
+  .orb { width: 400px; height: 400px; }
+  .orb-ring { top: -25px; left: -25px; width: 450px; height: 450px; }
+  .orb-ring::before { width: 10px; height: 10px; }
+  .orb-ring-2 { top: -45px; left: -45px; width: 490px; height: 490px; }
+  .orb-status { font-size: 14px; letter-spacing: 5px; }
+  .orb-status .state { width: 10px; height: 10px; }
+  .orb-mic-status { font-size: 15px; max-width: 400px; }
+  .orb-mic-btn { padding: 8px 20px; font-size: 14px; }
+  .orb-alert { font-size: 14px; max-width: 440px; }
+  .voice-wave { width: 75px; height: 10px; }
+  .orb-section { padding: 25px; }
+  .orb-status-area { gap: 8px; margin-top: 30px; }
+
+  /* Dashboard */
+  .dash-grid { gap: 15px; padding: 0 20px 20px; }
+  .dash-card { padding: 15px; border-radius: 15px; }
+  .dash-card-title { font-size: 12px; letter-spacing: 2.5px; margin-bottom: 10px; }
+  .dct-icon { font-size: 15px; }
+  .dash-toolbar { padding: 8px 20px; }
+  .dash-toolbar button { padding: 7px 18px; font-size: 14px; }
+
+  /* System stats */
+  .sysmon-gauge svg { width: 88px; height: 88px; }
+  .sysmon-val { font-size: 15px; }
+  .sysmon-label { font-size: 11px; }
+  .sysmon-detail-row { font-size: 13px; }
+  .sysmon-gauges { gap: 12px; padding: 10px 0; }
+
+  /* Models */
+  .zeus-model { padding: 10px 13px; gap: 10px; border-radius: 10px; }
+  .zeus-models { gap: 8px; }
+  .zm-name { font-size: 14px; }
+  .zm-size { font-size: 12px; }
+  .zm-role { font-size: 11px; }
+  .zm-icon { font-size: 17px; }
+  .zm-dot { width: 8px; height: 8px; }
+  .zeus-auto-badge { font-size: 11px; padding: 3px 10px; }
+
+  /* Quick actions */
+  .qa-btn { padding: 9px 18px; font-size: 13px; gap: 6px; }
+  .qa-icon { font-size: 15px; }
+
+  /* Memory graph */
+  .memgraph-total-num { font-size: 35px; }
+  .memgraph-total-label { font-size: 10px; }
+  .memgraph-row-label { font-size: 12px; min-width: 110px; }
+  .memgraph-bar { height: 5px; }
+  .memgraph-row-val { font-size: 14px; }
+
+  /* Timeline */
+  .timeline-label { font-size: 11px; }
+  .timeline-text { font-size: 14px; }
+  .timeline-time { font-size: 11px; }
+  .timeline-dot { width: 10px; height: 10px; }
+  .timeline-filter-btn { font-size: 11px; padding: 4px 12px; }
+
+  /* Agent network */
+  .agentnet-row-name { font-size: 14px; }
+  .agentnet-row-role { font-size: 11px; }
+  .agentnet-stat span { font-size: 16px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+
+  /* File preview */
+  .file-preview-name { font-size: 15px; }
+  .file-preview-size { font-size: 14px; }
+  .file-preview-icon { font-size: 24px; }
+  .file-preview-thumb { width: 48px; height: 48px; }
+}
+
+/* ============================================================
+   HD (1366px - 1599px) -- scale 0.9x, slightly compact
+   ============================================================ */
+@media (max-width: 1600px) {
+  :root {
+    --scale: 0.9;
+    --orb-size: 280px;
+    --orb-ring1: 320px;
+    --orb-ring2: 350px;
+    --orb-ring1-offset: -18px;
+    --orb-ring2-offset: -32px;
+  }
+
+  .content-row { gap: 8px; }
+  .orb-container { width: 280px; height: 280px; }
+  .orb { width: 280px; height: 280px; }
+  .orb-ring { top: -18px; left: -18px; width: 316px; height: 316px; }
+  .orb-ring-2 { top: -30px; left: -30px; width: 340px; height: 340px; }
+}
+
+/* ============================================================
+   Compact screens (<=1200px) -- sidebar collapse
+   ============================================================ */
+@media (max-width: 1200px) {
+  .hud-sidebar {
+    width: 60px !important;
+  }
+  .hud-sidebar .hud-detail {
+    opacity: 0; flex: 0; max-width: 0; margin-left: 0; overflow: hidden;
+  }
+  .hud-sidebar .hud-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+  .hud-sidebar .sidebar-widget { display: none; }
+  .hud-hex-icon { font-size: 18px; margin: 0; }
+  .main-content { margin-left: 60px !important; }
+  .sidebar-resize-handle { left: 60px; }
+  .zeus-models { grid-template-columns: 1fr; }
+  .top-bar-widgets { gap: 16px; }
+}
+
+/* ============================================================
+   Narrow (<=900px) -- sidebar hidden
+   ============================================================ */
+@media (max-width: 900px) {
+  .hud-sidebar {
+    width: 0 !important;
+    overflow: hidden;
+    border-right: none;
+  }
+  .main-content { margin-left: 0 !important; }
+  .sidebar-resize-handle { display: none; }
+  .top-bar { padding: 8px 12px; }
+  .top-bar .logo { font-size: 16px; letter-spacing: 3px; }
+  .top-bar-widgets { gap: 12px; }
+  .widget-mini { font-size: 10px; }
+  .widget-mini .val { font-size: 12px; }
+  .widget-mini .val.time-val { font-size: 14px; }
+  .dash-grid { grid-template-columns: repeat(6, 1fr); }
+  .sysmon-gauges { flex-wrap: wrap; }
+  .orb-container { width: 240px; height: 240px; }
+  .orb { width: 240px; height: 240px; }
+  .orb-ring { top: -16px; left: -16px; width: 272px; height: 272px; }
+  .orb-ring-2 { top: -26px; left: -26px; width: 292px; height: 292px; }
+}
+
+/* ============================================================
+   Tablet / Mobile (<=768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  body { overflow-y: auto; }
+  #root { height: auto; min-height: 100vh; }
+  .content-row { flex-direction: column; }
+
+  /* Touch targets */
+  button, .nav-item, .qa-btn, .zeus-model { min-height: 44px; }
+
+  /* Header compact */
+  .top-bar { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
+  .top-bar .logo { font-size: 14px; letter-spacing: 2px; }
+  .top-bar-widgets { gap: 10px; }
+  .top-bar-right { gap: 8px; }
+
+  /* Orb responsive */
+  .orb-section { padding: 10px; }
+  .orb-container { width: 220px; height: 220px; }
+  .orb { width: 220px; height: 220px; }
+  .orb-ring { top: -15px; left: -15px; width: 250px; height: 250px; }
+  .orb-ring-2 { top: -25px; left: -25px; width: 270px; height: 270px; }
+
+  /* Chat panel full-width */
+  .chat-panel {
+    width: 100% !important;
+    max-width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  .chat-header { padding: 10px 14px; }
+  .chat-container { padding: 12px; }
+  .input-bar { padding: 10px 12px; }
+  .msg-row { max-width: 98%; }
+  .msg { font-size: 12px; padding: 10px 14px; }
+
+  .chat-collapse-btn { height: 44px; width: 22px; }
+
+  /* Chat history mobile: slide-in */
+  .chat-history {
+    width: 100% !important;
+    position: fixed;
+    left: 0; top: 0;
+    height: 100vh;
+    z-index: 200;
+    max-height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .chat-history.open { transform: translateX(0); }
+
+  /* Side panel goes full-width */
+  .chat-side-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    z-index: 200;
+  }
+
+  /* Dashboard */
+  .dash-grid { grid-template-columns: repeat(6, 1fr); gap: 10px; }
+}
+
+/* ============================================================
+   Small mobile (<=480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .top-bar .weather-slot,
+  .top-bar .cpu-mini,
+  .top-bar .ram-mini { display: none; }
+  .top-bar .logo { font-size: 12px; letter-spacing: 1px; }
+  .icon-btn { width: 34px; height: 34px; font-size: 14px; }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 0 8px 8px;
+  }
+  .dash-grid > * {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+  .dash-card { padding: 8px; }
+  .dash-card-title { font-size: 9px; letter-spacing: 1px; }
+
+  .sysmon-gauge svg { width: 55px; height: 55px; }
+  .sysmon-val { font-size: 10px; }
+
+  .qa-btn { padding: 6px 10px; font-size: 9px; }
+
+  .orb-container { width: 180px; height: 180px; }
+  .orb { width: 180px; height: 180px; }
+  .orb-ring { top: -12px; left: -12px; width: 204px; height: 204px; }
+  .orb-ring-2 { top: -20px; left: -20px; width: 220px; height: 220px; }
+
+  .msg { font-size: 11px; padding: 8px 12px; }
+  .msg-row { gap: 8px; }
+  .avatar { width: 26px; height: 26px; font-size: 9px; }
+  .chat-textarea { font-size: 12px; }
+  .send-btn { padding: 10px 16px; font-size: 10px; }
+}
+
+/* ============================================================
+   Accessibility: reduced motion
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -15,151 +616,11 @@
   .orb-ring, .orb-ring-2 { animation: none; }
 }
 
-/* ── Large screens (<=1600px) ── */
-@media (max-width: 1600px) {
-  .content-row {
-    gap: 8px;
-  }
-}
-
-/* ── Medium screens (<=1200px) ── */
-@media (max-width: 1200px) {
-  .sidebar {
-    width: 60px !important;
-  }
-  .sidebar .hud-label,
-  .sidebar .hud-value,
-  .sidebar .mini-calendar,
-  .sidebar .focus-timer,
-  .sidebar .nav-label {
-    display: none;
-  }
-  .sidebar .nav-icon {
-    font-size: 18px;
-    margin: 0;
-  }
-  .sidebar .nav-item {
-    justify-content: center;
-    padding: 10px 0;
-  }
-  .main-content {
-    margin-left: 60px !important;
-  }
-}
-
-/* ── Small screens (<=900px) ── */
-@media (max-width: 900px) {
-  .sidebar {
-    width: 0 !important;
-    overflow: hidden;
-  }
-  .main-content {
-    margin-left: 0 !important;
-  }
-  .top-bar {
-    padding: 6px 10px;
-  }
-  .top-bar .mj-logo {
-    font-size: 14px;
-  }
-}
-
-/* ── Tablet / Mobile (<=768px) ── */
-@media (max-width: 768px) {
-  body {
-    overflow-y: auto;
-  }
-  #root {
-    height: auto;
-    min-height: 100vh;
-  }
-
-  .content-row {
-    flex-direction: column;
-  }
-
-  /* Touch-friendly targets */
-  button, .nav-item, .qa-btn, .zeus-model {
-    min-height: 44px;
-  }
-
-  /* Header compact */
-  .top-bar {
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 6px 8px;
-  }
-  .top-bar-right {
-    gap: 8px;
-  }
-
-  /* Orb responsive */
-  .orb-section {
-    padding: 10px;
-  }
-
-  /* Chat panel full-width */
-  .chat-panel {
-    width: 100% !important;
-    max-width: 100%;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-  }
-  .chat-history {
-    width: 100% !important;
-    position: fixed;
-    left: 0; top: 0;
-    height: 100vh;
-    z-index: 200;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
-  .chat-history.open {
-    transform: translateX(0);
-  }
-}
-
-/* ── Small mobile (<=480px) ── */
-@media (max-width: 480px) {
-  .top-bar .weather-slot,
-  .top-bar .cpu-mini,
-  .top-bar .ram-mini {
-    display: none;
-  }
-  .top-bar .mj-logo {
-    font-size: 12px;
-    letter-spacing: 2px;
-  }
-  .dash-card {
-    padding: 8px;
-  }
-  .dash-card-title {
-    font-size: 9px;
-    letter-spacing: 1px;
-  }
-  .sysmon-gauge svg {
-    width: 50px;
-    height: 50px;
-  }
-  .qa-btn {
-    padding: 6px 10px;
-    font-size: 9px;
-  }
-  .orb-container {
-    width: 180px;
-    height: 180px;
-  }
-  .orb {
-    width: 180px;
-    height: 180px;
-  }
-  .orb-ring {
-    top: -12px; left: -12px;
-    width: 204px; height: 204px;
-  }
-  .orb-ring-2 {
-    top: -20px; left: -20px;
-    width: 220px; height: 220px;
-  }
+/* ============================================================
+   High DPI / Retina displays
+   ============================================================ */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .hud-detail-bar, .memgraph-bar { height: max(3px, 0.2em); }
+  .orb-ring { border-width: 0.5px; }
+  .orb-ring-2 { border-width: 0.5px; }
 }

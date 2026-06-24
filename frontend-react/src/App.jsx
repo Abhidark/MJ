@@ -91,7 +91,7 @@ function AppLayout() {
                 className="chat-side-close"
                 onClick={() => dispatch({ type: 'CLOSE_CHAT_PANEL' })}
                 title="Close chat panel"
-              >✕</button>
+              >x</button>
               <ChatPanel sideMode />
             </div>
           )}

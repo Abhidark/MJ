@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 /**
- * useDashboard — manages card layout positions, edit mode, save/load/reset.
+ * useDashboard -- manages card layout positions, edit mode, save/load/reset.
  *
  * v7 format: { layout: { cardId: { col, row, w, h, bg?, minH? } }, v: 7 }
  * 12-column CSS grid with explicit col/row/w/h per card.

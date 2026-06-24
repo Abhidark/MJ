@@ -1,5 +1,5 @@
 /**
- * DashboardGrid — 12-column CSS grid layout for dashboard cards.
+ * DashboardGrid -- 12-column CSS grid layout for dashboard cards.
  * Houses the Orb + all dashboard cards with edit mode toolbar.
  * Manages drag-to-reposition (mouse-based, grid-snapping) and
  * corner-drag resize + toolbar button resize.
@@ -34,13 +34,13 @@ export default function DashboardGrid() {
   // Drag state: tracks which card is being dragged and placeholder position
   const [dragState, setDragState] = useState(null);
 
-  // ─── Voice ───
+  // --- Voice ---
   const handleTranscript = useCallback((text) => {
     dispatch({ type: 'OPEN_CHAT_PANEL', payload: text });
   }, [dispatch]);
 
   const handleWake = useCallback(() => {
-    console.log('[MJ] Wake word detected — first activation');
+    console.log('[MJ] Wake word detected -- first activation');
   }, []);
 
   const voice = useVoice({ onTranscript: handleTranscript, onWake: handleWake });
@@ -49,7 +49,7 @@ export default function DashboardGrid() {
     dispatch({ type: 'OPEN_CHAT_PANEL', payload: cmd });
   }, [dispatch]);
 
-  // ─── Grid cell calculation (matches old UI getGridCell) ───
+  // --- Grid cell calculation (matches old UI getGridCell) ---
   const getGridCell = useCallback((clientX, clientY) => {
     const grid = gridRef.current;
     if (!grid) return { col: 1, row: 1 };
@@ -68,7 +68,7 @@ export default function DashboardGrid() {
     return { col, row };
   }, []);
 
-  // ─── Drag: mouse-based with ghost + grid-snapping placeholder ───
+  // --- Drag: mouse-based with ghost + grid-snapping placeholder ---
   const handleDragStart = useCallback((cardId, e) => {
     if (!dashboard.editing) return;
     e.preventDefault();
@@ -134,7 +134,7 @@ export default function DashboardGrid() {
     document.addEventListener('mouseup', onUp);
   }, [dashboard.editing, dashboard.layout, dashboard.updateCardPos, getGridCell]);
 
-  // ─── Resize: corner drag handle ───
+  // --- Resize: corner drag handle ---
   const handleResizeStart = useCallback((cardId, e) => {
     if (!dashboard.editing) return;
     e.preventDefault();
@@ -171,7 +171,7 @@ export default function DashboardGrid() {
     document.addEventListener('mouseup', onUp);
   }, [dashboard.editing, dashboard.layout, dashboard.updateCardPos]);
 
-  // ─── Toolbar resize buttons ───
+  // --- Toolbar resize buttons ---
   const handleWider = useCallback((cardId) => {
     const p = dashboard.layout[cardId];
     if (p && p.col + p.w <= 12) dashboard.updateCardPos(cardId, { w: p.w + 1 });
@@ -201,7 +201,7 @@ export default function DashboardGrid() {
     dashboard.updateCardPos(cardId, { bg: color });
   }, [dashboard.updateCardPos]);
 
-  // ─── Edit actions object passed to every DashboardCard ───
+  // --- Edit actions object passed to every DashboardCard ---
   const editActions = {
     onDragStart: handleDragStart,
     onResizeStart: handleResizeStart,
@@ -213,7 +213,7 @@ export default function DashboardGrid() {
     onColorChange: handleColorChange,
   };
 
-  // ─── Helper: common props for every card ───
+  // --- Helper: common props for every card ---
   const cp = (id) => ({
     id,
     style: dashboard.getCardStyle(id),
@@ -229,13 +229,13 @@ export default function DashboardGrid() {
       <div className={`dash-toolbar${dashboard.editing ? ' active' : ''}`}>
         {!dashboard.editing ? (
           <button className="dash-edit-btn" onClick={dashboard.enterEdit} title="Edit layout">
-            ✎ Edit
+            {'✎'} Edit
           </button>
         ) : (
           <>
-            <button className="dash-save-btn" onClick={dashboard.saveEdit}>✓ Save</button>
-            <button className="dash-cancel-btn" onClick={dashboard.cancelEdit}>✕ Cancel</button>
-            <button className="dash-reset-btn" onClick={dashboard.resetLayout}>↺ Reset</button>
+            <button className="dash-save-btn" onClick={dashboard.saveEdit}>{'✓'} Save</button>
+            <button className="dash-cancel-btn" onClick={dashboard.cancelEdit}>x Cancel</button>
+            <button className="dash-reset-btn" onClick={dashboard.resetLayout}>{'↺'} Reset</button>
           </>
         )}
       </div>
@@ -243,7 +243,7 @@ export default function DashboardGrid() {
       {/* Grid */}
       <div ref={gridRef} className={`dash-grid${dashboard.editing ? ' editing' : ''}`}>
 
-        {/* ── Orb Card ── */}
+        {/* -- Orb Card -- */}
         <DashboardCard {...cp('orb')} collapsible={false}>
           <div className="orb-section">
             <Orb state={voice.orbState} onClick={voice.handleOrbClick} />
@@ -258,72 +258,72 @@ export default function DashboardGrid() {
           </div>
         </DashboardCard>
 
-        {/* ── AI Core Overview ── */}
+        {/* -- AI Core Overview -- */}
         <DashboardCard {...cp('ai-core')}>
           <AICoreCard />
         </DashboardCard>
 
-        {/* ── Live Intelligence ── */}
+        {/* -- Live Intelligence -- */}
         <DashboardCard {...cp('live-intel')}>
           <LiveIntelCard />
         </DashboardCard>
 
-        {/* ── Quick Commands ── */}
+        {/* -- Quick Commands -- */}
         <DashboardCard {...cp('quick-cmd')}>
           <QuickCommandsCard onAction={handleQuickAction} />
         </DashboardCard>
 
-        {/* ── System Monitor ── */}
+        {/* -- System Monitor -- */}
         <DashboardCard {...cp('sys-monitor')} title="System Monitor" icon="⚡">
           <SystemStatsCard />
         </DashboardCard>
 
-        {/* ── Model Selector ── */}
+        {/* -- Model Selector -- */}
         <DashboardCard {...cp('model-selector')} title="LLM Status" icon="🧠">
           <ModelSelectorCard />
         </DashboardCard>
 
-        {/* ── Quick Actions ── */}
+        {/* -- Quick Actions -- */}
         <DashboardCard {...cp('quick-actions')} title="Quick Actions" icon="⚡">
           <QuickActionsCard onAction={handleQuickAction} />
         </DashboardCard>
 
-        {/* ── System Stats Widget ── */}
+        {/* -- System Stats Widget -- */}
         <DashboardCard {...cp('sys-stats')}>
           <SystemStatsWidgetCard />
         </DashboardCard>
 
-        {/* ── Smart Suggestions ── */}
+        {/* -- Smart Suggestions -- */}
         <DashboardCard {...cp('smart-suggest')}>
           <SmartSuggestionsCard onAction={handleQuickAction} />
         </DashboardCard>
 
-        {/* ── Memory Graph ── */}
+        {/* -- Memory Graph -- */}
         <DashboardCard {...cp('memory-graph')} title="Memory Graph" icon="🧠">
           <MemoryGraphCard />
         </DashboardCard>
 
-        {/* ── Timeline ── */}
+        {/* -- Timeline -- */}
         <DashboardCard {...cp('timeline')} title="Activity Timeline" icon="📋">
           <TimelineCard />
         </DashboardCard>
 
-        {/* ── Agent Network ── */}
+        {/* -- Agent Network -- */}
         <DashboardCard {...cp('agent-network')} title="Agent Network" icon="⚡">
           <AgentNetworkCard />
         </DashboardCard>
 
-        {/* ── Gesture Control ── */}
+        {/* -- Gesture Control -- */}
         <DashboardCard {...cp('gesture-ctrl')}>
           <GestureControlCard />
         </DashboardCard>
 
-        {/* ── Voice Language Selector ── */}
+        {/* -- Voice Language Selector -- */}
         <DashboardCard {...cp('voice-lang')}>
           <VoiceLangSelector />
         </DashboardCard>
 
-        {/* ── Drag placeholder (grid-snapped) ── */}
+        {/* -- Drag placeholder (grid-snapped) -- */}
         {dragState && (
           <div
             className="drag-placeholder"

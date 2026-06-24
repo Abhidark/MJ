@@ -104,7 +104,7 @@ export const modelAPI = {
   routePreview: (message) => api.post('/models/route', { message }),
   getProvider: () => api.get('/provider'),
   setProvider: (provider) => api.post('/provider/set', { provider }),
-  // V22 Hybrid AI — multi-provider
+  // V22 Hybrid AI -- multi-provider
   checkProvider: (name) => api.get(`/provider/check/${name}`),
   smartRoute: (taskType) => api.get(`/provider/smart-route/${taskType}`),
   smartRouteAll: () => api.get('/provider/smart-route'),
@@ -331,35 +331,6 @@ export const miscAPI = {
   getEmailConfig: () => api.get('/email/config'),
 };
 
-// --- CALENDAR (localStorage-based, no backend needed) ---
-export const calendarAPI = {
-  _key: 'mj-calendar-events',
-  getEvents: () => {
-    try {
-      return JSON.parse(localStorage.getItem('mj-calendar-events') || '[]');
-    } catch { return []; }
-  },
-  addEvent: (event) => {
-    const events = calendarAPI.getEvents();
-    const newEvent = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      ...event,
-      createdAt: new Date().toISOString(),
-    };
-    events.push(newEvent);
-    localStorage.setItem('mj-calendar-events', JSON.stringify(events));
-    return newEvent;
-  },
-  deleteEvent: (id) => {
-    const events = calendarAPI.getEvents().filter(e => e.id !== id);
-    localStorage.setItem('mj-calendar-events', JSON.stringify(events));
-    return events;
-  },
-  getEventsForDate: (dateStr) => {
-    return calendarAPI.getEvents().filter(e => e.date === dateStr);
-  },
-};
-
 // --- WEATHER ---
 export const weatherAPI = {
   get: (city = 'Gurgaon', days = 3) => api.get(`/weather?city=${encodeURIComponent(city)}&days=${days}`),
@@ -395,60 +366,52 @@ export const frameworkAPI = {
     const form = new FormData();
     form.append('key', key);
     form.append('value', JSON.stringify(value));
-    form.append('namespace', namespace);
-    if (ttl) form.append('ttl', ttl);
+    if (namespace !== 'global') form.append('namespace', namespace);
+    if (ttl) form.append('ttl', String(ttl));
     return api.post('/framework/memory/set', form);
   },
-  memoryGet: (key, namespace = 'global') => api.get(`/framework/memory/get/${key}`, { params: { namespace } }),
-  memoryAll: () => api.get('/framework/memory/all'),
-  memoryNamespace: (ns) => api.get(`/framework/memory/namespace/${ns}`),
+  memoryGet: (key, namespace = 'global') => api.get('/framework/memory/get', { params: { key, namespace } }),
+  memoryDelete: (key, namespace = 'global') => api.delete('/framework/memory/delete', { params: { key, namespace } }),
+  memoryList: (namespace = 'global') => api.get('/framework/memory/list', { params: { namespace } }),
   memoryStats: () => api.get('/framework/memory/stats'),
-  memoryDelete: (key, namespace = 'global') => api.delete(`/framework/memory/${key}`, { params: { namespace } }),
-  // Task Queue
-  queueSubmit: (name, handler, params = {}, priority = 5) => {
-    const form = new FormData();
-    form.append('name', name);
-    form.append('handler', handler);
-    form.append('params', JSON.stringify(params));
-    form.append('priority', priority);
-    return api.post('/framework/queue/submit', form);
-  },
-  queueProcess: () => api.post('/framework/queue/process'),
-  queueProcessAll: () => api.post('/framework/queue/process-all'),
-  queueList: () => api.get('/framework/queue'),
-  queueStats: () => api.get('/framework/queue/stats'),
-  queueHistory: (limit = 50) => api.get('/framework/queue/history', { params: { limit } }),
-  queueTask: (taskId) => api.get(`/framework/queue/${taskId}`),
-  queueCancel: (taskId) => api.delete(`/framework/queue/${taskId}`),
 };
 
-// ===== Smart Home API (V3 Hestia) =====
+// --- SELF-HEALING ---
+export const selfHealAPI = {
+  getStatus: () => api.get('/self-healing/status'),
+  getErrors: () => api.get('/self-healing/errors'),
+  getHistory: (limit = 20) => api.get('/self-healing/history', { params: { limit } }),
+  triggerFix: (errorId) => api.post(`/self-healing/fix/${errorId}`),
+  getStats: () => api.get('/self-healing/stats'),
+};
+
+// ===== Smart Home API (V3 Tool Engine) =====
 export const smartHomeAPI = {
   getDevices: () => api.get('/smart-home/devices'),
   getScenes: () => api.get('/smart-home/scenes'),
-  activateScene: (key) => api.post(`/smart-home/scenes/${key}`),
+  activateScene: (id) => api.post(`/smart-home/scenes/${id}/activate`),
   getAutomations: () => api.get('/smart-home/automations'),
   getRooms: () => api.get('/smart-home/rooms'),
   addDevice: (device) => api.post('/smart-home/devices', device),
-  controlDevice: (deviceId, action, params = {}) => api.post(`/smart-home/devices/${deviceId}/control`, { action, ...params }),
+  controlDevice: (id, command) => api.post(`/smart-home/devices/${id}/control`, { command }),
 };
 
-// ===== Workflow Engine API (V19) =====
+// ===== Workflow API (V19) =====
 export const workflowAPI = {
   list: () => api.get('/workflows'),
   get: (id) => api.get(`/workflows/${id}`),
   create: (data) => api.post('/workflows', data),
   update: (id, data) => api.put(`/workflows/${id}`, data),
   delete: (id) => api.delete(`/workflows/${id}`),
-  toggle: (id, enabled) => api.post(`/workflows/${id}/toggle`, { enabled }),
+  toggle: (id) => api.post(`/workflows/${id}/toggle`),
   run: (id) => api.post(`/workflows/${id}/run`),
   getTemplates: () => api.get('/workflows/templates'),
-  installTemplate: (id) => api.post(`/workflows/install/${id}`),
+  installTemplate: (id) => api.post(`/workflows/templates/${id}/install`),
   getStats: () => api.get('/workflows/stats'),
   getLogs: (limit = 20) => api.get('/workflows/logs', { params: { limit } }),
-  getTriggers: () => api.get('/workflows/triggers/all'),
-  addTrigger: (workflowId, trigger) => api.post(`/workflows/${workflowId}/trigger`, trigger),
-  removeTrigger: (triggerId) => api.delete(`/workflows/triggers/${triggerId}`),
+  getTriggers: (id) => api.get(`/workflows/${id}/triggers`),
+  addTrigger: (id, trigger) => api.post(`/workflows/${id}/triggers`, trigger),
+  removeTrigger: (id, triggerId) => api.delete(`/workflows/${id}/triggers/${triggerId}`),
   reset: () => api.post('/workflows/reset'),
 };
 
@@ -460,6 +423,56 @@ export const devToolsAPI = {
   getDeployStatus: () => api.get('/dev/deploy-status'),
   gitStatus: () => api.get('/git/status'),
   gitCommand: (command, path = '') => api.post('/git', { command, path }),
+};
+
+// ===== Multi-Agent Pipelines API (V20) =====
+export const pipelineAPI = {
+  list: () => api.get('/pipelines'),
+  get: (id) => api.get(`/pipelines/${id}`),
+  create: (data) => api.post('/pipelines', data),
+  delete: (id) => api.delete(`/pipelines/${id}`),
+  run: (id) => api.post(`/pipelines/${id}/run`),
+  getTemplates: () => api.get('/pipelines/templates'),
+  installTemplate: (id) => api.post(`/pipelines/install/${id}`),
+  getStats: () => api.get('/pipelines/stats'),
+  getLogs: (limit = 20) => api.get('/pipelines/logs', { params: { limit } }),
+  reset: () => api.post('/pipelines/reset'),
+  listGroups: () => api.get('/agent-groups'),
+  createGroup: (data) => api.post('/agent-groups', data),
+  deleteGroup: (id) => api.delete(`/agent-groups/${id}`),
+  sendMail: (from, to, message, data = null) => api.post('/agent-mail/send', { from, to, message, data }),
+  getMail: (agent, unread = true) => api.get(`/agent-mail/${agent}`, { params: { unread } }),
+  getMailStats: () => api.get('/agent-mail-stats'),
+};
+
+// ===== Calendar & Planner API (V14) =====
+export const calendarAPI = {
+  getEvents: (date = '') => api.get('/calendar/events', { params: { date } }),
+  getUpcoming: (days = 7) => api.get('/calendar/upcoming', { params: { days } }),
+  addEvent: (event) => api.post('/calendar/events', event),
+  deleteEvent: (id) => api.delete(`/calendar/events/${id}`),
+  getDailyPlan: () => api.get('/planner/today'),
+  getProductivity: () => api.get('/productivity/stats'),
+};
+
+// ===== Episodic Memory API (V13) =====
+export const episodicMemoryAPI = {
+  getEpisodes: (query = '', limit = 10, days = 30) => api.get('/memory/episodes', { params: { query, limit, days } }),
+  getTimeline: (days = 7) => api.get('/memory/timeline', { params: { days } }),
+  getCompressionStats: () => api.get('/memory/compression'),
+  compress: () => api.post('/memory/compress'),
+};
+
+// ===== Cost & Budget API (V22) =====
+export const costAPI = {
+  getStats: () => api.get('/provider/costs'),
+  setBudget: (limit) => api.post('/provider/budget', { limit }),
+  costRoute: (taskType) => api.post('/provider/cost-route', { task_type: taskType }),
+};
+
+// ===== Database Readiness API (V2) =====
+export const dbAPI = {
+  getStatus: () => api.get('/db/status'),
 };
 
 export default api;

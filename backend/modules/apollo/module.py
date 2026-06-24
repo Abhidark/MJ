@@ -1,13 +1,17 @@
 """
-Apollo Module v2 — Creative Arts for MJ Assistant.
+Apollo Module v3 — Creative Arts for MJ Assistant (V10 upgrade).
 Creative writing, poetry, stories, captions, artistic expression.
-Now integrated with image generation via Pollinations.ai.
+Image generation via Pollinations.ai.
+NEW: Video gen stubs, UI mockup generation, logo generation, presentation outlines.
 """
 
 import re
 import sys
+import json
+import time
 import logging
 from pathlib import Path
+from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -15,13 +19,33 @@ from modules.base_module import BaseModule
 
 logger = logging.getLogger("mj.apollo")
 
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DATA_DIR.mkdir(exist_ok=True)
+CREATIVE_LOG_FILE = DATA_DIR / "apollo_creative_log.json"
+
+
+def _load_json(path, default=None):
+    try:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return default if default is not None else {}
+
+
+def _save_json(path, data):
+    try:
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
 
 class ApolloModule(BaseModule):
     name = "apollo"
     display_name = "Apollo"
     icon = "🎨"
-    description = "Creative Arts — writing, poetry, stories, image generation, artistic expression"
-    version = "2.0"
+    description = "Creative Arts — writing, poetry, images, video, UI mockups, logos, presentations"
+    version = "3.0"
     category = "creative"
     enabled = True
 
@@ -63,30 +87,65 @@ class ApolloModule(BaseModule):
         "dark": "dark theme, moody lighting",
     }
 
+    VIDEO_KEYWORDS = re.compile(
+        r"\b(generate\s+(?:a\s+)?video|create\s+(?:a\s+)?video|make\s+(?:a\s+)?video|"
+        r"video\s+(?:bana|banao|generate|create)|animate|animation)\b",
+        re.IGNORECASE,
+    )
+
+    UI_KEYWORDS = re.compile(
+        r"\b(ui\s+(?:mockup|design|wireframe)|mockup|wireframe|"
+        r"design\s+(?:a\s+)?(?:screen|page|layout|app|website|interface)|"
+        r"create\s+(?:a\s+)?(?:mockup|wireframe|layout))\b",
+        re.IGNORECASE,
+    )
+
+    LOGO_KEYWORDS = re.compile(
+        r"\b(logo|brand\s+(?:design|identity)|icon\s+design|"
+        r"create\s+(?:a\s+)?logo|design\s+(?:a\s+)?logo|logo\s+(?:bana|banao))\b",
+        re.IGNORECASE,
+    )
+
+    PRESENTATION_KEYWORDS = re.compile(
+        r"\b(presentation|slide\s*(?:s|deck)?|pitch\s+deck|"
+        r"create\s+(?:a\s+)?presentation|make\s+(?:a\s+)?(?:presentation|slides|deck)|"
+        r"outline\s+(?:a\s+)?presentation)\b",
+        re.IGNORECASE,
+    )
+
     def can_handle(self, text: str, intent: str, context: dict) -> float:
-        # Image generation gets highest priority
         if self.IMAGE_KEYWORDS.search(text):
             return 0.95
-
+        if self.VIDEO_KEYWORDS.search(text):
+            return 0.93
+        if self.UI_KEYWORDS.search(text):
+            return 0.92
+        if self.LOGO_KEYWORDS.search(text):
+            return 0.92
+        if self.PRESENTATION_KEYWORDS.search(text):
+            return 0.88
         if intent == "image_generation":
             return 0.93
-
         if self.WRITING_KEYWORDS.search(text):
             return 0.90
-
-        if intent in ("creative_writing", "poetry", "storytelling"):
+        if intent in ("creative_writing", "poetry", "storytelling", "video", "ui_design", "logo", "presentation"):
             return 0.85
-
         if re.search(r"\b(imagine|describe\s+creatively|paint\s+a\s+picture)\b", text, re.IGNORECASE):
             return 0.6
-
         return 0.0
 
     def execute(self, text: str, context: dict) -> dict:
-        """Route to image generation or creative writing."""
+        """Route to the appropriate creative handler."""
+        if self.VIDEO_KEYWORDS.search(text):
+            return self._handle_video(text, context)
+        if self.UI_KEYWORDS.search(text):
+            return self._handle_ui_mockup(text, context)
+        if self.LOGO_KEYWORDS.search(text):
+            return self._handle_logo(text, context)
+        if self.PRESENTATION_KEYWORDS.search(text):
+            return self._handle_presentation(text, context)
         if self.IMAGE_KEYWORDS.search(text):
             return self._handle_image(text, context)
-
         return self._handle_writing(text, context)
 
     # ========================
@@ -257,6 +316,241 @@ class ApolloModule(BaseModule):
             },
             "action": "creative_generate",
         }
+
+    # ========================
+    # VIDEO GENERATION
+    # ========================
+
+    def _handle_video(self, text: str, context: dict) -> dict:
+        """Video generation — currently uses image sequence + prompt for future API."""
+        prompt = re.sub(r"\b(generate|create|make|bana|banao)\s+(?:a\s+)?video\s*(?:of|about|for)?\s*", "", text, flags=re.I).strip()
+        if not prompt or len(prompt) < 3:
+            prompt = text
+
+        # Detect video type
+        video_type = "general"
+        if re.search(r"\b(explainer|tutorial|how.to)\b", text, re.I):
+            video_type = "explainer"
+        elif re.search(r"\b(promo|ad|commercial|marketing)\b", text, re.I):
+            video_type = "promo"
+        elif re.search(r"\b(animation|animate|motion)\b", text, re.I):
+            video_type = "animation"
+
+        # Log the request
+        self._log_creative("video", prompt, video_type)
+
+        return {
+            "response": (
+                f"🎬 **Video Generation Request**\n\n"
+                f"Type: {video_type}\n"
+                f"Concept: {prompt[:100]}\n\n"
+                f"Video generation will use image sequences from Pollinations.ai to create frames. "
+                f"For full video generation, connect a GPU-enabled PC with ffmpeg."
+            ),
+            "data": {
+                "type": "video_generation",
+                "video_type": video_type,
+                "prompt": prompt,
+                "status": "concept_ready",
+            },
+            "action": "video_generate",
+        }
+
+    # ========================
+    # UI MOCKUP GENERATION
+    # ========================
+
+    UI_TEMPLATES = {
+        "dashboard": {"sections": ["header", "sidebar", "main_grid", "stats_bar"], "style": "dark modern"},
+        "login": {"sections": ["logo", "form_fields", "submit_button", "social_login"], "style": "clean minimal"},
+        "landing": {"sections": ["hero", "features", "testimonials", "cta", "footer"], "style": "modern gradient"},
+        "profile": {"sections": ["avatar", "info_card", "activity_feed", "settings"], "style": "card-based"},
+        "chat": {"sections": ["message_list", "input_bar", "sidebar_contacts"], "style": "messaging"},
+        "settings": {"sections": ["nav_tabs", "form_sections", "save_bar"], "style": "clean form"},
+        "ecommerce": {"sections": ["header", "product_grid", "filters", "cart", "footer"], "style": "shop"},
+    }
+
+    def _handle_ui_mockup(self, text: str, context: dict) -> dict:
+        """Generate UI mockup specifications."""
+        # Detect which template
+        detected = "dashboard"
+        for tpl_name in self.UI_TEMPLATES:
+            if tpl_name in text.lower():
+                detected = tpl_name
+                break
+
+        template = self.UI_TEMPLATES[detected]
+        description = re.sub(r"\b(ui|mockup|wireframe|design|create|make|a)\b", "", text, flags=re.I).strip()
+
+        mockup = {
+            "template": detected,
+            "sections": template["sections"],
+            "style": template["style"],
+            "description": description or f"A {detected} UI design",
+            "colors": {"primary": "#6366f1", "secondary": "#8b5cf6", "bg": "#0f172a", "text": "#e2e8f0"},
+            "typography": {"heading": "Inter Bold", "body": "Inter Regular"},
+        }
+
+        self._log_creative("ui_mockup", description, detected)
+
+        section_list = ", ".join(template["sections"])
+        return {
+            "response": (
+                f"🎨 **UI Mockup: {detected.title()}**\n\n"
+                f"Style: {template['style']}\n"
+                f"Sections: {section_list}\n"
+                f"Description: {description or 'Standard layout'}\n\n"
+                f"The mockup spec is ready. Use 'generate image of {detected} UI' to create a visual."
+            ),
+            "data": {"type": "ui_mockup", "mockup": mockup},
+            "action": "ui_mockup",
+        }
+
+    # ========================
+    # LOGO GENERATION
+    # ========================
+
+    LOGO_STYLES = {
+        "wordmark": "text-based logo with stylized typography",
+        "lettermark": "initials-based logo (e.g., IBM, HBO)",
+        "icon": "symbol/icon-based logo",
+        "combination": "icon + text combination mark",
+        "emblem": "badge/seal style emblem logo",
+        "abstract": "abstract geometric shapes",
+        "mascot": "character/mascot-based logo",
+    }
+
+    def _handle_logo(self, text: str, context: dict) -> dict:
+        """Generate logo design specification + image prompt."""
+        brand_name = re.sub(r"\b(logo|design|create|make|bana|banao|for|a|an)\b", "", text, flags=re.I).strip()
+        if not brand_name or len(brand_name) < 2:
+            brand_name = "Brand"
+
+        # Detect style
+        logo_style = "combination"
+        for style_name in self.LOGO_STYLES:
+            if style_name in text.lower():
+                logo_style = style_name
+                break
+
+        logo_spec = {
+            "brand": brand_name,
+            "style": logo_style,
+            "style_description": self.LOGO_STYLES[logo_style],
+            "colors": ["#6366f1", "#8b5cf6", "#ffffff"],
+            "image_prompt": f"professional {logo_style} logo for '{brand_name}', clean vector style, modern, minimalist, white background",
+        }
+
+        self._log_creative("logo", brand_name, logo_style)
+
+        return {
+            "response": (
+                f"🎯 **Logo Design: {brand_name}**\n\n"
+                f"Style: {logo_style} — {self.LOGO_STYLES[logo_style]}\n"
+                f"Colors: Indigo + Purple + White\n\n"
+                f"Use 'generate image of {logo_spec['image_prompt'][:60]}' to create a visual draft."
+            ),
+            "data": {"type": "logo_design", "logo": logo_spec},
+            "action": "logo_design",
+        }
+
+    # ========================
+    # PRESENTATION OUTLINES
+    # ========================
+
+    def _handle_presentation(self, text: str, context: dict) -> dict:
+        """Generate a presentation outline with slide structure."""
+        topic = re.sub(r"\b(presentation|slides?|deck|pitch|create|make|about|on|for|a|an)\b", "", text, flags=re.I).strip()
+        if not topic or len(topic) < 3:
+            topic = "General Topic"
+
+        # Detect presentation type
+        pres_type = "standard"
+        if re.search(r"\b(pitch|investor|startup|funding)\b", text, re.I):
+            pres_type = "pitch_deck"
+        elif re.search(r"\b(report|quarterly|monthly|review)\b", text, re.I):
+            pres_type = "report"
+        elif re.search(r"\b(tutorial|training|workshop|lesson)\b", text, re.I):
+            pres_type = "training"
+
+        # Generate slide outlines
+        slide_templates = {
+            "pitch_deck": [
+                {"slide": 1, "title": "Title Slide", "content": f"{topic} — Pitch Deck"},
+                {"slide": 2, "title": "Problem", "content": "The problem we're solving"},
+                {"slide": 3, "title": "Solution", "content": "Our approach and solution"},
+                {"slide": 4, "title": "Market Size", "content": "TAM / SAM / SOM analysis"},
+                {"slide": 5, "title": "Product", "content": "Product demo / screenshots"},
+                {"slide": 6, "title": "Business Model", "content": "How we make money"},
+                {"slide": 7, "title": "Traction", "content": "Key metrics and growth"},
+                {"slide": 8, "title": "Team", "content": "Founding team and advisors"},
+                {"slide": 9, "title": "Ask", "content": "Funding ask and use of funds"},
+                {"slide": 10, "title": "Thank You", "content": "Contact information"},
+            ],
+            "report": [
+                {"slide": 1, "title": "Title Slide", "content": f"{topic} — Report"},
+                {"slide": 2, "title": "Executive Summary", "content": "Key findings overview"},
+                {"slide": 3, "title": "Data Overview", "content": "Charts and key numbers"},
+                {"slide": 4, "title": "Analysis", "content": "Detailed analysis"},
+                {"slide": 5, "title": "Trends", "content": "Patterns and trends"},
+                {"slide": 6, "title": "Recommendations", "content": "Next steps"},
+                {"slide": 7, "title": "Q&A", "content": "Discussion"},
+            ],
+            "training": [
+                {"slide": 1, "title": "Title Slide", "content": f"{topic} — Training"},
+                {"slide": 2, "title": "Objectives", "content": "What you'll learn"},
+                {"slide": 3, "title": "Overview", "content": "Topic introduction"},
+                {"slide": 4, "title": "Core Concepts", "content": "Key concepts explained"},
+                {"slide": 5, "title": "Demo / Examples", "content": "Practical examples"},
+                {"slide": 6, "title": "Hands-On", "content": "Practice exercise"},
+                {"slide": 7, "title": "Summary", "content": "Key takeaways"},
+                {"slide": 8, "title": "Resources", "content": "Further reading"},
+            ],
+            "standard": [
+                {"slide": 1, "title": "Title Slide", "content": f"{topic}"},
+                {"slide": 2, "title": "Introduction", "content": "Topic overview"},
+                {"slide": 3, "title": "Key Points", "content": "Main arguments / features"},
+                {"slide": 4, "title": "Details", "content": "Deep dive"},
+                {"slide": 5, "title": "Examples", "content": "Real-world examples"},
+                {"slide": 6, "title": "Summary", "content": "Key takeaways"},
+                {"slide": 7, "title": "Q&A", "content": "Questions and discussion"},
+            ],
+        }
+
+        slides = slide_templates.get(pres_type, slide_templates["standard"])
+
+        self._log_creative("presentation", topic, pres_type)
+
+        lines = [f"📊 **Presentation Outline: {topic}**\n", f"Type: {pres_type.replace('_', ' ').title()} ({len(slides)} slides)\n"]
+        for s in slides:
+            lines.append(f"  **Slide {s['slide']}:** {s['title']} — {s['content']}")
+
+        return {
+            "response": "\n".join(lines),
+            "data": {"type": "presentation", "pres_type": pres_type, "topic": topic, "slides": slides},
+            "action": "presentation_outline",
+        }
+
+    # ========================
+    # CREATIVE LOG
+    # ========================
+
+    def _log_creative(self, creative_type: str, content: str, subtype: str = ""):
+        try:
+            log = _load_json(CREATIVE_LOG_FILE, [])
+            if not isinstance(log, list):
+                log = []
+            log.append({
+                "type": creative_type,
+                "content": content[:200],
+                "subtype": subtype,
+                "timestamp": datetime.now().isoformat(),
+            })
+            if len(log) > 200:
+                log = log[-200:]
+            _save_json(CREATIVE_LOG_FILE, log)
+        except Exception:
+            pass
 
     # ========================
     # SYSTEM PROMPT & SETTINGS

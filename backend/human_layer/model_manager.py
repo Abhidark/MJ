@@ -809,3 +809,123 @@ def _format_size(bytes_size: int) -> str:
         return f"{bytes_size / (1024*1024):.0f} MB"
     else:
         return f"{bytes_size / (1024*1024*1024):.1f} GB"
+
+
+# ════════════════════════════════════════════════════
+# COST OPTIMIZATION ENGINE (V22 upgrade)
+# ════════════════════════════════════════════════════
+
+COST_PER_1K_TOKENS = {
+    "ollama": {"input": 0.0, "output": 0.0},       # local = free
+    "groq":   {"input": 0.0001, "output": 0.0002},  # near-free tier
+    "openai": {"input": 0.0025, "output": 0.01},    # GPT-4o pricing
+    "anthropic": {"input": 0.003, "output": 0.015}, # Claude Sonnet
+    "gemini": {"input": 0.00035, "output": 0.0014}, # Gemini 2.0 Flash
+}
+
+COST_FILE = Path(__file__).parent.parent / "data" / "provider_costs.json"
+
+
+def _load_cost_data() -> dict:
+    try:
+        if COST_FILE.exists():
+            return json.loads(COST_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {"daily": {}, "budget_limit": 5.00, "total_spent": 0.0}
+
+
+def _save_cost_data(data: dict):
+    try:
+        COST_FILE.parent.mkdir(exist_ok=True)
+        COST_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def log_token_usage(provider: str, input_tokens: int, output_tokens: int) -> dict:
+    """Log token usage and calculate cost."""
+    rates = COST_PER_1K_TOKENS.get(provider, COST_PER_1K_TOKENS["ollama"])
+    cost = (input_tokens / 1000 * rates["input"]) + (output_tokens / 1000 * rates["output"])
+
+    data = _load_cost_data()
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    if today not in data["daily"]:
+        data["daily"][today] = {"total_cost": 0.0, "total_tokens": 0, "by_provider": {}}
+    day = data["daily"][today]
+    day["total_cost"] = round(day["total_cost"] + cost, 6)
+    day["total_tokens"] += input_tokens + output_tokens
+
+    if provider not in day["by_provider"]:
+        day["by_provider"][provider] = {"cost": 0.0, "input_tokens": 0, "output_tokens": 0, "calls": 0}
+    prov = day["by_provider"][provider]
+    prov["cost"] = round(prov["cost"] + cost, 6)
+    prov["input_tokens"] += input_tokens
+    prov["output_tokens"] += output_tokens
+    prov["calls"] += 1
+
+    data["total_spent"] = round(data["total_spent"] + cost, 6)
+
+    # Keep only last 30 days
+    dates = sorted(data["daily"].keys())
+    if len(dates) > 30:
+        for old in dates[:-30]:
+            del data["daily"][old]
+
+    _save_cost_data(data)
+    return {"cost": round(cost, 6), "daily_total": day["total_cost"], "budget_remaining": round(data["budget_limit"] - day["total_cost"], 4)}
+
+
+def get_cost_stats() -> dict:
+    """Get cost tracking statistics."""
+    data = _load_cost_data()
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+    today_data = data["daily"].get(today, {"total_cost": 0, "total_tokens": 0, "by_provider": {}})
+
+    return {
+        "today_cost": today_data["total_cost"],
+        "today_tokens": today_data["total_tokens"],
+        "today_by_provider": today_data.get("by_provider", {}),
+        "budget_limit": data.get("budget_limit", 5.0),
+        "budget_remaining": round(data.get("budget_limit", 5.0) - today_data["total_cost"], 4),
+        "total_spent_all_time": data.get("total_spent", 0),
+        "days_tracked": len(data.get("daily", {})),
+    }
+
+
+def set_budget_limit(limit: float) -> dict:
+    """Set daily budget limit."""
+    data = _load_cost_data()
+    data["budget_limit"] = round(max(0, limit), 2)
+    _save_cost_data(data)
+    return {"success": True, "budget_limit": data["budget_limit"]}
+
+
+def is_within_budget() -> bool:
+    """Check if today's spending is within budget."""
+    stats = get_cost_stats()
+    return stats["budget_remaining"] > 0
+
+
+def cost_aware_route(task_type: str) -> dict:
+    """Smart routing that considers cost when budget is low."""
+    stats = get_cost_stats()
+    budget_pct = stats["budget_remaining"] / max(stats["budget_limit"], 0.01)
+
+    if budget_pct < 0.1:
+        # Budget almost exhausted — force free providers
+        return {"provider": "ollama", "model": get_model_for_task("", False),
+                "reason": "Budget limit reached — using free local model"}
+    elif budget_pct < 0.3:
+        # Low budget — prefer cheap providers
+        for p in ["ollama", "groq", "gemini"]:
+            check = _check_provider_available(p)
+            if check["available"]:
+                model = _get_model_for_provider(p, task_type)
+                return {"provider": p, "model": model, "reason": f"Budget-conscious — using {p}"}
+
+    # Normal routing
+    return smart_route_provider(task_type)

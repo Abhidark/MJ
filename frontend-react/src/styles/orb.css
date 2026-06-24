@@ -265,28 +265,4 @@
   50% { border-color: rgba(255, 59, 48, 0.5); box-shadow: 0 0 15px rgba(255, 59, 48, 0.15); }
 }
 
-/* ═══════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .orb-container {
-    width: 220px;
-    height: 220px;
-  }
-  .orb {
-    width: 220px;
-    height: 220px;
-  }
-  .orb-ring {
-    top: -15px;
-    left: -15px;
-    width: 250px;
-    height: 250px;
-  }
-  .orb-ring-2 {
-    top: -25px;
-    left: -25px;
-    width: 270px;
-    height: 270px;
-  }
-}
+/* Responsive rules moved to responsive.css */

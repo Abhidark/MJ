@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================
-   INDEX — base resets, scrollbar, selection, utility classes.
+   INDEX -- base resets, scrollbar, selection, utility classes.
    Design tokens are in theme.css. Animations in animations.css.
    ============================================================ */
 
@@ -14,6 +14,9 @@ body {
   height: 100vh;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-size: var(--font-base, 13px);
 }
 
 #root {
@@ -22,21 +25,38 @@ body {
   flex-direction: column;
 }
 
-/* ── Scrollbar ── */
+/* -- Scrollbar -- */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0, 180, 255, 0.15); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 180, 255, 0.3); }
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 180, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 180, 255, 0.3);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 180, 255, 0.15) transparent;
+}
 
 ::selection { background: rgba(0, 212, 255, 0.3); color: #fff; }
 
-/* ── Glow utilities ── */
+/* -- Focus visible -- */
+:focus-visible {
+  outline: 2px solid rgba(0, 212, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* -- Glow utilities -- */
 .glow-cyan  { box-shadow: 0 0 20px rgba(0, 212, 255, 0.15), 0 0 40px rgba(0, 212, 255, 0.05); }
 .glow-green { box-shadow: 0 0 20px rgba(0, 230, 118, 0.15); }
 .glow-red   { box-shadow: 0 0 20px rgba(255, 23, 68, 0.15); }
 .glow-gold  { box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
 
-/* ── Card base ── */
+/* -- Card base -- */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -47,4 +67,15 @@ body {
 .card:hover {
   border-color: var(--border-hover);
   box-shadow: 0 0 20px rgba(0, 180, 255, 0.08);
+}
+
+/* -- Smooth image rendering -- */
+img {
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* -- GPU acceleration for animated elements -- */
+.orb, .orb-ring, .orb-ring-2, .particles-canvas {
+  will-change: transform;
+  transform: translateZ(0);
 }

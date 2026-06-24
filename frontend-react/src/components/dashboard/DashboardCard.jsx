@@ -1,5 +1,5 @@
 /**
- * DashboardCard — reusable card wrapper with title, icon, expand/collapse,
+ * DashboardCard -- reusable card wrapper with title, icon, expand/collapse,
  * and full edit-mode controls: drag handle, resize handle, resize buttons,
  * color picker, position badge.
  */
@@ -32,7 +32,7 @@ export default function DashboardCard({
       style={cardStyle}
       data-card-id={id}
     >
-      {/* Drag handle — edit mode only */}
+      {/* Drag handle -- edit mode only */}
       {editing && (
         <div
           className="card-drag-handle"
@@ -68,27 +68,27 @@ export default function DashboardCard({
               onInput={(e) => editActions?.onColorChange?.(id, e.target.value)}
             />
             <button title="Wider (+1 col)" className="card-wider"
-              onClick={() => editActions?.onWider?.(id)}>→</button>
+              onClick={() => editActions?.onWider?.(id)}>{'→'}</button>
             <button title="Narrower (-1 col)" className="card-narrower"
-              onClick={() => editActions?.onNarrower?.(id)}>←</button>
+              onClick={() => editActions?.onNarrower?.(id)}>{'←'}</button>
             <button title="Taller (+1 row)" className="card-taller"
-              onClick={() => editActions?.onTaller?.(id)}>↓</button>
+              onClick={() => editActions?.onTaller?.(id)}>{'↓'}</button>
             <button title="Shorter (-1 row)" className="card-shorter"
-              onClick={() => editActions?.onShorter?.(id)}>↑</button>
+              onClick={() => editActions?.onShorter?.(id)}>{'↑'}</button>
             <button title="Reset to default" className="card-reset-size"
-              onClick={() => editActions?.onResetCard?.(id)}>↺</button>
+              onClick={() => editActions?.onResetCard?.(id)}>{'↺'}</button>
           </div>
 
           {/* Corner resize handle (drag to resize) */}
           <div
             className="card-resize-handle"
             onMouseDown={(e) => editActions?.onResizeStart?.(id, e)}
-          >⤡</div>
+          >{'⤡'}</div>
 
           {/* Grid position badge */}
           {pos && (
             <div className="grid-pos-badge">
-              C{pos.col} R{pos.row} {pos.w}×{pos.h}
+              C{pos.col} R{pos.row} {pos.w}{'×'}{pos.h}
             </div>
           )}
         </>

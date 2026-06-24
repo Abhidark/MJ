@@ -75,7 +75,7 @@ function RoadmapItem({ item }) {
         <span className="rm-version">{item.v}</span>
         <span className="rm-name">{item.name}</span>
         <span className="rm-pct">{item.pct}%</span>
-        <span className={`rm-expand ${open ? 'open' : ''}`}>▶</span>
+        <span className={`rm-expand ${open ? 'open' : ''}`}>{'▶'}</span>
       </div>
       <div className="rm-bar-wrap">
         <div className={`rm-bar-fill ${st}`} style={{ width: `${item.pct}%` }} />
@@ -110,8 +110,8 @@ export default function RoadmapPanel({ onClose }) {
     <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="rm-panel">
         <div className="rm-header">
-          <span className="rm-title">🚀 MJ ROADMAP</span>
-          <button className="panel-close" onClick={onClose}>✕</button>
+          <span className="rm-title">{'🚀'} MJ ROADMAP</span>
+          <button className="panel-close" onClick={onClose}>x</button>
         </div>
 
         <div className="rm-overall">
