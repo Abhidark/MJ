@@ -521,5 +521,125 @@ def handle(text: str) -> dict:
         }
 
 
+    # ========================
+    # REMOTE REGISTRY STUB (V21 → 95%)
+    # ========================
+
+    REGISTRY_URL = "https://plugins.mj-assistant.local/api/v1"  # stub
+
+    def search_remote(self, query: str) -> dict:
+        """Search remote plugin registry (stub — returns sample results)."""
+        # In production, this would call self.REGISTRY_URL/search?q=query
+        remote_results = []
+        for pid, p in self.catalog.items():
+            if query.lower() in f"{p['name']} {p['description']}".lower():
+                remote_results.append({
+                    "id": pid, "name": p["name"], "description": p["description"],
+                    "version": p.get("version"), "rating": p.get("rating"),
+                    "source": "remote_registry",
+                })
+        return {
+            "query": query,
+            "results": remote_results,
+            "registry": self.REGISTRY_URL,
+            "status": "stub_mode",
+        }
+
+    def publish_plugin(self, plugin_id: str) -> dict:
+        """Publish a local plugin to remote registry (stub)."""
+        if plugin_id not in self.catalog:
+            return {"error": "Plugin not found in catalog"}
+        p = self.catalog[plugin_id]
+        return {
+            "success": True,
+            "plugin": p["name"],
+            "version": p.get("version"),
+            "published_to": self.REGISTRY_URL,
+            "status": "stub_mode — would publish in production",
+        }
+
+    # ========================
+    # AUTO-UPDATE SYSTEM (V21 → 95%)
+    # ========================
+
+    AUTO_UPDATE_FILE = DATA_DIR / "plugin_auto_updates.json"
+
+    def enable_auto_update(self, plugin_id: str, enabled: bool = True) -> dict:
+        if plugin_id not in self.installed:
+            return {"error": "Plugin not installed"}
+        config = _load_json(self.AUTO_UPDATE_FILE, {})
+        config[plugin_id] = {
+            "enabled": enabled,
+            "last_checked": datetime.now().isoformat(),
+            "auto_updated_count": config.get(plugin_id, {}).get("auto_updated_count", 0),
+        }
+        _save_json(self.AUTO_UPDATE_FILE, config)
+        return {"success": True, "plugin_id": plugin_id, "auto_update": enabled}
+
+    def run_auto_updates(self) -> dict:
+        """Check and apply auto-updates for all enabled plugins."""
+        config = _load_json(self.AUTO_UPDATE_FILE, {})
+        updated = []
+        checked = 0
+
+        for pid, settings in config.items():
+            if not settings.get("enabled"):
+                continue
+            checked += 1
+            check = self.check_update(pid)
+            if check.get("update_available"):
+                result = self.update_plugin(pid)
+                if result.get("success"):
+                    updated.append(pid)
+                    settings["auto_updated_count"] = settings.get("auto_updated_count", 0) + 1
+                    settings["last_auto_update"] = datetime.now().isoformat()
+            settings["last_checked"] = datetime.now().isoformat()
+
+        _save_json(self.AUTO_UPDATE_FILE, config)
+        return {"checked": checked, "updated": updated, "total_updated": len(updated)}
+
+    def get_auto_update_config(self) -> dict:
+        config = _load_json(self.AUTO_UPDATE_FILE, {})
+        return {"plugins": config, "total_enabled": sum(1 for c in config.values() if c.get("enabled"))}
+
+    # ========================
+    # PLUGIN HEALTH MONITOR (V21 → 95%)
+    # ========================
+
+    def health_check_all(self) -> dict:
+        """Run health check on all installed plugins."""
+        results = []
+        for pid in self.installed:
+            plugin_file = PLUGINS_DIR / f"{pid}.py"
+            status = "healthy"
+            issues = []
+
+            if not plugin_file.exists():
+                status = "missing_file"
+                issues.append("Plugin file not found")
+            else:
+                sandbox = self.sandbox_check(pid)
+                if not sandbox.get("safe"):
+                    status = "security_warning"
+                    issues.extend([w["reason"] for w in sandbox.get("warnings", [])])
+
+            catalog_info = self.catalog.get(pid, {})
+            results.append({
+                "id": pid,
+                "name": catalog_info.get("name", pid),
+                "status": status,
+                "issues": issues,
+                "version": self.installed[pid].get("version", "?"),
+            })
+
+        healthy = sum(1 for r in results if r["status"] == "healthy")
+        return {
+            "plugins": results,
+            "healthy": healthy,
+            "total": len(results),
+            "overall": "healthy" if healthy == len(results) else "issues_found",
+        }
+
+
 # Singleton
 plugin_store = PluginStore()

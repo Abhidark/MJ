@@ -617,6 +617,91 @@ export const aiOsAPI = {
   getBgTask: (taskId) => api.get(`/os/bg-tasks/${taskId}`),
   updateBgTask: (taskId, data) => api.put(`/os/bg-tasks/${taskId}`, data),
   cancelBgTask: (taskId) => api.post(`/os/bg-tasks/${taskId}/cancel`),
+  listServices: () => api.get('/os/services'),
+  startService: (sid) => api.post(`/os/services/${sid}/start`),
+  stopService: (sid) => api.post(`/os/services/${sid}/stop`),
+  restartService: (sid) => api.post(`/os/services/${sid}/restart`),
+  autoStartAll: () => api.post('/os/services/auto-start'),
+  listApps: () => api.get('/os/apps'),
+  registerApp: (data) => api.post('/os/apps', data),
+  launchApp: (appId) => api.post(`/os/apps/${appId}/launch`),
+  getSyncStatus: () => api.get('/os/sync'),
+  registerDevice: (data) => api.post('/os/sync/device', data),
+  triggerSync: () => api.post('/os/sync/trigger'),
+};
+
+// ===== Self-Improve Extended API (V24 ML + Adaptive) =====
+export const mlTunerAPI = {
+  tune: (perfStats) => api.post('/self-improve/ml-tune', { perf_stats: perfStats }),
+  getParams: () => api.get('/self-improve/ml-params'),
+  setParam: (key, value) => api.put('/self-improve/ml-param', { key, value }),
+  getHistory: () => api.get('/self-improve/ml-history'),
+  reset: () => api.post('/self-improve/ml-reset'),
+};
+
+export const adaptiveRouterAPI = {
+  record: (data) => api.post('/self-improve/adaptive-route', data),
+  getBest: (taskType) => api.get(`/self-improve/adaptive-best/${taskType}`),
+  getReport: () => api.get('/self-improve/adaptive-report'),
+  calibrate: (taskType) => api.get(`/self-improve/adaptive-calibrate/${taskType}`),
+};
+
+// ===== Creative Extended API (V10 render + assets) =====
+export const creativeExtendedAPI = {
+  submitRender: (data) => api.post('/creative/render', data),
+  getRenderQueue: () => api.get('/creative/render-queue'),
+  updateRender: (jobId, data) => api.put(`/creative/render/${jobId}`, data),
+  registerAsset: (data) => api.post('/creative/assets', data),
+  searchAssets: () => api.get('/creative/assets'),
+  tagAsset: (aid, tags) => api.post(`/creative/assets/${aid}/tag`, { tags }),
+  deleteAsset: (aid) => api.delete(`/creative/assets/${aid}`),
+};
+
+// ===== Agent Extended API (V20 orchestration + capabilities) =====
+export const orchestrationAPI = {
+  start: (name, agents, strategy) => api.post('/agents/orchestration', { name, agents, strategy }),
+  advance: (oid, agent, result, error) => api.post(`/agents/orchestration/${oid}/advance`, { agent, result, error }),
+  getAll: () => api.get('/agents/orchestration'),
+  stop: (oid) => api.post(`/agents/orchestration/${oid}/stop`),
+  getCapabilities: () => api.get('/agents/capabilities'),
+  findCapable: (cap) => api.get(`/agents/find-capable/${cap}`),
+  assignTask: (taskType, requiredCaps) => api.post('/agents/assign-task', { task_type: taskType, required_caps: requiredCaps }),
+};
+
+// ===== Plugin Store Extended API (V21 registry + auto-update) =====
+export const pluginStoreExtendedAPI = {
+  remoteSearch: (q) => api.get(`/store/remote-search?q=${q}`),
+  publish: (pluginId) => api.post(`/store/publish/${pluginId}`),
+  enableAutoUpdate: (pluginId, enabled) => api.post(`/store/auto-update/${pluginId}`, { enabled }),
+  runAutoUpdates: () => api.post('/store/run-auto-updates'),
+  getAutoUpdateConfig: () => api.get('/store/auto-update-config'),
+  healthCheck: () => api.get('/store/health'),
+};
+
+// ===== JARVIS OS Ultimate API (V25) =====
+export const jarvisAPI = {
+  getStatus: () => api.get('/jarvis/status'),
+  boot: () => api.post('/jarvis/boot'),
+  getOverview: () => api.get('/jarvis/overview'),
+  setMode: (mode) => api.post('/jarvis/mode', { mode }),
+  search: (q) => api.get(`/jarvis/search?q=${q}`),
+  getQuickActions: () => api.get('/jarvis/quick-actions'),
+  getManifest: () => api.get('/jarvis/manifest'),
+  getMobileConfig: () => api.get('/jarvis/mobile-config'),
+  getPwaStatus: () => api.get('/jarvis/pwa-status'),
+  addDevice: (data) => api.post('/jarvis/smart-home/devices', data),
+  getDevices: () => api.get('/jarvis/smart-home/devices'),
+  setDeviceState: (did, state) => api.put(`/jarvis/smart-home/devices/${did}`, { state }),
+  removeDevice: (did) => api.delete(`/jarvis/smart-home/devices/${did}`),
+  createScene: (name, actions) => api.post('/jarvis/smart-home/scenes', { name, actions }),
+  getScenes: () => api.get('/jarvis/smart-home/scenes'),
+  activateScene: (sid) => api.post(`/jarvis/smart-home/scenes/${sid}/activate`),
+  getRooms: () => api.get('/jarvis/smart-home/rooms'),
+  sendNotification: (data) => api.post('/jarvis/notifications', data),
+  getNotifications: () => api.get('/jarvis/notifications'),
+  getUnread: () => api.get('/jarvis/notifications/unread'),
+  markRead: (nid) => api.post(`/jarvis/notifications/${nid}/read`),
+  markAllRead: () => api.post('/jarvis/notifications/read-all'),
 };
 
 export default api;

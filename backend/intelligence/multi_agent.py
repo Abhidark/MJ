@@ -708,6 +708,149 @@ class PipelineOrchestrator:
         except Exception:
             pass
 
+    # ========================
+    # LIVE ORCHESTRATION ENGINE (V20 → 100%)
+    # ========================
+
+    _orchestration_state: dict = {}
+    ORCHESTRATION_FILE = DATA_DIR / "orchestration_state.json"
+
+    def start_orchestration(self, name: str, agents: list, strategy: str = "sequential") -> dict:
+        """Start a live orchestration session."""
+        oid = f"orch_{int(time.time())}"
+        self._orchestration_state[oid] = {
+            "id": oid,
+            "name": name,
+            "agents": agents,
+            "strategy": strategy,  # sequential, parallel, round_robin, priority
+            "status": "running",
+            "started": datetime.now().isoformat(),
+            "current_agent": agents[0] if agents else None,
+            "completed_agents": [],
+            "results": {},
+            "errors": [],
+        }
+        self._save_orchestration()
+        return {"success": True, "orchestration_id": oid, "status": "running"}
+
+    def advance_orchestration(self, orch_id: str, agent: str, result: dict = None,
+                               error: str = "") -> dict:
+        """Advance orchestration to next agent."""
+        orch = self._orchestration_state.get(orch_id)
+        if not orch:
+            return {"error": "Orchestration not found"}
+
+        orch["completed_agents"].append(agent)
+        if result:
+            orch["results"][agent] = result
+        if error:
+            orch["errors"].append({"agent": agent, "error": error})
+
+        remaining = [a for a in orch["agents"] if a not in orch["completed_agents"]]
+        if remaining:
+            orch["current_agent"] = remaining[0]
+            orch["status"] = "running"
+        else:
+            orch["current_agent"] = None
+            orch["status"] = "completed"
+            orch["completed_at"] = datetime.now().isoformat()
+
+        self._save_orchestration()
+        return {"success": True, "status": orch["status"], "next_agent": orch["current_agent"]}
+
+    def get_orchestration(self, orch_id: str = "") -> dict:
+        if orch_id:
+            return self._orchestration_state.get(orch_id, {"error": "Not found"})
+        return {"orchestrations": list(self._orchestration_state.values())[-10:]}
+
+    def stop_orchestration(self, orch_id: str) -> dict:
+        orch = self._orchestration_state.get(orch_id)
+        if not orch:
+            return {"error": "Not found"}
+        orch["status"] = "stopped"
+        orch["completed_at"] = datetime.now().isoformat()
+        self._save_orchestration()
+        return {"success": True}
+
+    def _save_orchestration(self):
+        try:
+            _save_json(self.ORCHESTRATION_FILE, self._orchestration_state)
+        except Exception:
+            pass
+
+    # ========================
+    # AGENT CAPABILITY REGISTRY (V20 → 100%)
+    # ========================
+
+    _capabilities: dict = {}
+
+    AGENT_CAPABILITIES = {
+        "zeus": ["planning", "routing", "intent_detection", "task_breakdown"],
+        "hermes": ["email", "messaging", "notifications", "webhooks"],
+        "athena": ["search", "rag", "research", "pdf", "knowledge_graph"],
+        "hephaestus": ["coding", "git", "debugging", "testing", "cicd"],
+        "apollo": ["image_gen", "writing", "video", "ui_mockup", "presentation"],
+        "ares": ["desktop_control", "keyboard", "mouse", "browser"],
+        "argus": ["ocr", "camera", "object_detection", "screen_ai"],
+        "mnemosyne": ["memory", "episodic", "preferences", "knowledge_base"],
+        "chronos": ["calendar", "reminders", "planning", "habits"],
+        "sentinel": ["security", "encryption", "audit", "permissions"],
+    }
+
+    def register_capability(self, agent: str, capabilities: list) -> dict:
+        self._capabilities[agent] = {
+            "capabilities": capabilities,
+            "registered": datetime.now().isoformat(),
+        }
+        return {"success": True, "agent": agent, "capabilities": capabilities}
+
+    def find_capable_agent(self, capability: str) -> dict:
+        """Find agents that can handle a capability."""
+        matches = []
+        # Check registered first
+        for agent, info in self._capabilities.items():
+            if capability in info.get("capabilities", []):
+                matches.append({"agent": agent, "source": "registered"})
+
+        # Check defaults
+        for agent, caps in self.AGENT_CAPABILITIES.items():
+            if capability in caps and agent not in [m["agent"] for m in matches]:
+                matches.append({"agent": agent, "source": "default"})
+
+        return {"capability": capability, "agents": matches, "count": len(matches)}
+
+    def get_all_capabilities(self) -> dict:
+        merged = dict(self.AGENT_CAPABILITIES)
+        for agent, info in self._capabilities.items():
+            merged[agent] = info.get("capabilities", [])
+        return {"capabilities": merged, "total_agents": len(merged)}
+
+    def assign_task_to_best(self, task_type: str, required_caps: list) -> dict:
+        """Find the best agent for a task based on required capabilities + load."""
+        scores = {}
+        all_caps = self.get_all_capabilities()["capabilities"]
+
+        for agent, caps in all_caps.items():
+            cap_match = sum(1 for c in required_caps if c in caps)
+            if cap_match == 0:
+                continue
+            load = self._agent_load.get(agent, {}).get("utilization_pct", 0)
+            health = self._agent_health.get(agent, {}).get("status", "healthy")
+            health_penalty = 0 if health == "healthy" else (0.3 if health == "degraded" else 1.0)
+            score = (cap_match / max(len(required_caps), 1)) - (load / 200) - health_penalty
+            scores[agent] = round(score, 3)
+
+        if not scores:
+            return {"error": "No capable agent found", "required": required_caps}
+
+        best = max(scores, key=scores.get)
+        return {
+            "assigned_to": best,
+            "score": scores[best],
+            "task_type": task_type,
+            "all_scores": scores,
+        }
+
 
 # Singleton
 multi_agent = PipelineOrchestrator()

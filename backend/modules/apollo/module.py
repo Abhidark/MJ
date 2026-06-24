@@ -719,6 +719,8 @@ class ApolloModule(BaseModule):
             "video_pipelines": len(pipelines),
             "design_tokens_loaded": True,
             "themes_available": list(self.THEME_PRESETS.keys()),
+            "render_queue": render_queue.get_stats(),
+            "assets": asset_manager.get_stats(),
         }
 
     # ========================
@@ -811,3 +813,152 @@ class ApolloModule(BaseModule):
                 ],
             },
         ]
+
+
+# ========================
+# RENDER QUEUE (V10 → 100%)
+# ========================
+
+RENDER_QUEUE_FILE = DATA_DIR / "render_queue.json"
+
+class RenderQueue:
+    """Frame-by-frame render queue for video pipeline."""
+
+    def __init__(self):
+        self.jobs: list = []
+        self._load()
+
+    def _load(self):
+        data = _load_json(RENDER_QUEUE_FILE, [])
+        self.jobs = data if isinstance(data, list) else []
+
+    def _save(self):
+        _save_json(RENDER_QUEUE_FILE, self.jobs[-100:])
+
+    def submit_render(self, pipeline_id: str, scene: int, resolution: str = "1920x1080",
+                      format_out: str = "mp4") -> dict:
+        job = {
+            "id": f"render_{int(time.time())}_{scene}",
+            "pipeline_id": pipeline_id,
+            "scene": scene,
+            "resolution": resolution,
+            "format": format_out,
+            "status": "queued",
+            "progress": 0,
+            "submitted": datetime.now().isoformat(),
+            "frames_rendered": 0,
+            "total_frames": 0,
+        }
+        self.jobs.append(job)
+        self._save()
+        return {"success": True, "job": job}
+
+    def update_job(self, job_id: str, status: str = "", progress: float = 0,
+                   frames: int = 0) -> dict:
+        for job in self.jobs:
+            if job["id"] == job_id:
+                if status:
+                    job["status"] = status
+                if progress:
+                    job["progress"] = min(100, progress)
+                if frames:
+                    job["frames_rendered"] = frames
+                if status == "completed":
+                    job["completed"] = datetime.now().isoformat()
+                self._save()
+                return {"success": True, "job": job}
+        return {"error": "Job not found"}
+
+    def get_queue(self, status: str = "") -> dict:
+        jobs = self.jobs
+        if status:
+            jobs = [j for j in jobs if j.get("status") == status]
+        return {"jobs": jobs[-20:], "total": len(jobs)}
+
+    def get_stats(self) -> dict:
+        by_status = {}
+        for j in self.jobs:
+            s = j.get("status", "unknown")
+            by_status[s] = by_status.get(s, 0) + 1
+        return {
+            "total_jobs": len(self.jobs),
+            "by_status": by_status,
+            "queued": by_status.get("queued", 0),
+            "rendering": by_status.get("rendering", 0),
+            "completed": by_status.get("completed", 0),
+        }
+
+
+# ========================
+# ASSET MANAGER (V10 → 100%)
+# ========================
+
+ASSETS_FILE = DATA_DIR / "creative_assets.json"
+
+class AssetManager:
+    """Manage creative assets — images, videos, audio, fonts, templates."""
+
+    def __init__(self):
+        self.assets: dict = {}
+        self._load()
+
+    def _load(self):
+        self.assets = _load_json(ASSETS_FILE, {})
+
+    def _save(self):
+        _save_json(ASSETS_FILE, self.assets)
+
+    def register_asset(self, name: str, asset_type: str, path: str = "",
+                       metadata: dict = None) -> dict:
+        aid = f"asset_{int(time.time())}_{name[:10].replace(' ', '_')}"
+        self.assets[aid] = {
+            "id": aid,
+            "name": name,
+            "type": asset_type,  # image, video, audio, font, template
+            "path": path,
+            "metadata": metadata or {},
+            "created": datetime.now().isoformat(),
+            "tags": [],
+            "uses": 0,
+        }
+        self._save()
+        return {"success": True, "asset": self.assets[aid]}
+
+    def get_asset(self, asset_id: str) -> dict:
+        return self.assets.get(asset_id, {"error": "Asset not found"})
+
+    def search_assets(self, query: str = "", asset_type: str = "") -> dict:
+        results = []
+        for aid, a in self.assets.items():
+            if asset_type and a.get("type") != asset_type:
+                continue
+            if query and query.lower() not in f"{a['name']} {' '.join(a.get('tags', []))}".lower():
+                continue
+            results.append(a)
+        return {"assets": results, "total": len(results)}
+
+    def tag_asset(self, asset_id: str, tags: list) -> dict:
+        if asset_id not in self.assets:
+            return {"error": "Not found"}
+        self.assets[asset_id]["tags"] = list(set(self.assets[asset_id].get("tags", []) + tags))
+        self._save()
+        return {"success": True, "tags": self.assets[asset_id]["tags"]}
+
+    def delete_asset(self, asset_id: str) -> dict:
+        if asset_id not in self.assets:
+            return {"error": "Not found"}
+        del self.assets[asset_id]
+        self._save()
+        return {"success": True}
+
+    def get_stats(self) -> dict:
+        by_type = {}
+        for a in self.assets.values():
+            t = a.get("type", "unknown")
+            by_type[t] = by_type.get(t, 0) + 1
+        return {"total_assets": len(self.assets), "by_type": by_type}
+
+
+# Singletons
+render_queue = RenderQueue()
+asset_manager = AssetManager()

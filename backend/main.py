@@ -68,6 +68,13 @@ from modules.chronos.module import conflict_detector, habit_tracker
 from intelligence.ai_os import (
     user_manager, session_manager, permission_engine,
     api_gateway, bg_task_runner, get_os_status,
+    service_manager, app_registry, cross_device_sync,
+)
+from self_healer.self_improver import ml_tuner, adaptive_router
+from modules.apollo.module import render_queue, asset_manager
+from intelligence.jarvis_ultimate import (
+    unified_controller, pwa_manager, smart_home_hub,
+    notification_center, get_jarvis_status,
 )
 
 # Intelligence Layer
@@ -3953,6 +3960,309 @@ async def os_update_bg_task(task_id: str, req: Request):
 async def os_cancel_bg_task(task_id: str):
     return bg_task_runner.cancel_task(task_id)
 
+# ------- V23 EXTENDED: Services, Apps, Sync -------
+
+@app.get("/os/services")
+async def os_list_services():
+    return service_manager.list_services()
+
+@app.post("/os/services/{sid}/start")
+async def os_start_service(sid: str):
+    return service_manager.start_service(sid)
+
+@app.post("/os/services/{sid}/stop")
+async def os_stop_service(sid: str):
+    return service_manager.stop_service(sid)
+
+@app.post("/os/services/{sid}/restart")
+async def os_restart_service(sid: str):
+    return service_manager.restart_service(sid)
+
+@app.post("/os/services/auto-start")
+async def os_auto_start():
+    return service_manager.auto_start_all()
+
+@app.get("/os/apps")
+async def os_list_apps():
+    return app_registry.list_apps()
+
+@app.post("/os/apps")
+async def os_register_app(req: Request):
+    body = await req.json()
+    return app_registry.register_app(
+        body.get("app_id", ""), body.get("name", ""),
+        body.get("type", ""), body.get("version", "1.0.0"),
+        body.get("permissions", []))
+
+@app.post("/os/apps/{app_id}/launch")
+async def os_launch_app(app_id: str):
+    return app_registry.launch_app(app_id)
+
+@app.get("/os/sync")
+async def os_sync_status():
+    return cross_device_sync.get_sync_status()
+
+@app.post("/os/sync/device")
+async def os_register_device(req: Request):
+    body = await req.json()
+    return cross_device_sync.register_device(
+        body.get("device_id", ""), body.get("name", ""), body.get("type", "pc"))
+
+@app.post("/os/sync/trigger")
+async def os_trigger_sync():
+    return cross_device_sync.trigger_sync()
+
+# ------- V24 EXTENDED: ML Tuner, Adaptive Router -------
+
+@app.post("/self-improve/ml-tune")
+async def ml_tune(req: Request):
+    body = await req.json()
+    return ml_tuner.analyze_and_tune(body.get("perf_stats", {}))
+
+@app.get("/self-improve/ml-params")
+async def ml_params():
+    return ml_tuner.get_params()
+
+@app.put("/self-improve/ml-param")
+async def ml_set_param(req: Request):
+    body = await req.json()
+    return ml_tuner.set_param(body.get("key", ""), body.get("value"))
+
+@app.get("/self-improve/ml-history")
+async def ml_history():
+    return {"history": ml_tuner.get_tuning_history()}
+
+@app.post("/self-improve/ml-reset")
+async def ml_reset():
+    return ml_tuner.reset_defaults()
+
+@app.post("/self-improve/adaptive-route")
+async def adaptive_record(req: Request):
+    body = await req.json()
+    return adaptive_router.record_routing(
+        body.get("task_type", ""), body.get("provider", ""),
+        body.get("model", ""), body.get("latency_ms", 0),
+        body.get("quality", 0), body.get("success", True))
+
+@app.get("/self-improve/adaptive-best/{task_type}")
+async def adaptive_best(task_type: str):
+    return adaptive_router.get_best_route(task_type)
+
+@app.get("/self-improve/adaptive-report")
+async def adaptive_report():
+    return adaptive_router.get_routing_report()
+
+@app.get("/self-improve/adaptive-calibrate/{task_type}")
+async def adaptive_calibrate(task_type: str):
+    return adaptive_router.calibrate_confidence(task_type)
+
+# ------- V10 EXTENDED: Render Queue, Asset Manager -------
+
+@app.post("/creative/render")
+async def creative_render(req: Request):
+    body = await req.json()
+    return render_queue.submit_render(
+        body.get("pipeline_id", ""), body.get("scene", 1),
+        body.get("resolution", "1920x1080"), body.get("format", "mp4"))
+
+@app.get("/creative/render-queue")
+async def creative_render_queue():
+    return render_queue.get_queue()
+
+@app.put("/creative/render/{job_id}")
+async def creative_update_render(job_id: str, req: Request):
+    body = await req.json()
+    return render_queue.update_job(
+        job_id, body.get("status", ""), body.get("progress", 0), body.get("frames", 0))
+
+@app.post("/creative/assets")
+async def creative_register_asset(req: Request):
+    body = await req.json()
+    return asset_manager.register_asset(
+        body.get("name", ""), body.get("type", ""),
+        body.get("path", ""), body.get("metadata", {}))
+
+@app.get("/creative/assets")
+async def creative_search_assets():
+    return asset_manager.search_assets()
+
+@app.post("/creative/assets/{aid}/tag")
+async def creative_tag_asset(aid: str, req: Request):
+    body = await req.json()
+    return asset_manager.tag_asset(aid, body.get("tags", []))
+
+@app.delete("/creative/assets/{aid}")
+async def creative_delete_asset(aid: str):
+    return asset_manager.delete_asset(aid)
+
+# ------- V20 EXTENDED: Orchestration, Capabilities -------
+
+@app.post("/agents/orchestration")
+async def start_orchestration(req: Request):
+    body = await req.json()
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.start_orchestration(
+        body.get("name", ""), body.get("agents", []), body.get("strategy", "sequential"))
+
+@app.post("/agents/orchestration/{oid}/advance")
+async def advance_orchestration(oid: str, req: Request):
+    body = await req.json()
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.advance_orchestration(oid, body.get("agent", ""), body.get("result"), body.get("error", ""))
+
+@app.get("/agents/orchestration")
+async def get_orchestrations():
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.get_orchestration()
+
+@app.post("/agents/orchestration/{oid}/stop")
+async def stop_orchestration(oid: str):
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.stop_orchestration(oid)
+
+@app.get("/agents/capabilities")
+async def agent_capabilities():
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.get_all_capabilities()
+
+@app.get("/agents/find-capable/{capability}")
+async def find_capable(capability: str):
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.find_capable_agent(capability)
+
+@app.post("/agents/assign-task")
+async def assign_task(req: Request):
+    body = await req.json()
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.assign_task_to_best(body.get("task_type", ""), body.get("required_caps", []))
+
+# ------- V21 EXTENDED: Remote Registry, Auto-Update, Health -------
+
+@app.get("/store/remote-search")
+async def store_remote_search(q: str = ""):
+    return plugin_store.search_remote(q)
+
+@app.post("/store/publish/{plugin_id}")
+async def store_publish(plugin_id: str):
+    return plugin_store.publish_plugin(plugin_id)
+
+@app.post("/store/auto-update/{plugin_id}")
+async def store_enable_auto_update(plugin_id: str, req: Request):
+    body = await req.json()
+    return plugin_store.enable_auto_update(plugin_id, body.get("enabled", True))
+
+@app.post("/store/run-auto-updates")
+async def store_run_auto_updates():
+    return plugin_store.run_auto_updates()
+
+@app.get("/store/auto-update-config")
+async def store_auto_update_config():
+    return plugin_store.get_auto_update_config()
+
+@app.get("/store/health")
+async def store_health():
+    return plugin_store.health_check_all()
+
+# ------- V25: JARVIS OS ULTIMATE -------
+
+@app.get("/jarvis/status")
+async def jarvis_status():
+    return get_jarvis_status()
+
+@app.post("/jarvis/boot")
+async def jarvis_boot():
+    return unified_controller.boot()
+
+@app.get("/jarvis/overview")
+async def jarvis_overview():
+    return unified_controller.get_system_overview()
+
+@app.post("/jarvis/mode")
+async def jarvis_set_mode(req: Request):
+    body = await req.json()
+    return unified_controller.set_mode(body.get("mode", "standard"))
+
+@app.get("/jarvis/search")
+async def jarvis_search(q: str = ""):
+    return unified_controller.system_search(q)
+
+@app.get("/jarvis/quick-actions")
+async def jarvis_quick_actions():
+    return unified_controller.get_quick_actions()
+
+@app.get("/jarvis/manifest")
+async def jarvis_manifest():
+    return pwa_manager.get_manifest()
+
+@app.get("/jarvis/mobile-config")
+async def jarvis_mobile_config():
+    return pwa_manager.get_mobile_config()
+
+@app.get("/jarvis/pwa-status")
+async def jarvis_pwa_status():
+    return pwa_manager.get_install_prompt_data()
+
+@app.post("/jarvis/smart-home/devices")
+async def jarvis_add_device(req: Request):
+    body = await req.json()
+    return smart_home_hub.add_device(
+        body.get("device_id", ""), body.get("name", ""),
+        body.get("type", ""), body.get("room", ""), body.get("protocol", "wifi"))
+
+@app.get("/jarvis/smart-home/devices")
+async def jarvis_get_devices():
+    return smart_home_hub.get_devices()
+
+@app.put("/jarvis/smart-home/devices/{did}")
+async def jarvis_set_device(did: str, req: Request):
+    body = await req.json()
+    return smart_home_hub.set_device_state(did, body.get("state", {}))
+
+@app.delete("/jarvis/smart-home/devices/{did}")
+async def jarvis_remove_device(did: str):
+    return smart_home_hub.remove_device(did)
+
+@app.post("/jarvis/smart-home/scenes")
+async def jarvis_create_scene(req: Request):
+    body = await req.json()
+    return smart_home_hub.create_scene(body.get("name", ""), body.get("actions", []))
+
+@app.get("/jarvis/smart-home/scenes")
+async def jarvis_get_scenes():
+    return smart_home_hub.get_scenes()
+
+@app.post("/jarvis/smart-home/scenes/{sid}/activate")
+async def jarvis_activate_scene(sid: str):
+    return smart_home_hub.activate_scene(sid)
+
+@app.get("/jarvis/smart-home/rooms")
+async def jarvis_rooms():
+    return smart_home_hub.get_rooms()
+
+@app.post("/jarvis/notifications")
+async def jarvis_send_notif(req: Request):
+    body = await req.json()
+    return notification_center.send(
+        body.get("title", ""), body.get("body", ""),
+        body.get("category", "info"), body.get("source", "system"),
+        body.get("priority", "normal"))
+
+@app.get("/jarvis/notifications")
+async def jarvis_get_notifs():
+    return notification_center.get_all()
+
+@app.get("/jarvis/notifications/unread")
+async def jarvis_unread():
+    return notification_center.get_unread()
+
+@app.post("/jarvis/notifications/{nid}/read")
+async def jarvis_mark_read(nid: str):
+    return notification_center.mark_read(nid)
+
+@app.post("/jarvis/notifications/read-all")
+async def jarvis_read_all():
+    return notification_center.mark_all_read()
+
 
 # SPA catch-all: serve React index.html for client-side routes
 @app.get("/{path:path}")
@@ -3973,7 +4283,7 @@ async def spa_catch_all(path: str):
         "mouse", "browser-control", "calendar", "pipelines", "agent-groups",
         "agent-mail", "agent-mail-stats", "planner", "productivity", "db",
         "smart-home", "workflows", "dev",
-        "store", "agents", "self-improve", "memory", "os", "creative",
+        "store", "agents", "self-improve", "memory", "os", "creative", "jarvis",
     }
     if first_segment in backend_prefixes:
         return JSONResponse({"error": "Not found"}, status_code=404)

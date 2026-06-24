@@ -438,6 +438,205 @@ class BackgroundTaskRunner:
 
 
 # ========================
+# SYSTEM SERVICE MANAGER (V23 → 75%)
+# ========================
+
+SERVICES_FILE = DATA_DIR / "os_services.json"
+
+class SystemServiceManager:
+    """Manage system services — auto-start, health, dependencies."""
+
+    DEFAULT_SERVICES = {
+        "zeus_brain": {"name": "Zeus Brain", "type": "core", "auto_start": True, "priority": 1},
+        "memory_engine": {"name": "Memory Engine", "type": "core", "auto_start": True, "priority": 2},
+        "model_router": {"name": "Model Router", "type": "core", "auto_start": True, "priority": 3},
+        "workflow_engine": {"name": "Workflow Engine", "type": "intelligence", "auto_start": True, "priority": 5},
+        "plugin_loader": {"name": "Plugin Loader", "type": "extension", "auto_start": True, "priority": 8},
+        "health_monitor": {"name": "Health Monitor", "type": "system", "auto_start": True, "priority": 4},
+        "self_healer": {"name": "Self-Healer", "type": "system", "auto_start": False, "priority": 9},
+        "event_bus": {"name": "Event Bus", "type": "core", "auto_start": True, "priority": 2},
+    }
+
+    def __init__(self):
+        self.services: dict = {}
+        self._load()
+
+    def _load(self):
+        self.services = _load_json(SERVICES_FILE, {})
+        if not self.services:
+            for sid, svc in self.DEFAULT_SERVICES.items():
+                self.services[sid] = {
+                    **svc, "id": sid, "status": "stopped",
+                    "started_at": None, "restarts": 0,
+                }
+            self._save()
+
+    def _save(self):
+        _save_json(SERVICES_FILE, self.services)
+
+    def start_service(self, service_id: str) -> dict:
+        svc = self.services.get(service_id)
+        if not svc:
+            return {"error": f"Service '{service_id}' not found"}
+        svc["status"] = "running"
+        svc["started_at"] = datetime.now().isoformat()
+        self._save()
+        return {"success": True, "service": svc["name"], "status": "running"}
+
+    def stop_service(self, service_id: str) -> dict:
+        svc = self.services.get(service_id)
+        if not svc:
+            return {"error": "Not found"}
+        svc["status"] = "stopped"
+        svc["started_at"] = None
+        self._save()
+        return {"success": True, "service": svc["name"], "status": "stopped"}
+
+    def restart_service(self, service_id: str) -> dict:
+        svc = self.services.get(service_id)
+        if not svc:
+            return {"error": "Not found"}
+        svc["status"] = "running"
+        svc["started_at"] = datetime.now().isoformat()
+        svc["restarts"] = svc.get("restarts", 0) + 1
+        self._save()
+        return {"success": True, "restarts": svc["restarts"]}
+
+    def list_services(self) -> dict:
+        items = sorted(self.services.values(), key=lambda x: x.get("priority", 99))
+        running = sum(1 for s in items if s.get("status") == "running")
+        return {"services": items, "running": running, "total": len(items)}
+
+    def auto_start_all(self) -> dict:
+        started = []
+        for sid, svc in sorted(self.services.items(), key=lambda x: x[1].get("priority", 99)):
+            if svc.get("auto_start") and svc.get("status") != "running":
+                svc["status"] = "running"
+                svc["started_at"] = datetime.now().isoformat()
+                started.append(svc["name"])
+        self._save()
+        return {"started": started, "total": len(started)}
+
+
+# ========================
+# APP REGISTRY (V23 → 75%)
+# ========================
+
+APP_REGISTRY_FILE = DATA_DIR / "os_app_registry.json"
+
+class AppRegistry:
+    """Registry of installed apps/modules within the AI OS."""
+
+    def __init__(self):
+        self.apps: dict = {}
+        self._load()
+
+    def _load(self):
+        self.apps = _load_json(APP_REGISTRY_FILE, {})
+
+    def _save(self):
+        _save_json(APP_REGISTRY_FILE, self.apps)
+
+    def register_app(self, app_id: str, name: str, app_type: str, version: str = "1.0.0",
+                     permissions: list = None) -> dict:
+        self.apps[app_id] = {
+            "id": app_id, "name": name, "type": app_type,
+            "version": version, "permissions": permissions or [],
+            "installed": datetime.now().isoformat(),
+            "launches": 0, "last_used": None,
+        }
+        self._save()
+        return {"success": True, "app": self.apps[app_id]}
+
+    def launch_app(self, app_id: str) -> dict:
+        if app_id not in self.apps:
+            return {"error": "App not registered"}
+        self.apps[app_id]["launches"] = self.apps[app_id].get("launches", 0) + 1
+        self.apps[app_id]["last_used"] = datetime.now().isoformat()
+        self._save()
+        return {"success": True, "app": self.apps[app_id]}
+
+    def list_apps(self, app_type: str = "") -> dict:
+        items = list(self.apps.values())
+        if app_type:
+            items = [a for a in items if a.get("type") == app_type]
+        return {"apps": items, "total": len(items)}
+
+    def unregister_app(self, app_id: str) -> dict:
+        if app_id not in self.apps:
+            return {"error": "Not found"}
+        del self.apps[app_id]
+        self._save()
+        return {"success": True}
+
+
+# ========================
+# CROSS-DEVICE SYNC STUB (V23 → 75%)
+# ========================
+
+SYNC_FILE = DATA_DIR / "os_sync_state.json"
+
+class CrossDeviceSync:
+    """Cross-device sync stub — tracks sync state and pending changes."""
+
+    def __init__(self):
+        self.sync_state: dict = {}
+        self._load()
+
+    def _load(self):
+        self.sync_state = _load_json(SYNC_FILE, {
+            "devices": {},
+            "pending_changes": [],
+            "last_sync": None,
+            "sync_enabled": False,
+        })
+
+    def _save(self):
+        _save_json(SYNC_FILE, self.sync_state)
+
+    def register_device(self, device_id: str, device_name: str, device_type: str = "pc") -> dict:
+        self.sync_state["devices"][device_id] = {
+            "name": device_name, "type": device_type,
+            "registered": datetime.now().isoformat(),
+            "last_seen": datetime.now().isoformat(),
+            "status": "online",
+        }
+        self._save()
+        return {"success": True, "device": self.sync_state["devices"][device_id]}
+
+    def queue_change(self, change_type: str, data: dict) -> dict:
+        self.sync_state["pending_changes"].append({
+            "type": change_type, "data": data,
+            "ts": datetime.now().isoformat(), "synced": False,
+        })
+        if len(self.sync_state["pending_changes"]) > 100:
+            self.sync_state["pending_changes"] = self.sync_state["pending_changes"][-100:]
+        self._save()
+        return {"queued": True, "pending": len(self.sync_state["pending_changes"])}
+
+    def get_sync_status(self) -> dict:
+        return {
+            "devices": self.sync_state["devices"],
+            "pending_changes": len(self.sync_state.get("pending_changes", [])),
+            "last_sync": self.sync_state.get("last_sync"),
+            "sync_enabled": self.sync_state.get("sync_enabled", False),
+            "status": "stub_mode",
+        }
+
+    def trigger_sync(self) -> dict:
+        """Trigger sync (stub — marks changes as synced)."""
+        pending = self.sync_state.get("pending_changes", [])
+        synced = 0
+        for change in pending:
+            if not change.get("synced"):
+                change["synced"] = True
+                synced += 1
+        self.sync_state["last_sync"] = datetime.now().isoformat()
+        self._save()
+        return {"synced": synced, "status": "stub_sync_complete"}
+
+
+# ========================
 # SINGLETONS
 # ========================
 
@@ -446,6 +645,9 @@ session_manager = SessionManager()
 permission_engine = PermissionEngine()
 api_gateway = APIGateway()
 bg_task_runner = BackgroundTaskRunner()
+service_manager = SystemServiceManager()
+app_registry = AppRegistry()
+cross_device_sync = CrossDeviceSync()
 
 
 def get_os_status() -> dict:
@@ -455,5 +657,8 @@ def get_os_status() -> dict:
         "sessions": session_manager.get_active_sessions(),
         "api_gateway": api_gateway.get_gateway_stats(),
         "background_tasks": bg_task_runner.get_stats(),
+        "services": service_manager.list_services(),
+        "apps": app_registry.list_apps(),
+        "sync": cross_device_sync.get_sync_status(),
         "roles": list(ROLES.keys()),
     }

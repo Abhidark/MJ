@@ -575,6 +575,221 @@ class LearningLoop:
 
 
 # ========================
+# ML-BASED TUNER (V24 → 100%)
+# ========================
+
+ML_TUNING_FILE = DATA_DIR / "ml_tuning.json"
+
+class MLTuner:
+    """ML-based parameter tuning using statistical analysis of performance data."""
+
+    def __init__(self):
+        self.tuning_history: list = []
+        self.current_params: dict = {}
+        self._load()
+
+    def _load(self):
+        data = _load_json(ML_TUNING_FILE, {})
+        self.tuning_history = data.get("history", [])
+        self.current_params = data.get("params", {
+            "temperature": 0.7,
+            "max_tokens": 2048,
+            "timeout_ms": 10000,
+            "retry_threshold": 0.4,
+            "cache_ttl_sec": 300,
+            "batch_size": 5,
+            "confidence_threshold": 0.6,
+        })
+
+    def _save(self):
+        _save_json(ML_TUNING_FILE, {
+            "history": self.tuning_history[-200:],
+            "params": self.current_params,
+        })
+
+    def analyze_and_tune(self, perf_stats: dict) -> dict:
+        """Analyze performance and auto-tune parameters."""
+        adjustments = []
+
+        avg_latency = perf_stats.get("avg_latency_ms", 0)
+        success_rate = perf_stats.get("success_rate", 100)
+        avg_quality = perf_stats.get("avg_quality", 0.7)
+
+        # Latency-based tuning
+        if avg_latency > 5000:
+            old = self.current_params["max_tokens"]
+            self.current_params["max_tokens"] = max(512, old - 256)
+            adjustments.append({"param": "max_tokens", "old": old,
+                                "new": self.current_params["max_tokens"], "reason": "high_latency"})
+
+        if avg_latency > 8000:
+            old = self.current_params["timeout_ms"]
+            self.current_params["timeout_ms"] = min(30000, old + 2000)
+            adjustments.append({"param": "timeout_ms", "old": old,
+                                "new": self.current_params["timeout_ms"], "reason": "timeout_risk"})
+
+        # Quality-based tuning
+        if avg_quality < 0.5:
+            old = self.current_params["temperature"]
+            self.current_params["temperature"] = max(0.1, old - 0.1)
+            adjustments.append({"param": "temperature", "old": old,
+                                "new": self.current_params["temperature"], "reason": "low_quality"})
+
+        if avg_quality > 0.85 and avg_latency < 2000:
+            old = self.current_params["temperature"]
+            self.current_params["temperature"] = min(1.0, old + 0.05)
+            adjustments.append({"param": "temperature", "old": old,
+                                "new": self.current_params["temperature"], "reason": "quality_headroom"})
+
+        # Success-based tuning
+        if success_rate < 85:
+            old = self.current_params["retry_threshold"]
+            self.current_params["retry_threshold"] = min(0.6, old + 0.05)
+            adjustments.append({"param": "retry_threshold", "old": old,
+                                "new": self.current_params["retry_threshold"], "reason": "low_success"})
+
+        if adjustments:
+            self.tuning_history.append({
+                "ts": time.time(),
+                "adjustments": adjustments,
+                "input_stats": {
+                    "latency": avg_latency, "success": success_rate, "quality": avg_quality,
+                },
+            })
+            self._save()
+
+        return {
+            "adjustments": adjustments,
+            "current_params": self.current_params,
+            "auto_tuned": len(adjustments) > 0,
+        }
+
+    def get_params(self) -> dict:
+        return {"params": self.current_params}
+
+    def set_param(self, key: str, value) -> dict:
+        if key not in self.current_params:
+            return {"error": f"Unknown param: {key}"}
+        old = self.current_params[key]
+        self.current_params[key] = value
+        self._save()
+        return {"success": True, "param": key, "old": old, "new": value}
+
+    def get_tuning_history(self, limit: int = 20) -> list:
+        return self.tuning_history[-limit:]
+
+    def reset_defaults(self) -> dict:
+        self.current_params = {
+            "temperature": 0.7, "max_tokens": 2048, "timeout_ms": 10000,
+            "retry_threshold": 0.4, "cache_ttl_sec": 300,
+            "batch_size": 5, "confidence_threshold": 0.6,
+        }
+        self._save()
+        return {"success": True, "params": self.current_params}
+
+
+# ========================
+# ADAPTIVE MODEL ROUTER (V24 → 100%)
+# ========================
+
+ADAPTIVE_ROUTING_FILE = DATA_DIR / "adaptive_routing.json"
+
+class AdaptiveRouter:
+    """Route requests to best model based on learned performance patterns."""
+
+    def __init__(self):
+        self.routing_stats: dict = {}
+        self._load()
+
+    def _load(self):
+        self.routing_stats = _load_json(ADAPTIVE_ROUTING_FILE, {})
+
+    def _save(self):
+        _save_json(ADAPTIVE_ROUTING_FILE, self.routing_stats)
+
+    def record_routing(self, task_type: str, provider: str, model: str,
+                       latency_ms: float, quality: float, success: bool) -> dict:
+        key = f"{task_type}:{provider}:{model}"
+        if key not in self.routing_stats:
+            self.routing_stats[key] = {
+                "count": 0, "total_latency": 0, "total_quality": 0,
+                "successes": 0, "failures": 0,
+            }
+        stats = self.routing_stats[key]
+        stats["count"] += 1
+        stats["total_latency"] += latency_ms
+        stats["total_quality"] += quality
+        if success:
+            stats["successes"] += 1
+        else:
+            stats["failures"] += 1
+        self._save()
+        return {"recorded": True}
+
+    def get_best_route(self, task_type: str) -> dict:
+        """Find best provider/model for a task type based on historical data."""
+        candidates = []
+        for key, stats in self.routing_stats.items():
+            parts = key.split(":")
+            if len(parts) < 3:
+                continue
+            if parts[0] != task_type:
+                continue
+            if stats["count"] < 3:
+                continue  # need minimum data
+
+            avg_quality = stats["total_quality"] / stats["count"]
+            avg_latency = stats["total_latency"] / stats["count"]
+            success_rate = stats["successes"] / stats["count"]
+            # Score: quality * success_rate - latency_penalty
+            score = avg_quality * success_rate - (avg_latency / 20000)
+
+            candidates.append({
+                "provider": parts[1], "model": parts[2],
+                "score": round(score, 4),
+                "avg_quality": round(avg_quality, 3),
+                "avg_latency_ms": round(avg_latency, 1),
+                "success_rate": round(success_rate * 100, 1),
+                "sample_size": stats["count"],
+            })
+
+        candidates.sort(key=lambda x: x["score"], reverse=True)
+        return {
+            "task_type": task_type,
+            "best": candidates[0] if candidates else None,
+            "alternatives": candidates[1:3] if len(candidates) > 1 else [],
+        }
+
+    def get_routing_report(self) -> dict:
+        task_types = set()
+        for key in self.routing_stats:
+            parts = key.split(":")
+            if parts:
+                task_types.add(parts[0])
+        return {
+            "total_routes_tracked": len(self.routing_stats),
+            "task_types": list(task_types),
+            "total_requests": sum(s["count"] for s in self.routing_stats.values()),
+        }
+
+    def calibrate_confidence(self, task_type: str) -> dict:
+        """Calibrate confidence thresholds based on observed quality."""
+        route = self.get_best_route(task_type)
+        best = route.get("best")
+        if not best:
+            return {"calibrated": False, "reason": "insufficient_data"}
+
+        # Suggest confidence threshold based on observed quality
+        suggested_threshold = max(0.3, min(0.9, best["avg_quality"] - 0.1))
+        return {
+            "task_type": task_type,
+            "suggested_threshold": round(suggested_threshold, 2),
+            "based_on": best["sample_size"],
+            "calibrated": True,
+        }
+
+
+# ========================
 # SINGLETONS
 # ========================
 
@@ -585,6 +800,8 @@ auto_tuner = AutoTuner()
 quality_scorer = QualityScorer()
 auto_retry = AutoRetryEngine()
 learning_loop = LearningLoop()
+ml_tuner = MLTuner()
+adaptive_router = AdaptiveRouter()
 
 
 def get_self_improve_status() -> dict:
@@ -597,4 +814,6 @@ def get_self_improve_status() -> dict:
         "quality": quality_scorer.get_quality_trend(),
         "retries": auto_retry.get_retry_stats(),
         "learning": learning_loop.get_success_rates(),
+        "ml_tuning": ml_tuner.get_params(),
+        "adaptive_routing": adaptive_router.get_routing_report(),
     }
