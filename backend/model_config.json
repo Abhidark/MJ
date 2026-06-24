@@ -1,14 +1,14 @@
 {
-  "active_model": "qwen2.5:7b",
+  "active_model": "qwen3:8b",
   "auto_select": true,
   "model_map": {
-    "chat": "qwen2.5:7b",
-    "coding": "qwen2.5:7b",
-    "creative": "qwen2.5:7b",
-    "analysis": "qwen2.5:7b",
-    "reasoning": "qwen2.5:7b",
-    "vision": "qwen2.5:7b",
-    "translation": "qwen2.5:7b"
+    "chat": "qwen3:8b",
+    "coding": "qwen3:8b",
+    "creative": "qwen3:8b",
+    "analysis": "qwen3:8b",
+    "reasoning": "qwen3:8b",
+    "vision": "qwen3:8b",
+    "translation": "qwen3:8b"
   },
-  "provider": "groq"
+  "provider": "ollama"
 }

@@ -1,5 +1,33 @@
 [
   {
+    "id": "alert_20260623_221721_693674",
+    "timestamp": "2026-06-23T22:17:21.694681",
+    "time_display": "10:17:21 PM",
+    "title": "Auto-Fix Failed: OSError",
+    "message": "Manual intervention needed. Ollama se response nahi aaya (status 404).",
+    "severity": "error",
+    "category": "self_heal",
+    "source": "auto_fixer",
+    "error_id": "",
+    "resolved": true,
+    "resolved_at": "2026-06-23T22:17:30.793986",
+    "resolve_message": "Ollama is back online"
+  },
+  {
+    "id": "alert_20260623_221721_219943",
+    "timestamp": "2026-06-23T22:17:21.219943",
+    "time_display": "10:17:21 PM",
+    "title": "OSError: [Errno 22] Invalid argument: 'H:\\\\MJ\\\\MJ-Assistant\\\\backend\\\\chats\\\\<<<<<<< Upda",
+    "message": "Endpoint: POST /chat\nFile: H:\\MJ\\MJ-Assistant\\backend\\main.py\nLine: 299\nAuto-fix attempting...",
+    "severity": "error",
+    "category": "error",
+    "source": "middleware",
+    "error_id": "err_20260623_221721_218437",
+    "resolved": false,
+    "resolved_at": "",
+    "resolve_message": ""
+  },
+  {
     "id": "alert_20260623_173254_605476",
     "timestamp": "2026-06-23T17:32:54.605476",
     "time_display": "05:32:54 PM",
@@ -9,9 +37,9 @@
     "category": "health",
     "source": "health_monitor",
     "error_id": "",
-    "resolved": false,
-    "resolved_at": "",
-    "resolve_message": ""
+    "resolved": true,
+    "resolved_at": "2026-06-23T22:14:56.560068",
+    "resolve_message": "Ollama is back online"
   },
   {
     "id": "alert_20260623_173252_052388",
@@ -37,9 +65,9 @@
     "category": "health",
     "source": "health_monitor",
     "error_id": "",
-    "resolved": false,
-    "resolved_at": "",
-    "resolve_message": ""
+    "resolved": true,
+    "resolved_at": "2026-06-23T22:14:56.561077",
+    "resolve_message": "Ollama is back online"
   },
   {
     "id": "alert_20260623_164703_822432",
@@ -135,9 +163,9 @@
     "category": "health",
     "source": "health_monitor",
     "error_id": "",
-    "resolved": false,
-    "resolved_at": "",
-    "resolve_message": ""
+    "resolved": true,
+    "resolved_at": "2026-06-23T22:14:56.562075",
+    "resolve_message": "Ollama is back online"
   },
   {
     "id": "alert_20260623_154358_303994",

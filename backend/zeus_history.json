@@ -30,5 +30,13 @@
     "success": true,
     "text_preview": "what is the weaher",
     "timestamp": 1782213472.0578344
+  },
+  {
+    "module": "echo",
+    "confidence": 0.9,
+    "duration_ms": 1304.0,
+    "success": true,
+    "text_preview": "meri wife ka naam kuhsi hai usko namste bolo",
+    "timestamp": 1782233165.0182765
   }
 ]
