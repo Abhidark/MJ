@@ -567,6 +567,98 @@ class WorkflowEngine:
             "total_fires": sum(t.get("fires", 0) for t in self.triggers),
         }
 
+    # ========================
+    # ERROR RECOVERY & RETRY (V19 → 100%)
+    # ========================
+
+    async def execute_with_retry(self, workflow_id: str, modules: dict = None,
+                                  context: dict = None, max_retries: int = 2) -> dict:
+        """Execute workflow with automatic retry on failures."""
+        w = self.workflows.get(workflow_id)
+        if not w:
+            return {"success": False, "error": f"Workflow '{workflow_id}' not found"}
+
+        start_time = time.time()
+        steps = w.get("steps", [])
+        results = []
+        retried = 0
+        step_context = dict(context or {})
+
+        for step in steps:
+            step_result = None
+            for attempt in range(max_retries + 1):
+                step_result = await self._execute_single_step(step, modules, step_context)
+
+                if step_result.get("status") == "completed":
+                    if step_result.get("response"):
+                        step_context["previous_step"] = step_result["response"]
+                    break
+                elif step_result.get("status") == "error" and attempt < max_retries:
+                    retried += 1
+                    step_result["retry_attempt"] = attempt + 1
+                    await asyncio.sleep(0.5 * (attempt + 1))  # backoff
+                else:
+                    # Skip failed step, continue workflow
+                    step_result["final_status"] = "failed_after_retries"
+                    break
+
+            results.append(step_result)
+
+        duration = time.time() - start_time
+        w["run_count"] = w.get("run_count", 0) + 1
+        w["last_run"] = datetime.now().isoformat()
+        self._save_workflows()
+
+        completed = sum(1 for r in results if r.get("status") == "completed")
+        self._log_execution(workflow_id, "retry_completed", results, duration)
+
+        return {
+            "success": True, "workflow": w["name"], "mode": "retry",
+            "max_retries": max_retries, "total_retries": retried,
+            "steps_completed": completed, "steps_total": len(results),
+            "duration": round(duration, 2), "results": results,
+        }
+
+    # ========================
+    # LIVE STATUS (V19 → 100%)
+    # ========================
+
+    _live_status: dict = {}
+
+    def update_live_status(self, workflow_id: str, step_id: str, status: str, progress: float = 0) -> dict:
+        """Update live execution status for real-time monitoring."""
+        self._live_status[workflow_id] = {
+            "current_step": step_id,
+            "status": status,
+            "progress_pct": round(progress, 1),
+            "updated": datetime.now().isoformat(),
+        }
+        return {"updated": True}
+
+    def get_live_status(self, workflow_id: str = "") -> dict:
+        if workflow_id:
+            return self._live_status.get(workflow_id, {"status": "idle"})
+        return {"workflows": self._live_status}
+
+    def get_dashboard_data(self) -> dict:
+        """Get data for workflow orchestration dashboard."""
+        stats = self.get_stats()
+        recent_logs = self.execution_log[-5:]
+        active = {wid: s for wid, s in self._live_status.items() if s.get("status") == "running"}
+
+        # Success rate
+        total_runs = len(self.execution_log)
+        successful = sum(1 for l in self.execution_log if "completed" in l.get("status", ""))
+        success_rate = round(successful / max(total_runs, 1) * 100, 1)
+
+        return {
+            **stats,
+            "success_rate": success_rate,
+            "active_workflows": len(active),
+            "active": active,
+            "recent_runs": recent_logs,
+        }
+
 
 # Singleton
 workflow_engine = WorkflowEngine()

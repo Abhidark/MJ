@@ -344,6 +344,237 @@ class AutoTuner:
 
 
 # ========================
+# RESPONSE QUALITY SCORER (V24 → 90%)
+# ========================
+
+class QualityScorer:
+    """Auto-score response quality based on heuristics."""
+
+    def __init__(self):
+        self.scores: list = []
+        self._load()
+
+    def _load(self):
+        data = _load_json(QUALITY_LOG_FILE, [])
+        self.scores = data if isinstance(data, list) else []
+
+    def _save(self):
+        _save_json(QUALITY_LOG_FILE, self.scores[-300:])
+
+    def score_response(self, query: str, response: str, latency_ms: float = 0,
+                       user_feedback: float = 0.0) -> dict:
+        """Auto-score a response based on heuristics + optional user feedback."""
+        score = 0.5  # baseline
+
+        # Length appropriateness
+        resp_words = len(response.split())
+        query_words = len(query.split())
+        if resp_words > 5 and resp_words < 2000:
+            score += 0.1
+        if resp_words < 2:
+            score -= 0.2
+
+        # Relevance heuristic: word overlap
+        q_words = set(query.lower().split())
+        r_words = set(response.lower().split())
+        overlap = len(q_words & r_words) / max(len(q_words), 1)
+        score += overlap * 0.15
+
+        # Error indicators
+        error_phrases = ["sorry", "i can't", "error", "failed", "unable to"]
+        if any(p in response.lower() for p in error_phrases):
+            score -= 0.15
+
+        # Latency penalty
+        if latency_ms > 5000:
+            score -= 0.1
+        elif latency_ms < 1000 and latency_ms > 0:
+            score += 0.05
+
+        # User feedback override (strongest signal)
+        if user_feedback > 0:
+            score = score * 0.3 + user_feedback * 0.7
+
+        score = max(0.0, min(1.0, score))
+
+        entry = {
+            "query_hash": hashlib.md5(query.encode()).hexdigest()[:8],
+            "auto_score": round(score, 3),
+            "user_feedback": user_feedback,
+            "latency_ms": latency_ms,
+            "response_length": resp_words,
+            "ts": time.time(),
+        }
+        self.scores.append(entry)
+        self._save()
+        return entry
+
+    def get_quality_trend(self, window: int = 50) -> dict:
+        """Get quality trend over recent responses."""
+        recent = self.scores[-window:]
+        if not recent:
+            return {"message": "No data yet"}
+        scores = [s["auto_score"] for s in recent]
+        first_half = scores[:len(scores)//2]
+        second_half = scores[len(scores)//2:]
+        return {
+            "avg_score": round(sum(scores) / len(scores), 3),
+            "trend": "improving" if sum(second_half)/max(len(second_half),1) >
+                     sum(first_half)/max(len(first_half),1) else "stable",
+            "total_scored": len(self.scores),
+            "recent_avg": round(sum(scores[-10:]) / max(len(scores[-10:]), 1), 3),
+        }
+
+    def get_low_quality(self, threshold: float = 0.4, limit: int = 10) -> list:
+        """Get lowest quality responses for review."""
+        low = [s for s in self.scores if s["auto_score"] < threshold]
+        return sorted(low, key=lambda x: x["auto_score"])[:limit]
+
+
+# ========================
+# AUTO-RETRY ENGINE (V24 → 90%)
+# ========================
+
+class AutoRetryEngine:
+    """Automatically retry failed or low-quality responses with improved prompts."""
+
+    RETRY_LOG_FILE = DATA_DIR / "auto_retries.json"
+
+    def __init__(self):
+        self.retries: list = []
+        self._load()
+
+    def _load(self):
+        data = _load_json(self.RETRY_LOG_FILE, [])
+        self.retries = data if isinstance(data, list) else []
+
+    def _save(self):
+        _save_json(self.RETRY_LOG_FILE, self.retries[-200:])
+
+    def should_retry(self, quality_score: float, error: bool = False,
+                     attempt: int = 0, max_attempts: int = 2) -> dict:
+        """Decide if a response should be retried."""
+        retry = False
+        reason = ""
+
+        if error and attempt < max_attempts:
+            retry = True
+            reason = "error_response"
+        elif quality_score < 0.3 and attempt < max_attempts:
+            retry = True
+            reason = "low_quality"
+        elif quality_score < 0.5 and attempt == 0:
+            retry = True
+            reason = "below_threshold"
+
+        return {"should_retry": retry, "reason": reason, "attempt": attempt + 1}
+
+    def improve_prompt(self, original: str, reason: str) -> str:
+        """Improve a prompt for retry based on failure reason."""
+        if reason == "low_quality":
+            return f"Please provide a detailed and helpful answer: {original}"
+        elif reason == "error_response":
+            return f"Try a different approach to answer: {original}"
+        elif reason == "below_threshold":
+            return f"Be specific and thorough: {original}"
+        return original
+
+    def log_retry(self, query_hash: str, original_score: float,
+                  retry_score: float, reason: str) -> dict:
+        entry = {
+            "query_hash": query_hash,
+            "original_score": original_score,
+            "retry_score": retry_score,
+            "improvement": round(retry_score - original_score, 3),
+            "reason": reason,
+            "ts": time.time(),
+        }
+        self.retries.append(entry)
+        self._save()
+        return entry
+
+    def get_retry_stats(self) -> dict:
+        if not self.retries:
+            return {"total_retries": 0}
+        improvements = [r["improvement"] for r in self.retries]
+        successful = sum(1 for i in improvements if i > 0)
+        return {
+            "total_retries": len(self.retries),
+            "successful_improvements": successful,
+            "avg_improvement": round(sum(improvements) / len(improvements), 3),
+            "success_rate": round(successful / len(self.retries) * 100, 1),
+        }
+
+
+# ========================
+# LEARNING FEEDBACK LOOP (V24 → 90%)
+# ========================
+
+LEARNING_LOG_FILE = DATA_DIR / "learning_feedback.json"
+
+class LearningLoop:
+    """Track what works and feed it back into the system."""
+
+    def __init__(self):
+        self.feedback: list = []
+        self.patterns: dict = {}
+        self._load()
+
+    def _load(self):
+        data = _load_json(LEARNING_LOG_FILE, {})
+        self.feedback = data.get("feedback", [])
+        self.patterns = data.get("patterns", {})
+
+    def _save(self):
+        _save_json(LEARNING_LOG_FILE, {
+            "feedback": self.feedback[-300:],
+            "patterns": self.patterns,
+        })
+
+    def record_outcome(self, module: str, action: str, success: bool, context: str = "") -> dict:
+        """Record whether an action succeeded or failed."""
+        key = f"{module}:{action}"
+        if key not in self.patterns:
+            self.patterns[key] = {"successes": 0, "failures": 0, "last_context": ""}
+
+        if success:
+            self.patterns[key]["successes"] += 1
+        else:
+            self.patterns[key]["failures"] += 1
+        self.patterns[key]["last_context"] = context
+
+        self.feedback.append({
+            "module": module, "action": action, "success": success,
+            "ts": time.time(),
+        })
+        self._save()
+        return {"recorded": True, "pattern": self.patterns[key]}
+
+    def get_success_rates(self) -> dict:
+        """Get success rates for all tracked patterns."""
+        rates = {}
+        for key, data in self.patterns.items():
+            total = data["successes"] + data["failures"]
+            if total > 0:
+                rates[key] = {
+                    "rate": round(data["successes"] / total * 100, 1),
+                    "total": total,
+                }
+        return {"patterns": rates, "total_tracked": len(rates)}
+
+    def get_weak_areas(self, threshold: float = 70.0) -> list:
+        """Find areas with low success rates."""
+        weak = []
+        for key, data in self.patterns.items():
+            total = data["successes"] + data["failures"]
+            if total >= 3:  # minimum sample
+                rate = data["successes"] / total * 100
+                if rate < threshold:
+                    weak.append({"pattern": key, "success_rate": round(rate, 1), "total": total})
+        return sorted(weak, key=lambda x: x["success_rate"])
+
+
+# ========================
 # SINGLETONS
 # ========================
 
@@ -351,6 +582,9 @@ performance_tracker = PerformanceTracker()
 prompt_improver = PromptImprover()
 memory_optimizer = MemoryOptimizer()
 auto_tuner = AutoTuner()
+quality_scorer = QualityScorer()
+auto_retry = AutoRetryEngine()
+learning_loop = LearningLoop()
 
 
 def get_self_improve_status() -> dict:
@@ -360,4 +594,7 @@ def get_self_improve_status() -> dict:
         "memory": memory_optimizer.get_memory_summary(),
         "prompt_effectiveness": prompt_improver.get_effectiveness_report(),
         "optimizations": auto_tuner.get_stats(),
+        "quality": quality_scorer.get_quality_trend(),
+        "retries": auto_retry.get_retry_stats(),
+        "learning": learning_loop.get_success_rates(),
     }

@@ -604,6 +604,110 @@ class PipelineOrchestrator:
     def get_coordination_tasks(self, limit: int = 20) -> dict:
         return {"tasks": self._coordination_tasks[-limit:], "total": len(self._coordination_tasks)}
 
+    # ========================
+    # LOAD BALANCING & HEALTH (V20 → 95%)
+    # ========================
+
+    _agent_load: dict = {}
+    _agent_health: dict = {}
+    HEALTH_FILE = DATA_DIR / "agent_health.json"
+
+    def update_agent_load(self, agent: str, active_tasks: int = 0, capacity: int = 10) -> dict:
+        """Update load info for an agent."""
+        self._agent_load[agent] = {
+            "active_tasks": active_tasks,
+            "capacity": capacity,
+            "utilization_pct": round(active_tasks / max(capacity, 1) * 100, 1),
+            "updated": datetime.now().isoformat(),
+        }
+        return {"success": True, "agent": agent, "load": self._agent_load[agent]}
+
+    def get_least_loaded(self, agents: list = None) -> dict:
+        """Return the agent with lowest utilization."""
+        candidates = agents or list(self._agent_load.keys())
+        if not candidates:
+            return {"agent": None, "reason": "No agents registered"}
+
+        best = None
+        best_util = 999
+        for a in candidates:
+            load = self._agent_load.get(a, {"utilization_pct": 0})
+            if load.get("utilization_pct", 0) < best_util:
+                best_util = load["utilization_pct"]
+                best = a
+
+        return {"agent": best, "utilization_pct": best_util}
+
+    def get_load_report(self) -> dict:
+        """Get full load balancing report."""
+        return {
+            "agents": self._agent_load,
+            "total_active": sum(l.get("active_tasks", 0) for l in self._agent_load.values()),
+            "avg_utilization": round(
+                sum(l.get("utilization_pct", 0) for l in self._agent_load.values())
+                / max(len(self._agent_load), 1), 1
+            ),
+            "overloaded": [a for a, l in self._agent_load.items() if l.get("utilization_pct", 0) > 80],
+        }
+
+    def report_health(self, agent: str, status: str = "healthy", error: str = "") -> dict:
+        """Agent health check-in."""
+        self._agent_health[agent] = {
+            "status": status,  # healthy, degraded, down
+            "error": error,
+            "last_heartbeat": datetime.now().isoformat(),
+            "consecutive_failures": 0 if status == "healthy" else
+                self._agent_health.get(agent, {}).get("consecutive_failures", 0) + 1,
+        }
+        self._save_health()
+        return {"success": True, "agent": agent, "health": self._agent_health[agent]}
+
+    def get_health_report(self) -> dict:
+        """Get health status of all agents."""
+        healthy = sum(1 for h in self._agent_health.values() if h.get("status") == "healthy")
+        degraded = sum(1 for h in self._agent_health.values() if h.get("status") == "degraded")
+        down = sum(1 for h in self._agent_health.values() if h.get("status") == "down")
+        return {
+            "agents": self._agent_health,
+            "summary": {"healthy": healthy, "degraded": degraded, "down": down},
+            "overall": "healthy" if down == 0 and degraded == 0 else ("degraded" if down == 0 else "unhealthy"),
+        }
+
+    def redistribute_tasks(self, failed_agent: str) -> dict:
+        """Redistribute tasks from a failed agent to healthy ones."""
+        healthy = [a for a, h in self._agent_health.items()
+                   if h.get("status") == "healthy" and a != failed_agent]
+        if not healthy:
+            return {"success": False, "error": "No healthy agents available"}
+
+        failed_tasks = self._agent_load.get(failed_agent, {}).get("active_tasks", 0)
+        per_agent = max(1, failed_tasks // len(healthy))
+        redistribution = {}
+
+        for i, agent in enumerate(healthy):
+            assigned = min(per_agent, failed_tasks)
+            redistribution[agent] = assigned
+            failed_tasks -= assigned
+            if failed_tasks <= 0:
+                break
+
+        # Clear failed agent load
+        if failed_agent in self._agent_load:
+            self._agent_load[failed_agent]["active_tasks"] = 0
+
+        return {
+            "success": True,
+            "failed_agent": failed_agent,
+            "redistributed_to": redistribution,
+            "total_redistributed": sum(redistribution.values()),
+        }
+
+    def _save_health(self):
+        try:
+            _save_json(self.HEALTH_FILE, self._agent_health)
+        except Exception:
+            pass
+
 
 # Singleton
 multi_agent = PipelineOrchestrator()

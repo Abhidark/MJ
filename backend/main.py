@@ -60,7 +60,14 @@ from modules.mnemosyne.module import memory_decay, knowledge_indexer
 from modules.chronos.module import google_calendar
 from plugins.plugin_store import plugin_store
 from self_healer.self_improver import (
-    performance_tracker, prompt_improver, memory_optimizer, auto_tuner, get_self_improve_status,
+    performance_tracker, prompt_improver, memory_optimizer, auto_tuner,
+    quality_scorer, auto_retry, learning_loop, get_self_improve_status,
+)
+from modules.mnemosyne.module import memory_consolidator
+from modules.chronos.module import conflict_detector, habit_tracker
+from intelligence.ai_os import (
+    user_manager, session_manager, permission_engine,
+    api_gateway, bg_task_runner, get_os_status,
 )
 
 # Intelligence Layer
@@ -3641,6 +3648,311 @@ async def optimization_suggestions():
 async def optimization_history():
     return {"history": auto_tuner.get_optimization_history()}
 
+# ------- V24 EXTENDED: Quality, Retry, Learning -------
+
+@app.post("/self-improve/score-response")
+async def score_response(req: Request):
+    body = await req.json()
+    return quality_scorer.score_response(
+        body.get("query", ""), body.get("response", ""),
+        body.get("latency_ms", 0), body.get("user_feedback", 0.0))
+
+@app.get("/self-improve/quality-trend")
+async def quality_trend():
+    return quality_scorer.get_quality_trend()
+
+@app.get("/self-improve/low-quality")
+async def low_quality():
+    return {"low_quality": quality_scorer.get_low_quality()}
+
+@app.post("/self-improve/should-retry")
+async def should_retry(req: Request):
+    body = await req.json()
+    return auto_retry.should_retry(
+        body.get("quality_score", 0), body.get("error", False), body.get("attempt", 0))
+
+@app.get("/self-improve/retry-stats")
+async def retry_stats():
+    return auto_retry.get_retry_stats()
+
+@app.post("/self-improve/learning-outcome")
+async def learning_outcome(req: Request):
+    body = await req.json()
+    return learning_loop.record_outcome(
+        body.get("module", ""), body.get("action", ""),
+        body.get("success", True), body.get("context", ""))
+
+@app.get("/self-improve/learning-rates")
+async def learning_rates():
+    return learning_loop.get_success_rates()
+
+@app.get("/self-improve/weak-areas")
+async def weak_areas():
+    return {"weak_areas": learning_loop.get_weak_areas()}
+
+# ------- V13 EXTENDED: Consolidation -------
+
+@app.post("/memory/consolidate")
+async def memory_consolidate(req: Request):
+    body = await req.json()
+    facts = body.get("facts", [])
+    auto_merge = body.get("auto_merge", False)
+    return memory_consolidator.consolidate(facts, auto_merge)
+
+@app.get("/memory/consolidation-stats")
+async def consolidation_stats():
+    return memory_consolidator.get_stats()
+
+@app.get("/memory/consolidation-history")
+async def consolidation_history():
+    return {"history": memory_consolidator.get_history()}
+
+# ------- V14 EXTENDED: Conflict Detection, Habits -------
+
+@app.post("/calendar/check-conflict")
+async def check_conflict(req: Request):
+    body = await req.json()
+    return conflict_detector.check_conflicts(body.get("events", []), body.get("new_event", {}))
+
+@app.post("/calendar/availability")
+async def day_availability(req: Request):
+    body = await req.json()
+    return conflict_detector.get_day_availability(body.get("events", []), body.get("date", ""))
+
+@app.post("/calendar/habits")
+async def add_habit(req: Request):
+    body = await req.json()
+    return habit_tracker.add_habit(body.get("name", ""), body.get("frequency", "daily"), body.get("target", 1))
+
+@app.get("/calendar/habits")
+async def get_habits():
+    return habit_tracker.get_habits()
+
+@app.post("/calendar/habits/{habit_id}/log")
+async def log_habit(habit_id: str, req: Request):
+    body = await req.json()
+    return habit_tracker.log_habit(habit_id, body.get("date", ""), body.get("count", 1))
+
+@app.delete("/calendar/habits/{habit_id}")
+async def delete_habit(habit_id: str):
+    return habit_tracker.delete_habit(habit_id)
+
+@app.get("/calendar/habit-stats")
+async def habit_stats():
+    return habit_tracker.get_stats()
+
+# ------- V19 EXTENDED: Retry, Live Status, Dashboard -------
+
+@app.post("/workflows/{wid}/retry")
+async def workflow_retry(wid: str, req: Request):
+    body = await req.json()
+    from intelligence.workflow_engine import workflow_engine
+    return await workflow_engine.execute_with_retry(wid, context=body.get("context", {}))
+
+@app.post("/workflows/live-status")
+async def workflow_live_status_update(req: Request):
+    body = await req.json()
+    from intelligence.workflow_engine import workflow_engine
+    return workflow_engine.update_live_status(
+        body.get("workflow_id", ""), body.get("step_id", ""),
+        body.get("status", ""), body.get("progress", 0))
+
+@app.get("/workflows/live-status")
+async def workflow_live_status():
+    from intelligence.workflow_engine import workflow_engine
+    return workflow_engine.get_live_status()
+
+@app.get("/workflows/dashboard")
+async def workflow_dashboard():
+    from intelligence.workflow_engine import workflow_engine
+    return workflow_engine.get_dashboard_data()
+
+# ------- V20 EXTENDED: Load Balancing, Health -------
+
+@app.post("/agents/load")
+async def update_agent_load(req: Request):
+    body = await req.json()
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.update_agent_load(
+        body.get("agent", ""), body.get("active_tasks", 0), body.get("capacity", 10))
+
+@app.get("/agents/load-report")
+async def agent_load_report():
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.get_load_report()
+
+@app.get("/agents/least-loaded")
+async def least_loaded():
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.get_least_loaded()
+
+@app.post("/agents/health")
+async def agent_health(req: Request):
+    body = await req.json()
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.report_health(body.get("agent", ""), body.get("status", "healthy"), body.get("error", ""))
+
+@app.get("/agents/health-report")
+async def agent_health_report():
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.get_health_report()
+
+@app.post("/agents/redistribute")
+async def redistribute_tasks(req: Request):
+    body = await req.json()
+    from intelligence.multi_agent import multi_agent
+    return multi_agent.redistribute_tasks(body.get("failed_agent", ""))
+
+# ------- V21 EXTENDED: Versioning, Dependencies, Featured -------
+
+@app.get("/store/check-updates")
+async def store_check_updates():
+    return plugin_store.check_all_updates()
+
+@app.post("/store/update/{plugin_id}")
+async def store_update_plugin(plugin_id: str):
+    return plugin_store.update_plugin(plugin_id)
+
+@app.get("/store/dependencies/{plugin_id}")
+async def store_dependencies(plugin_id: str):
+    return plugin_store.resolve_dependencies(plugin_id)
+
+@app.get("/store/featured")
+async def store_featured():
+    return {"featured": plugin_store.get_featured()}
+
+@app.get("/store/changelog/{plugin_id}")
+async def store_changelog(plugin_id: str):
+    return plugin_store.get_changelog(plugin_id)
+
+# ------- V10 EXTENDED: Video Pipeline, Presentation Gen, Design Tokens -------
+
+@app.get("/creative/video-pipelines")
+async def creative_video_pipelines():
+    from modules.apollo.module import ApolloModule
+    apollo = ApolloModule()
+    return apollo.get_video_pipelines()
+
+@app.get("/creative/design-tokens")
+async def creative_design_tokens():
+    from modules.apollo.module import ApolloModule
+    apollo = ApolloModule()
+    return apollo.get_design_tokens()
+
+@app.post("/creative/presentation")
+async def creative_presentation(req: Request):
+    body = await req.json()
+    from modules.apollo.module import ApolloModule
+    apollo = ApolloModule()
+    return apollo.generate_full_presentation(
+        body.get("topic", ""), body.get("type", "standard"),
+        body.get("theme", "dark"), body.get("slide_count", 0))
+
+@app.get("/creative/stats")
+async def creative_stats():
+    from modules.apollo.module import ApolloModule
+    apollo = ApolloModule()
+    return apollo.get_creative_stats()
+
+# ------- V23: AI OPERATING SYSTEM -------
+
+@app.get("/os/status")
+async def os_status():
+    return get_os_status()
+
+@app.get("/os/users")
+async def os_list_users():
+    return user_manager.list_users()
+
+@app.post("/os/users")
+async def os_create_user(req: Request):
+    body = await req.json()
+    return user_manager.create_user(
+        body.get("username", ""), body.get("display_name", ""),
+        body.get("role", "user"))
+
+@app.get("/os/users/{username}")
+async def os_get_user(username: str):
+    return user_manager.get_user(username)
+
+@app.put("/os/users/{username}/role")
+async def os_update_role(username: str, req: Request):
+    body = await req.json()
+    return user_manager.update_role(username, body.get("role", "user"))
+
+@app.delete("/os/users/{username}")
+async def os_delete_user(username: str):
+    return user_manager.delete_user(username)
+
+@app.post("/os/sessions")
+async def os_create_session(req: Request):
+    body = await req.json()
+    return session_manager.create_session(body.get("username", ""))
+
+@app.get("/os/sessions")
+async def os_active_sessions():
+    return session_manager.get_active_sessions()
+
+@app.post("/os/sessions/validate")
+async def os_validate_session(req: Request):
+    body = await req.json()
+    return session_manager.validate_session(body.get("token", ""))
+
+@app.post("/os/permissions/check")
+async def os_check_perm(req: Request):
+    body = await req.json()
+    return permission_engine.check_permission(
+        body.get("username", ""), body.get("permission", ""), body.get("role", "user"))
+
+@app.get("/os/permissions/{username}")
+async def os_user_perms(username: str):
+    user = user_manager.get_user(username)
+    role = user.get("role", "user") if "error" not in user else "user"
+    return permission_engine.get_user_permissions(username, role)
+
+@app.get("/os/roles")
+async def os_roles():
+    return permission_engine.get_all_roles()
+
+@app.post("/os/api-keys")
+async def os_create_api_key(req: Request):
+    body = await req.json()
+    return api_gateway.create_api_key(
+        body.get("name", ""), body.get("username", ""), body.get("rate_limit", 100))
+
+@app.get("/os/api-keys")
+async def os_list_api_keys():
+    return api_gateway.get_api_keys()
+
+@app.get("/os/gateway-stats")
+async def os_gateway_stats():
+    return api_gateway.get_gateway_stats()
+
+@app.post("/os/bg-tasks")
+async def os_submit_bg_task(req: Request):
+    body = await req.json()
+    return bg_task_runner.submit_task(
+        body.get("name", ""), body.get("type", ""), body.get("params", {}))
+
+@app.get("/os/bg-tasks")
+async def os_list_bg_tasks():
+    return bg_task_runner.list_tasks()
+
+@app.get("/os/bg-tasks/{task_id}")
+async def os_get_bg_task(task_id: str):
+    return bg_task_runner.get_task(task_id)
+
+@app.put("/os/bg-tasks/{task_id}")
+async def os_update_bg_task(task_id: str, req: Request):
+    body = await req.json()
+    return bg_task_runner.update_task(
+        task_id, body.get("status", ""), body.get("progress", 0),
+        body.get("result"), body.get("error", ""))
+
+@app.post("/os/bg-tasks/{task_id}/cancel")
+async def os_cancel_bg_task(task_id: str):
+    return bg_task_runner.cancel_task(task_id)
+
 
 # SPA catch-all: serve React index.html for client-side routes
 @app.get("/{path:path}")
@@ -3661,7 +3973,7 @@ async def spa_catch_all(path: str):
         "mouse", "browser-control", "calendar", "pipelines", "agent-groups",
         "agent-mail", "agent-mail-stats", "planner", "productivity", "db",
         "smart-home", "workflows", "dev",
-        "store", "agents", "self-improve", "memory",
+        "store", "agents", "self-improve", "memory", "os", "creative",
     }
     if first_segment in backend_prefixes:
         return JSONResponse({"error": "Not found"}, status_code=404)

@@ -521,6 +521,11 @@ export const pluginStoreAPI = {
   rate: (pluginId, score, review) => api.post(`/store/rate/${pluginId}`, { score, review }),
   getStats: () => api.get('/store/stats'),
   sandboxCheck: (pluginId) => api.get(`/store/sandbox/${pluginId}`),
+  checkUpdates: () => api.get('/store/check-updates'),
+  updatePlugin: (pluginId) => api.post(`/store/update/${pluginId}`),
+  getDependencies: (pluginId) => api.get(`/store/dependencies/${pluginId}`),
+  getFeatured: () => api.get('/store/featured'),
+  getChangelog: (pluginId) => api.get(`/store/changelog/${pluginId}`),
 };
 
 // ===== Self-Improving API (V24) =====
@@ -536,6 +541,82 @@ export const selfImproveAPI = {
   suggestPrompt: (promptId, prompt) => api.post('/self-improve/prompt-suggest', { prompt_id: promptId, prompt }),
   getOptimizations: () => api.get('/self-improve/optimizations'),
   getOptimizationHistory: () => api.get('/self-improve/optimization-history'),
+  scoreResponse: (data) => api.post('/self-improve/score-response', data),
+  getQualityTrend: () => api.get('/self-improve/quality-trend'),
+  getLowQuality: () => api.get('/self-improve/low-quality'),
+  shouldRetry: (data) => api.post('/self-improve/should-retry', data),
+  getRetryStats: () => api.get('/self-improve/retry-stats'),
+  recordOutcome: (data) => api.post('/self-improve/learning-outcome', data),
+  getLearningRates: () => api.get('/self-improve/learning-rates'),
+  getWeakAreas: () => api.get('/self-improve/weak-areas'),
+};
+
+// ===== Memory Extended API (V13 consolidation) =====
+export const memoryConsolidationAPI = {
+  consolidate: (facts, autoMerge) => api.post('/memory/consolidate', { facts, auto_merge: autoMerge }),
+  getStats: () => api.get('/memory/consolidation-stats'),
+  getHistory: () => api.get('/memory/consolidation-history'),
+};
+
+// ===== Calendar Extended API (V14 conflict + habits) =====
+export const calendarExtendedAPI = {
+  checkConflict: (events, newEvent) => api.post('/calendar/check-conflict', { events, new_event: newEvent }),
+  getDayAvailability: (events, date) => api.post('/calendar/availability', { events, date }),
+  addHabit: (name, frequency, target) => api.post('/calendar/habits', { name, frequency, target }),
+  getHabits: () => api.get('/calendar/habits'),
+  logHabit: (habitId, date, count) => api.post(`/calendar/habits/${habitId}/log`, { date, count }),
+  deleteHabit: (habitId) => api.delete(`/calendar/habits/${habitId}`),
+  getHabitStats: () => api.get('/calendar/habit-stats'),
+};
+
+// ===== Workflow Extended API (V19 retry + live) =====
+export const workflowExtendedAPI = {
+  executeWithRetry: (wid, context) => api.post(`/workflows/${wid}/retry`, { context }),
+  updateLiveStatus: (data) => api.post('/workflows/live-status', data),
+  getLiveStatus: () => api.get('/workflows/live-status'),
+  getDashboard: () => api.get('/workflows/dashboard'),
+};
+
+// ===== Agent Extended API (V20 load + health) =====
+export const agentExtendedAPI = {
+  updateLoad: (agent, activeTasks, capacity) => api.post('/agents/load', { agent, active_tasks: activeTasks, capacity }),
+  getLoadReport: () => api.get('/agents/load-report'),
+  getLeastLoaded: () => api.get('/agents/least-loaded'),
+  reportHealth: (agent, status, error) => api.post('/agents/health', { agent, status, error }),
+  getHealthReport: () => api.get('/agents/health-report'),
+  redistribute: (failedAgent) => api.post('/agents/redistribute', { failed_agent: failedAgent }),
+};
+
+// ===== Creative API (V10 extended) =====
+export const creativeAPI = {
+  getVideoPipelines: () => api.get('/creative/video-pipelines'),
+  getDesignTokens: () => api.get('/creative/design-tokens'),
+  generatePresentation: (topic, type, theme) => api.post('/creative/presentation', { topic, type, theme }),
+  getStats: () => api.get('/creative/stats'),
+};
+
+// ===== AI OS API (V23) =====
+export const aiOsAPI = {
+  getStatus: () => api.get('/os/status'),
+  listUsers: () => api.get('/os/users'),
+  createUser: (username, displayName, role) => api.post('/os/users', { username, display_name: displayName, role }),
+  getUser: (username) => api.get(`/os/users/${username}`),
+  updateRole: (username, role) => api.put(`/os/users/${username}/role`, { role }),
+  deleteUser: (username) => api.delete(`/os/users/${username}`),
+  createSession: (username) => api.post('/os/sessions', { username }),
+  getActiveSessions: () => api.get('/os/sessions'),
+  validateSession: (token) => api.post('/os/sessions/validate', { token }),
+  checkPermission: (username, permission, role) => api.post('/os/permissions/check', { username, permission, role }),
+  getUserPermissions: (username) => api.get(`/os/permissions/${username}`),
+  getRoles: () => api.get('/os/roles'),
+  createApiKey: (name, username, rateLimit) => api.post('/os/api-keys', { name, username, rate_limit: rateLimit }),
+  getApiKeys: () => api.get('/os/api-keys'),
+  getGatewayStats: () => api.get('/os/gateway-stats'),
+  submitBgTask: (name, type, params) => api.post('/os/bg-tasks', { name, type, params }),
+  listBgTasks: () => api.get('/os/bg-tasks'),
+  getBgTask: (taskId) => api.get(`/os/bg-tasks/${taskId}`),
+  updateBgTask: (taskId, data) => api.put(`/os/bg-tasks/${taskId}`, data),
+  cancelBgTask: (taskId) => api.post(`/os/bg-tasks/${taskId}/cancel`),
 };
 
 export default api;

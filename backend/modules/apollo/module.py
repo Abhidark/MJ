@@ -553,6 +553,175 @@ class ApolloModule(BaseModule):
             pass
 
     # ========================
+    # FULL VIDEO PIPELINE (V10 → 90%)
+    # ========================
+
+    VIDEO_PIPELINE_FILE = DATA_DIR / "video_pipeline.json"
+
+    def _handle_full_video(self, text: str, context: dict) -> dict:
+        """Full video pipeline — storyboard → scenes → frames → timeline."""
+        prompt = re.sub(r"\b(full\s+)?video\s+(pipeline|production|project)\b", "", text, flags=re.I).strip()
+        if not prompt or len(prompt) < 3:
+            prompt = "Untitled Video"
+
+        # Parse duration
+        duration = 30  # default seconds
+        dur_match = re.search(r"(\d+)\s*(?:sec|second|s\b)", text, re.I)
+        if dur_match:
+            duration = int(dur_match.group(1))
+
+        pipeline = {
+            "id": f"vid_{int(time.time())}",
+            "title": prompt[:60],
+            "duration_sec": duration,
+            "fps": 24,
+            "resolution": "1920x1080",
+            "status": "storyboard",
+            "created": datetime.now().isoformat(),
+            "scenes": self._generate_scenes(prompt, duration),
+            "audio": {"music": "auto", "voiceover": False, "sfx": True},
+        }
+
+        # Save pipeline
+        pipelines = _load_json(self.VIDEO_PIPELINE_FILE, [])
+        if not isinstance(pipelines, list):
+            pipelines = []
+        pipelines.append(pipeline)
+        _save_json(self.VIDEO_PIPELINE_FILE, pipelines[-50:])
+        self._log_creative("full_video", prompt, "pipeline")
+
+        scene_lines = "\n".join(
+            f"  Scene {s['scene']}: {s['description']} ({s['duration']}s)"
+            for s in pipeline["scenes"]
+        )
+        return {
+            "response": (
+                f"🎬 **Video Pipeline Created: {pipeline['title']}**\n\n"
+                f"Duration: {duration}s | Resolution: 1920x1080 | FPS: 24\n"
+                f"Scenes ({len(pipeline['scenes'])}):\n{scene_lines}\n\n"
+                f"Status: Storyboard ready. Use GPU PC to render frames."
+            ),
+            "data": {"type": "video_pipeline", "pipeline": pipeline},
+            "action": "video_pipeline",
+        }
+
+    def _generate_scenes(self, prompt: str, duration: int) -> list:
+        """Auto-generate scene breakdown from prompt."""
+        scene_count = max(3, duration // 10)
+        per_scene = duration / scene_count
+        scenes = []
+        labels = ["Introduction", "Build-up", "Main Action", "Climax", "Resolution"]
+        for i in range(scene_count):
+            label = labels[i] if i < len(labels) else f"Scene {i + 1}"
+            scenes.append({
+                "scene": i + 1,
+                "label": label,
+                "description": f"{label} — {prompt[:40]}",
+                "duration": round(per_scene, 1),
+                "transition": "fade" if i > 0 else "none",
+                "frame_count": int(per_scene * 24),
+            })
+        return scenes
+
+    def get_video_pipelines(self) -> dict:
+        pipelines = _load_json(self.VIDEO_PIPELINE_FILE, [])
+        if not isinstance(pipelines, list):
+            pipelines = []
+        return {"pipelines": pipelines[-10:], "total": len(pipelines)}
+
+    # ========================
+    # PRESENTATION GENERATOR V2 (V10 → 90%)
+    # ========================
+
+    THEME_PRESETS = {
+        "dark": {"bg": "#0f172a", "text": "#e2e8f0", "accent": "#6366f1", "card_bg": "#1e293b"},
+        "light": {"bg": "#ffffff", "text": "#1e293b", "accent": "#3b82f6", "card_bg": "#f1f5f9"},
+        "neon": {"bg": "#0a0a0a", "text": "#00ff88", "accent": "#ff00ff", "card_bg": "#1a1a2e"},
+        "corporate": {"bg": "#f8fafc", "text": "#334155", "accent": "#0369a1", "card_bg": "#ffffff"},
+        "warm": {"bg": "#fffbeb", "text": "#451a03", "accent": "#d97706", "card_bg": "#fef3c7"},
+    }
+
+    def generate_full_presentation(self, topic: str, pres_type: str = "standard",
+                                    theme: str = "dark", slide_count: int = 0) -> dict:
+        """Generate complete presentation with content, layout, and theme."""
+        colors = self.THEME_PRESETS.get(theme, self.THEME_PRESETS["dark"])
+
+        # Use template slides
+        result = self._handle_presentation(f"presentation about {topic}", {})
+        slides = result.get("data", {}).get("slides", [])
+
+        # Enhance each slide with layout info
+        for slide in slides:
+            slide["layout"] = "title_content" if slide["slide"] > 1 else "title_only"
+            slide["theme"] = colors
+            slide["notes"] = f"Speaker notes for {slide['title']}"
+
+        return {
+            "topic": topic,
+            "type": pres_type,
+            "theme": theme,
+            "colors": colors,
+            "slide_count": len(slides),
+            "slides": slides,
+            "export_formats": ["html", "pdf", "pptx_stub"],
+        }
+
+    # ========================
+    # DESIGN SYSTEM TOKENS (V10 → 90%)
+    # ========================
+
+    DESIGN_TOKENS = {
+        "spacing": {"xs": "4px", "sm": "8px", "md": "16px", "lg": "24px", "xl": "32px", "2xl": "48px"},
+        "radius": {"none": "0", "sm": "4px", "md": "8px", "lg": "12px", "xl": "16px", "full": "9999px"},
+        "shadow": {
+            "sm": "0 1px 2px rgba(0,0,0,0.05)",
+            "md": "0 4px 6px rgba(0,0,0,0.1)",
+            "lg": "0 10px 15px rgba(0,0,0,0.1)",
+            "xl": "0 20px 25px rgba(0,0,0,0.15)",
+        },
+        "typography": {
+            "h1": {"size": "36px", "weight": "800", "line_height": "1.2"},
+            "h2": {"size": "30px", "weight": "700", "line_height": "1.3"},
+            "h3": {"size": "24px", "weight": "600", "line_height": "1.4"},
+            "body": {"size": "16px", "weight": "400", "line_height": "1.6"},
+            "caption": {"size": "12px", "weight": "400", "line_height": "1.5"},
+        },
+        "colors": {
+            "primary": {"50": "#eef2ff", "500": "#6366f1", "900": "#312e81"},
+            "gray": {"50": "#f8fafc", "500": "#64748b", "900": "#0f172a"},
+            "success": "#22c55e",
+            "warning": "#f59e0b",
+            "error": "#ef4444",
+            "info": "#3b82f6",
+        },
+    }
+
+    def get_design_tokens(self) -> dict:
+        return self.DESIGN_TOKENS
+
+    def get_creative_stats(self) -> dict:
+        """Get creative module statistics."""
+        log = _load_json(CREATIVE_LOG_FILE, [])
+        if not isinstance(log, list):
+            log = []
+        by_type = {}
+        for entry in log:
+            t = entry.get("type", "unknown")
+            by_type[t] = by_type.get(t, 0) + 1
+
+        pipelines = _load_json(self.VIDEO_PIPELINE_FILE, [])
+        if not isinstance(pipelines, list):
+            pipelines = []
+
+        return {
+            "total_creations": len(log),
+            "by_type": by_type,
+            "video_pipelines": len(pipelines),
+            "design_tokens_loaded": True,
+            "themes_available": list(self.THEME_PRESETS.keys()),
+        }
+
+    # ========================
     # SYSTEM PROMPT & SETTINGS
     # ========================
 

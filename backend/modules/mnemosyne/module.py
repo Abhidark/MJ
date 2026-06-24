@@ -368,11 +368,122 @@ class KnowledgeIndexer:
         }
 
 
+# ========================
+# MEMORY CONSOLIDATION (V13 → 100%)
+# ========================
+
+CONSOLIDATION_LOG_FILE = DATA_DIR / "consolidation_log.json"
+
+class MemoryConsolidator:
+    """
+    Merges duplicate/related facts, removes contradictions,
+    and keeps the knowledge base clean and coherent.
+    """
+
+    def __init__(self):
+        self.log: list = []
+        self._load()
+
+    def _load(self):
+        data = _load_json(CONSOLIDATION_LOG_FILE, [])
+        self.log = data if isinstance(data, list) else []
+
+    def _save(self):
+        _save_json(CONSOLIDATION_LOG_FILE, self.log[-200:])
+
+    def _similarity(self, a: str, b: str) -> float:
+        wa = set(a.lower().split())
+        wb = set(b.lower().split())
+        if not wa or not wb:
+            return 0.0
+        return len(wa & wb) / len(wa | wb)
+
+    def find_duplicates(self, facts: list, threshold: float = 0.6) -> list:
+        """Find duplicate/near-duplicate facts."""
+        dupes = []
+        seen = set()
+        for i, fa in enumerate(facts):
+            if i in seen:
+                continue
+            group = [fa]
+            for j in range(i + 1, len(facts)):
+                if j in seen:
+                    continue
+                if self._similarity(fa, facts[j]) >= threshold:
+                    group.append(facts[j])
+                    seen.add(j)
+            if len(group) > 1:
+                dupes.append({"original": fa, "duplicates": group[1:], "count": len(group)})
+                seen.add(i)
+        return dupes
+
+    def find_contradictions(self, facts: list) -> list:
+        """Find potentially contradictory facts (simple negation detection)."""
+        contradictions = []
+        negation = re.compile(r"\b(not|don't|doesn't|isn't|aren't|never|hate|dislike)\b", re.IGNORECASE)
+        for i, fa in enumerate(facts):
+            for j in range(i + 1, len(facts)):
+                fb = facts[j]
+                sim = self._similarity(fa, fb)
+                if sim > 0.4 and sim < 0.85:
+                    a_neg = bool(negation.search(fa))
+                    b_neg = bool(negation.search(fb))
+                    if a_neg != b_neg:
+                        contradictions.append({"fact_a": fa, "fact_b": fb, "similarity": round(sim, 2)})
+        return contradictions
+
+    def consolidate(self, facts: list, auto_merge: bool = False) -> dict:
+        """Run full consolidation: find dupes, contradictions, optionally merge."""
+        dupes = self.find_duplicates(facts)
+        contradictions = self.find_contradictions(facts)
+
+        merged = 0
+        if auto_merge and dupes:
+            # Keep the longest version of each duplicate group
+            to_remove = set()
+            for group in dupes:
+                all_versions = [group["original"]] + group["duplicates"]
+                keeper = max(all_versions, key=len)
+                for v in all_versions:
+                    if v != keeper:
+                        to_remove.add(v)
+                merged += len(all_versions) - 1
+
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "total_facts": len(facts),
+            "duplicates_found": len(dupes),
+            "contradictions_found": len(contradictions),
+            "auto_merged": merged,
+        }
+        self.log.append(entry)
+        self._save()
+
+        return {
+            "total_facts": len(facts),
+            "duplicates": dupes[:20],
+            "contradictions": contradictions[:10],
+            "merged": merged,
+            "status": "clean" if not dupes and not contradictions else "needs_review",
+        }
+
+    def get_stats(self) -> dict:
+        return {
+            "total_runs": len(self.log),
+            "last_run": self.log[-1] if self.log else None,
+            "total_merged": sum(e.get("auto_merged", 0) for e in self.log),
+        }
+
+    def get_history(self, limit: int = 10) -> list:
+        return self.log[-limit:]
+
+
 # Module-level singletons
 episodic_memory = EpisodicMemory()
 memory_compressor = MemoryCompressor()
 memory_decay = MemoryDecay()
 knowledge_indexer = KnowledgeIndexer()
+memory_consolidator = MemoryConsolidator()
 
 
 class MnemosyneModule(BaseModule):

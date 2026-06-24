@@ -349,10 +349,208 @@ class ProductivityTracker:
         }
 
 
+# ========================
+# CONFLICT DETECTION (V14 → 100%)
+# ========================
+
+class ScheduleConflictDetector:
+    """Detect scheduling conflicts and suggest alternatives."""
+
+    def check_conflicts(self, events: list, new_event: dict) -> dict:
+        """Check if a new event conflicts with existing ones."""
+        new_start = new_event.get("start_time", "")
+        new_end = new_event.get("end_time", "")
+        new_date = new_event.get("date", "")
+        conflicts = []
+
+        for evt in events:
+            if evt.get("date") != new_date:
+                continue
+            if not evt.get("start_time") or not new_start:
+                continue
+            # Simple time overlap check
+            e_start = evt["start_time"]
+            e_end = evt.get("end_time", "23:59")
+            if not new_end:
+                new_end = str(int(new_start.split(":")[0]) + 1).zfill(2) + ":00"
+
+            if e_start < new_end and new_start < e_end:
+                conflicts.append({
+                    "event_id": evt.get("id", ""),
+                    "title": evt.get("title", ""),
+                    "time": f"{e_start}-{e_end}",
+                    "overlap": "partial" if e_start != new_start else "exact",
+                })
+
+        return {
+            "has_conflict": len(conflicts) > 0,
+            "conflicts": conflicts,
+            "suggestions": self._suggest_alternatives(events, new_date, new_start, new_end) if conflicts else [],
+        }
+
+    def _suggest_alternatives(self, events: list, date: str, start: str, end: str, count: int = 3) -> list:
+        """Suggest conflict-free time slots."""
+        busy = []
+        for evt in events:
+            if evt.get("date") == date and evt.get("start_time"):
+                e_end = evt.get("end_time", str(int(evt["start_time"].split(":")[0]) + 1).zfill(2) + ":00")
+                busy.append((evt["start_time"], e_end))
+        busy.sort()
+
+        # Find free slots between 08:00-22:00
+        duration_min = 60
+        try:
+            sh, sm = int(start.split(":")[0]), int(start.split(":")[1]) if ":" in start else 0
+            eh, em = int(end.split(":")[0]), int(end.split(":")[1]) if ":" in end else 0
+            duration_min = (eh * 60 + em) - (sh * 60 + sm)
+            if duration_min <= 0:
+                duration_min = 60
+        except Exception:
+            pass
+
+        suggestions = []
+        for hour in range(8, 22):
+            slot_start = f"{hour:02d}:00"
+            slot_end_h = hour + (duration_min // 60)
+            slot_end_m = duration_min % 60
+            slot_end = f"{slot_end_h:02d}:{slot_end_m:02d}"
+            if slot_end_h > 22:
+                continue
+
+            # Check if slot is free
+            is_free = True
+            for bs, be in busy:
+                if bs < slot_end and slot_start < be:
+                    is_free = False
+                    break
+            if is_free:
+                suggestions.append({"start": slot_start, "end": slot_end, "date": date})
+                if len(suggestions) >= count:
+                    break
+
+        return suggestions
+
+    def get_day_availability(self, events: list, date: str) -> dict:
+        """Get free/busy times for a day."""
+        busy = []
+        for evt in events:
+            if evt.get("date") == date and evt.get("start_time"):
+                e_end = evt.get("end_time", str(int(evt["start_time"].split(":")[0]) + 1).zfill(2) + ":00")
+                busy.append({"start": evt["start_time"], "end": e_end, "title": evt.get("title", "")})
+        busy.sort(key=lambda x: x["start"])
+
+        total_busy_min = 0
+        for b in busy:
+            try:
+                sh = int(b["start"].split(":")[0])
+                eh = int(b["end"].split(":")[0])
+                total_busy_min += (eh - sh) * 60
+            except Exception:
+                pass
+
+        return {
+            "date": date,
+            "busy_slots": busy,
+            "busy_hours": round(total_busy_min / 60, 1),
+            "free_hours": round(14 - total_busy_min / 60, 1),  # 8AM-10PM = 14h
+            "utilization_pct": round(total_busy_min / (14 * 60) * 100, 1),
+        }
+
+
+# ========================
+# HABIT TRACKER (V14 → 100%)
+# ========================
+
+HABITS_FILE = DATA_DIR / "habits.json"
+
+class HabitTracker:
+    """Track daily habits and streaks."""
+
+    def __init__(self):
+        self.habits: dict = {}
+        self._load()
+
+    def _load(self):
+        self.habits = _load_json(HABITS_FILE, {})
+
+    def _save(self):
+        _save_json(HABITS_FILE, self.habits)
+
+    def add_habit(self, name: str, frequency: str = "daily", target: int = 1) -> dict:
+        hid = name.lower().replace(" ", "_")
+        if hid in self.habits:
+            return {"success": False, "error": f"Habit '{name}' already exists"}
+        self.habits[hid] = {
+            "name": name, "frequency": frequency, "target": target,
+            "log": {}, "streak": 0, "best_streak": 0,
+            "created": datetime.now().isoformat(),
+        }
+        self._save()
+        return {"success": True, "habit": self.habits[hid]}
+
+    def log_habit(self, habit_id: str, date: str = "", count: int = 1) -> dict:
+        if habit_id not in self.habits:
+            return {"error": f"Habit '{habit_id}' not found"}
+        if not date:
+            date = datetime.now().strftime("%Y-%m-%d")
+        h = self.habits[habit_id]
+        h["log"][date] = h["log"].get(date, 0) + count
+        # Update streak
+        self._update_streak(habit_id)
+        self._save()
+        return {"success": True, "date": date, "count": h["log"][date], "streak": h["streak"]}
+
+    def _update_streak(self, habit_id: str):
+        h = self.habits[habit_id]
+        today = datetime.now().date()
+        streak = 0
+        day = today
+        while True:
+            ds = day.strftime("%Y-%m-%d")
+            if h["log"].get(ds, 0) >= h.get("target", 1):
+                streak += 1
+                day -= timedelta(days=1)
+            else:
+                break
+        h["streak"] = streak
+        h["best_streak"] = max(h.get("best_streak", 0), streak)
+
+    def get_habits(self) -> dict:
+        items = []
+        for hid, h in self.habits.items():
+            today = datetime.now().strftime("%Y-%m-%d")
+            items.append({
+                "id": hid, "name": h["name"], "frequency": h["frequency"],
+                "target": h.get("target", 1),
+                "today_count": h["log"].get(today, 0),
+                "streak": h.get("streak", 0),
+                "best_streak": h.get("best_streak", 0),
+                "completed_today": h["log"].get(today, 0) >= h.get("target", 1),
+            })
+        return {"habits": items, "total": len(items)}
+
+    def delete_habit(self, habit_id: str) -> dict:
+        if habit_id not in self.habits:
+            return {"error": "Not found"}
+        del self.habits[habit_id]
+        self._save()
+        return {"success": True}
+
+    def get_stats(self) -> dict:
+        total_logged = sum(sum(h["log"].values()) for h in self.habits.values())
+        return {
+            "total_habits": len(self.habits),
+            "total_entries": total_logged,
+            "active_streaks": sum(1 for h in self.habits.values() if h.get("streak", 0) > 0),
+        }
+
+
 # Module-level singletons
 calendar_engine = CalendarEngine()
 daily_planner = DailyPlanner()
 productivity_tracker = ProductivityTracker()
+conflict_detector = ScheduleConflictDetector()
+habit_tracker = HabitTracker()
 
 
 class ChronosModule(BaseModule):

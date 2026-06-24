@@ -397,5 +397,129 @@ def handle(text: str) -> dict:
 '''
 
 
+    # ========================
+    # VERSIONING (V21 → 85%)
+    # ========================
+
+    def check_update(self, plugin_id: str) -> dict:
+        """Check if a plugin has an update available."""
+        if plugin_id not in self.installed:
+            return {"error": "Plugin not installed"}
+        installed_ver = self.installed[plugin_id].get("version", "0.0.0")
+        catalog_ver = self.catalog.get(plugin_id, {}).get("version", "0.0.0")
+
+        def ver_tuple(v):
+            try:
+                return tuple(int(x) for x in v.split("."))
+            except Exception:
+                return (0, 0, 0)
+
+        has_update = ver_tuple(catalog_ver) > ver_tuple(installed_ver)
+        return {
+            "plugin_id": plugin_id,
+            "installed_version": installed_ver,
+            "latest_version": catalog_ver,
+            "update_available": has_update,
+        }
+
+    def check_all_updates(self) -> dict:
+        """Check all installed plugins for updates."""
+        updates = []
+        for pid in self.installed:
+            result = self.check_update(pid)
+            if result.get("update_available"):
+                updates.append(result)
+        return {"updates_available": updates, "total": len(updates)}
+
+    def update_plugin(self, plugin_id: str) -> dict:
+        """Update a plugin to latest version."""
+        check = self.check_update(plugin_id)
+        if check.get("error"):
+            return check
+        if not check.get("update_available"):
+            return {"success": False, "message": "Already up to date"}
+
+        p = self.catalog.get(plugin_id)
+        # Re-generate stub with new version
+        plugin_file = PLUGINS_DIR / f"{plugin_id}.py"
+        stub = self._generate_plugin_stub(plugin_id, p)
+        plugin_file.write_text(stub, encoding="utf-8")
+
+        self.installed[plugin_id]["version"] = p.get("version", "1.0.0")
+        self.installed[plugin_id]["updated_at"] = datetime.now().isoformat()
+        self._save_installed()
+
+        return {
+            "success": True, "plugin": p["name"],
+            "from_version": check["installed_version"],
+            "to_version": check["latest_version"],
+        }
+
+    # ========================
+    # DEPENDENCY RESOLUTION (V21 → 85%)
+    # ========================
+
+    def resolve_dependencies(self, plugin_id: str) -> dict:
+        """Resolve full dependency tree for a plugin."""
+        p = self.catalog.get(plugin_id)
+        if not p:
+            return {"error": f"Plugin '{plugin_id}' not found"}
+
+        requires = p.get("requires", [])
+        resolved = []
+        missing = []
+
+        for dep in requires:
+            # Check module deps
+            if self._check_module(dep):
+                resolved.append({"name": dep, "type": "module", "status": "available"})
+            else:
+                missing.append({"name": dep, "type": "module", "status": "missing"})
+
+        # Check plugin-to-plugin deps
+        plugin_deps = p.get("plugin_requires", [])
+        for pdep in plugin_deps:
+            if pdep in self.installed:
+                resolved.append({"name": pdep, "type": "plugin", "status": "installed"})
+            elif pdep in self.catalog:
+                missing.append({"name": pdep, "type": "plugin", "status": "available_in_store"})
+            else:
+                missing.append({"name": pdep, "type": "plugin", "status": "not_found"})
+
+        return {
+            "plugin_id": plugin_id,
+            "can_install": len(missing) == 0,
+            "resolved": resolved,
+            "missing": missing,
+        }
+
+    def get_featured(self) -> list:
+        """Get featured/recommended plugins."""
+        featured = sorted(
+            self.catalog.values(),
+            key=lambda p: (p.get("rating", 0) * 0.4 + p.get("downloads", 0) * 0.001),
+            reverse=True,
+        )
+        return [
+            {"id": p["id"], "name": p["name"], "description": p["description"],
+             "rating": p["rating"], "downloads": p["downloads"], "icon": p.get("icon", "📦")}
+            for p in featured[:5]
+        ]
+
+    def get_changelog(self, plugin_id: str) -> dict:
+        """Get plugin version history (stub for now)."""
+        p = self.catalog.get(plugin_id)
+        if not p:
+            return {"error": "Plugin not found"}
+        return {
+            "plugin_id": plugin_id,
+            "current_version": p.get("version", "1.0.0"),
+            "changelog": [
+                {"version": p.get("version", "1.0.0"), "date": "2025-01-01",
+                 "changes": ["Initial release"]},
+            ],
+        }
+
+
 # Singleton
 plugin_store = PluginStore()
