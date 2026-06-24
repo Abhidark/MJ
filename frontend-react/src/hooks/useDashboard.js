@@ -7,13 +7,16 @@ import { useState, useCallback, useRef, useEffect } from 'react';
  * 12-column CSS grid with explicit col/row/w/h per card.
  */
 
-const STORAGE_KEY = 'mj-dash-layout-v4';
+const STORAGE_KEY = 'mj-dash-layout-v5';
 
 const DEFAULT_LAYOUT = {
   'orb':           { col: 1,  row: 1,  w: 5,  h: 6 },
   'sys-monitor':   { col: 6,  row: 1,  w: 4,  h: 6 },
   'model-selector':{ col: 10, row: 1,  w: 3,  h: 6 },
   'quick-actions': { col: 1,  row: 7,  w: 12, h: 3 },
+  'memory-graph':  { col: 1,  row: 10, w: 4,  h: 6 },
+  'timeline':      { col: 5,  row: 10, w: 4,  h: 6 },
+  'agent-network': { col: 9,  row: 10, w: 4,  h: 6 },
 };
 
 function loadLayout() {
@@ -21,7 +24,7 @@ function loadLayout() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_LAYOUT };
     const parsed = JSON.parse(raw);
-    if (parsed.v === 4 && parsed.layout) return parsed.layout;
+    if (parsed.v === 5 && parsed.layout) return parsed.layout;
     return { ...DEFAULT_LAYOUT };
   } catch {
     return { ...DEFAULT_LAYOUT };

@@ -10,6 +10,9 @@ import DashboardCard from './DashboardCard';
 import SystemStatsCard from './cards/SystemStatsCard';
 import QuickActionsCard from './cards/QuickActionsCard';
 import ModelSelectorCard from './cards/ModelSelectorCard';
+import MemoryGraphCard from './cards/MemoryGraphCard';
+import TimelineCard from './cards/TimelineCard';
+import AgentNetworkCard from './cards/AgentNetworkCard';
 import Orb from '@/components/orb/Orb';
 import StatusDisplay from '@/components/orb/StatusDisplay';
 
@@ -118,6 +121,51 @@ export default function DashboardGrid() {
           onDragEnd={dashboard.onDragEnd}
         >
           <QuickActionsCard onAction={handleQuickAction} />
+        </DashboardCard>
+
+        {/* Memory Graph */}
+        <DashboardCard
+          id="memory-graph"
+          title="Memory Graph"
+          icon="🧠"
+          style={dashboard.getCardStyle('memory-graph')}
+          editing={dashboard.editing}
+          dragging={dashboard.dragId === 'memory-graph'}
+          onDragStart={dashboard.onDragStart}
+          onDragOver={dashboard.onDragOver}
+          onDragEnd={dashboard.onDragEnd}
+        >
+          <MemoryGraphCard />
+        </DashboardCard>
+
+        {/* Timeline */}
+        <DashboardCard
+          id="timeline"
+          title="Activity Timeline"
+          icon="📋"
+          style={dashboard.getCardStyle('timeline')}
+          editing={dashboard.editing}
+          dragging={dashboard.dragId === 'timeline'}
+          onDragStart={dashboard.onDragStart}
+          onDragOver={dashboard.onDragOver}
+          onDragEnd={dashboard.onDragEnd}
+        >
+          <TimelineCard />
+        </DashboardCard>
+
+        {/* Agent Network */}
+        <DashboardCard
+          id="agent-network"
+          title="Agent Network"
+          icon="⚡"
+          style={dashboard.getCardStyle('agent-network')}
+          editing={dashboard.editing}
+          dragging={dashboard.dragId === 'agent-network'}
+          onDragStart={dashboard.onDragStart}
+          onDragOver={dashboard.onDragOver}
+          onDragEnd={dashboard.onDragEnd}
+        >
+          <AgentNetworkCard />
         </DashboardCard>
       </div>
     </div>
