@@ -491,6 +491,119 @@ class PipelineOrchestrator:
         self._save_pipelines()
         return {"success": True, "count": len(self.pipelines)}
 
+    # ========================
+    # REAL-TIME AGENT STATUS (V20 → 80%+)
+    # ========================
+
+    _agent_status: dict = {}
+
+    def update_agent_status(self, agent_name: str, status: str, detail: str = "") -> dict:
+        """Update real-time status for an agent."""
+        self._agent_status[agent_name] = {
+            "status": status,  # idle, running, waiting, error
+            "detail": detail,
+            "updated": datetime.now().isoformat(),
+        }
+        return {"updated": True, "agent": agent_name, "status": status}
+
+    def get_agent_statuses(self) -> dict:
+        return {"agents": self._agent_status, "total": len(self._agent_status)}
+
+    # ========================
+    # CONFLICT RESOLUTION (V20 → 80%+)
+    # ========================
+
+    _resource_locks: dict = {}
+
+    def acquire_resource(self, agent_name: str, resource: str, timeout: float = 30.0) -> dict:
+        """Agent requests exclusive access to a resource."""
+        now = time.time()
+        lock = self._resource_locks.get(resource)
+        if lock and lock.get("agent") != agent_name:
+            # Check if lock expired
+            if now - lock.get("acquired_at", 0) < timeout:
+                return {
+                    "acquired": False, "resource": resource,
+                    "held_by": lock["agent"],
+                    "since": lock.get("acquired_at", 0),
+                }
+        self._resource_locks[resource] = {
+            "agent": agent_name, "acquired_at": now,
+        }
+        return {"acquired": True, "resource": resource, "agent": agent_name}
+
+    def release_resource(self, agent_name: str, resource: str) -> dict:
+        lock = self._resource_locks.get(resource)
+        if lock and lock.get("agent") == agent_name:
+            del self._resource_locks[resource]
+            return {"released": True, "resource": resource}
+        return {"released": False, "reason": "Not held by this agent"}
+
+    def get_resource_locks(self) -> dict:
+        return {"locks": self._resource_locks, "total": len(self._resource_locks)}
+
+    def resolve_conflict(self, agents: list, resource: str, strategy: str = "priority") -> dict:
+        """Resolve conflict between agents for a resource."""
+        if not agents:
+            return {"error": "No agents provided"}
+
+        # Priority order based on agent category
+        PRIORITY = {"zeus": 0, "sentinel": 1, "athena": 2, "hermes": 3, "hephaestus": 4,
+                     "chronos": 5, "mnemosyne": 6, "apollo": 7, "ares": 8, "argus": 9}
+
+        if strategy == "priority":
+            winner = min(agents, key=lambda a: PRIORITY.get(a.lower(), 50))
+        elif strategy == "round_robin":
+            # Pick the agent that hasn't had access recently
+            locks_count = {}
+            for lock in self._resource_locks.values():
+                a = lock.get("agent", "")
+                locks_count[a] = locks_count.get(a, 0) + 1
+            winner = min(agents, key=lambda a: locks_count.get(a, 0))
+        else:
+            winner = agents[0]
+
+        self.acquire_resource(winner, resource)
+        return {"winner": winner, "strategy": strategy, "resource": resource, "contestants": agents}
+
+    # ========================
+    # COORDINATION PROTOCOL (V20 → 80%+)
+    # ========================
+
+    _coordination_tasks: list = []
+
+    def request_coordination(self, requesting_agent: str, target_agents: list, task: str, data: dict = None) -> dict:
+        """Agent requests coordination with other agents for a task."""
+        coord = {
+            "id": f"coord_{int(time.time())}",
+            "requester": requesting_agent,
+            "targets": target_agents,
+            "task": task,
+            "data": data or {},
+            "status": "pending",
+            "responses": {},
+            "created": datetime.now().isoformat(),
+        }
+        self._coordination_tasks.append(coord)
+        # Auto-send mail to targets
+        for target in target_agents:
+            self.mailbox.send(requesting_agent, target, f"[COORD] {task}")
+        return {"success": True, "coordination": coord}
+
+    def respond_coordination(self, coord_id: str, agent: str, response: str, accept: bool = True) -> dict:
+        for coord in self._coordination_tasks:
+            if coord["id"] == coord_id:
+                coord["responses"][agent] = {"response": response, "accept": accept, "at": datetime.now().isoformat()}
+                # Check if all responded
+                if len(coord["responses"]) >= len(coord["targets"]):
+                    all_accept = all(r.get("accept") for r in coord["responses"].values())
+                    coord["status"] = "accepted" if all_accept else "partial"
+                return {"success": True, "coordination": coord}
+        return {"error": "Coordination request not found"}
+
+    def get_coordination_tasks(self, limit: int = 20) -> dict:
+        return {"tasks": self._coordination_tasks[-limit:], "total": len(self._coordination_tasks)}
+
 
 # Singleton
 multi_agent = PipelineOrchestrator()

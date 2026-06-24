@@ -450,6 +450,14 @@ export const episodicMemoryAPI = {
   getTimeline: (days = 7) => api.get('/memory/timeline', { params: { days } }),
   getCompressionStats: () => api.get('/memory/compression'),
   compress: () => api.post('/memory/compress'),
+  getImportance: () => api.get('/memory/importance'),
+  scoreFact: (factId, content) => api.post('/memory/score-fact', { fact_id: factId, content }),
+  runDecay: (halfLifeDays = 30) => api.post('/memory/decay', { half_life_days: halfLifeDays }),
+  getImportant: () => api.get('/memory/important'),
+  getFading: () => api.get('/memory/fading'),
+  getKBIndex: () => api.get('/memory/kb-index'),
+  getKBCategories: () => api.get('/memory/kb-categories'),
+  kbSearch: (category) => api.get(`/memory/kb-search/${category}`),
 };
 
 // ===== Cost & Budget API (V22) =====
@@ -457,11 +465,77 @@ export const costAPI = {
   getStats: () => api.get('/provider/costs'),
   setBudget: (limit) => api.post('/provider/budget', { limit }),
   costRoute: (taskType) => api.post('/provider/cost-route', { task_type: taskType }),
+  getBenchmarks: () => api.get('/provider/benchmarks'),
+  logBenchmark: (data) => api.post('/provider/benchmark', data),
+  getBestProvider: (taskType) => api.get(`/provider/best/${taskType}`),
+  fallbackRoute: (taskType, strategy) => api.post('/provider/fallback-route', { task_type: taskType, strategy }),
+  createABTest: (name, providerA, providerB, split) => api.post('/provider/ab-test', { name, provider_a: providerA, provider_b: providerB, split }),
+  abRoute: (testName, taskType) => api.post('/provider/ab-route', { test_name: testName, task_type: taskType }),
+  logABResult: (testName, variant, score, latencyMs) => api.post('/provider/ab-result', { test_name: testName, variant, score, latency_ms: latencyMs }),
+  getABResults: () => api.get('/provider/ab-results'),
 };
 
 // ===== Database Readiness API (V2) =====
 export const dbAPI = {
   getStatus: () => api.get('/db/status'),
+  exportData: () => api.get('/db/export'),
+  garbageCollect: (maxAgeDays = 90) => api.post('/db/garbage-collect', { max_age_days: maxAgeDays }),
+  getMigrationPlan: () => api.get('/db/migration-plan'),
+};
+
+// ===== Calendar Advanced API (V14) =====
+export const calendarAdvancedAPI = {
+  getRecurring: () => api.get('/calendar/recurring'),
+  getWithRecurring: () => api.get('/calendar/with-recurring'),
+  getGoogleStatus: () => api.get('/calendar/google-status'),
+  connectGoogle: (credentialsPath) => api.post('/calendar/google-connect', { credentials_path: credentialsPath }),
+};
+
+// ===== Workflow Advanced API (V19) =====
+export const workflowAdvancedAPI = {
+  executeParallel: (workflowId) => api.post(`/workflows/${workflowId}/parallel`),
+  addConditionTrigger: (workflowId, condition) => api.post('/workflows/condition-trigger', { workflow_id: workflowId, condition }),
+  checkConditions: (eventData) => api.post('/workflows/check-conditions', { event_data: eventData }),
+  getTriggerStats: () => api.get('/workflows/trigger-stats'),
+};
+
+// ===== Multi-Agent Advanced API (V20) =====
+export const agentAPI = {
+  getStatuses: () => api.get('/agents/status'),
+  updateStatus: (agent, status, detail) => api.post('/agents/status', { agent, status, detail }),
+  getLocks: () => api.get('/agents/locks'),
+  acquireResource: (agent, resource) => api.post('/agents/acquire', { agent, resource }),
+  releaseResource: (agent, resource) => api.post('/agents/release', { agent, resource }),
+  resolveConflict: (agents, resource, strategy) => api.post('/agents/resolve-conflict', { agents, resource, strategy }),
+  requestCoordination: (requester, targets, task, data) => api.post('/agents/coordinate', { requester, targets, task, data }),
+  getCoordination: () => api.get('/agents/coordination'),
+};
+
+// ===== Plugin Store API (V21) =====
+export const pluginStoreAPI = {
+  browse: (category = 'all', search = '', sort = 'downloads') => api.get('/store/browse', { params: { category, search, sort } }),
+  getDetails: (pluginId) => api.get(`/store/plugin/${pluginId}`),
+  install: (pluginId) => api.post(`/store/install/${pluginId}`),
+  uninstall: (pluginId) => api.post(`/store/uninstall/${pluginId}`),
+  getInstalled: () => api.get('/store/installed'),
+  rate: (pluginId, score, review) => api.post(`/store/rate/${pluginId}`, { score, review }),
+  getStats: () => api.get('/store/stats'),
+  sandboxCheck: (pluginId) => api.get(`/store/sandbox/${pluginId}`),
+};
+
+// ===== Self-Improving API (V24) =====
+export const selfImproveAPI = {
+  getStatus: () => api.get('/self-improve/status'),
+  getPerformance: () => api.get('/self-improve/performance'),
+  getSlowQueries: () => api.get('/self-improve/slow-queries'),
+  getErrors: () => api.get('/self-improve/errors'),
+  logRequest: (data) => api.post('/self-improve/log', data),
+  getMemoryAnalysis: () => api.get('/self-improve/memory'),
+  compactFile: (filename, maxRecords) => api.post('/self-improve/compact', { filename, max_records: maxRecords }),
+  getPromptReport: () => api.get('/self-improve/prompt-report'),
+  suggestPrompt: (promptId, prompt) => api.post('/self-improve/prompt-suggest', { prompt_id: promptId, prompt }),
+  getOptimizations: () => api.get('/self-improve/optimizations'),
+  getOptimizationHistory: () => api.get('/self-improve/optimization-history'),
 };
 
 export default api;

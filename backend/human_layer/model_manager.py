@@ -929,3 +929,177 @@ def cost_aware_route(task_type: str) -> dict:
 
     # Normal routing
     return smart_route_provider(task_type)
+
+
+# ========================
+# FALLBACK CHAINS (V22 → 100%)
+# ========================
+
+FALLBACK_CHAINS = {
+    "default":  ["ollama", "groq", "gemini", "openai", "anthropic"],
+    "quality":  ["anthropic", "openai", "gemini", "groq", "ollama"],
+    "speed":    ["groq", "ollama", "gemini", "openai", "anthropic"],
+    "free":     ["ollama", "groq", "gemini"],
+    "privacy":  ["ollama"],
+}
+
+def get_fallback_chain(strategy: str = "default") -> list:
+    return FALLBACK_CHAINS.get(strategy, FALLBACK_CHAINS["default"])
+
+def route_with_fallback(task_type: str, strategy: str = "default") -> dict:
+    """Try providers in fallback order until one works."""
+    chain = get_fallback_chain(strategy)
+    for provider in chain:
+        check = _check_provider_available(provider)
+        if check["available"]:
+            model = _get_model_for_provider(provider, task_type)
+            return {
+                "provider": provider, "model": model,
+                "strategy": strategy, "fallback_position": chain.index(provider),
+                "chain": chain,
+            }
+    return {"provider": "ollama", "model": "qwen2.5:3b", "strategy": strategy, "error": "no providers available"}
+
+
+# ========================
+# MODEL BENCHMARKING
+# ========================
+
+_benchmark_results = {}
+_benchmark_file = Path(__file__).parent.parent / "data" / "model_benchmarks.json"
+
+def _load_benchmarks() -> dict:
+    global _benchmark_results
+    if _benchmark_file.exists():
+        try:
+            _benchmark_results = json.loads(_benchmark_file.read_text())
+        except Exception:
+            _benchmark_results = {}
+    return _benchmark_results
+
+def _save_benchmarks():
+    _benchmark_file.parent.mkdir(parents=True, exist_ok=True)
+    _benchmark_file.write_text(json.dumps(_benchmark_results, indent=2))
+
+def log_benchmark(provider: str, model: str, task_type: str, latency_ms: float, tokens: int, quality_score: float = 0.0):
+    """Log a benchmark result for a provider+model+task combination."""
+    _load_benchmarks()
+    key = f"{provider}:{model}:{task_type}"
+    if key not in _benchmark_results:
+        _benchmark_results[key] = {"runs": [], "avg_latency": 0, "avg_quality": 0, "total_runs": 0}
+
+    entry = _benchmark_results[key]
+    entry["runs"].append({
+        "latency_ms": latency_ms, "tokens": tokens,
+        "quality": quality_score, "ts": time.time(),
+    })
+    # Keep last 50 runs
+    entry["runs"] = entry["runs"][-50:]
+    entry["total_runs"] = len(entry["runs"])
+    entry["avg_latency"] = sum(r["latency_ms"] for r in entry["runs"]) / len(entry["runs"])
+    entry["avg_quality"] = sum(r["quality"] for r in entry["runs"]) / len(entry["runs"]) if any(r["quality"] for r in entry["runs"]) else 0
+    _save_benchmarks()
+
+def get_benchmarks(task_type: str = "") -> dict:
+    """Get benchmark results, optionally filtered by task type."""
+    _load_benchmarks()
+    if not task_type:
+        return _benchmark_results
+    return {k: v for k, v in _benchmark_results.items() if task_type in k}
+
+def get_best_provider_for_task(task_type: str, metric: str = "latency") -> dict:
+    """Find best provider for a task based on benchmarks."""
+    benchmarks = get_benchmarks(task_type)
+    if not benchmarks:
+        return {"provider": "unknown", "reason": "No benchmarks yet. Run some queries first."}
+
+    if metric == "quality":
+        best_key = max(benchmarks, key=lambda k: benchmarks[k].get("avg_quality", 0))
+    else:
+        best_key = min(benchmarks, key=lambda k: benchmarks[k].get("avg_latency", 99999))
+
+    parts = best_key.split(":")
+    entry = benchmarks[best_key]
+    return {
+        "provider": parts[0], "model": parts[1] if len(parts) > 1 else "",
+        "task_type": parts[2] if len(parts) > 2 else task_type,
+        "avg_latency_ms": round(entry["avg_latency"], 1),
+        "avg_quality": round(entry["avg_quality"], 2),
+        "total_runs": entry["total_runs"],
+        "metric": metric,
+    }
+
+
+# ========================
+# A/B TESTING
+# ========================
+
+import random
+
+_ab_tests = {}
+_ab_file = Path(__file__).parent.parent / "data" / "ab_tests.json"
+
+def _load_ab_tests():
+    global _ab_tests
+    if _ab_file.exists():
+        try:
+            _ab_tests = json.loads(_ab_file.read_text())
+        except Exception:
+            _ab_tests = {}
+    return _ab_tests
+
+def _save_ab_tests():
+    _ab_file.parent.mkdir(parents=True, exist_ok=True)
+    _ab_file.write_text(json.dumps(_ab_tests, indent=2))
+
+def create_ab_test(name: str, provider_a: str, provider_b: str, split: float = 0.5) -> dict:
+    """Create an A/B test between two providers."""
+    _load_ab_tests()
+    _ab_tests[name] = {
+        "provider_a": provider_a, "provider_b": provider_b,
+        "split": split, "results_a": [], "results_b": [],
+        "created": time.time(), "active": True,
+    }
+    _save_ab_tests()
+    return {"created": name, "a": provider_a, "b": provider_b, "split": split}
+
+def ab_route(test_name: str, task_type: str) -> dict:
+    """Route a request based on A/B test config."""
+    _load_ab_tests()
+    test = _ab_tests.get(test_name)
+    if not test or not test.get("active"):
+        return smart_route_provider(task_type)
+
+    chosen = "a" if random.random() < test["split"] else "b"
+    provider = test[f"provider_{chosen}"]
+    model = _get_model_for_provider(provider, task_type)
+    return {"provider": provider, "model": model, "ab_test": test_name, "variant": chosen}
+
+def log_ab_result(test_name: str, variant: str, score: float, latency_ms: float = 0):
+    """Log a result for an A/B test variant."""
+    _load_ab_tests()
+    test = _ab_tests.get(test_name)
+    if not test:
+        return {"error": "Test not found"}
+    key = f"results_{variant}"
+    test[key].append({"score": score, "latency_ms": latency_ms, "ts": time.time()})
+    test[key] = test[key][-100:]  # keep last 100
+    _save_ab_tests()
+    return {"logged": True, "variant": variant}
+
+def get_ab_results(test_name: str = "") -> dict:
+    """Get A/B test results."""
+    _load_ab_tests()
+    if test_name:
+        test = _ab_tests.get(test_name)
+        if not test:
+            return {"error": "Not found"}
+        avg_a = sum(r["score"] for r in test["results_a"]) / max(len(test["results_a"]), 1)
+        avg_b = sum(r["score"] for r in test["results_b"]) / max(len(test["results_b"]), 1)
+        return {
+            "name": test_name, **test,
+            "avg_score_a": round(avg_a, 3), "avg_score_b": round(avg_b, 3),
+            "runs_a": len(test["results_a"]), "runs_b": len(test["results_b"]),
+            "winner": "a" if avg_a > avg_b else "b" if avg_b > avg_a else "tie",
+        }
+    return {name: {"a": t["provider_a"], "b": t["provider_b"], "active": t["active"]} for name, t in _ab_tests.items()}

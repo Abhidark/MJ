@@ -211,9 +211,168 @@ class MemoryCompressor:
         }
 
 
+# ========================
+# MEMORY DECAY & IMPORTANCE (V13 → 90%+)
+# ========================
+
+IMPORTANCE_FILE = DATA_DIR / "memory_importance.json"
+
+class MemoryDecay:
+    """
+    Implements memory importance scoring and time-based decay.
+    High-importance memories persist; low-importance ones fade.
+    """
+
+    def __init__(self):
+        self.scores: dict = {}
+        self._load()
+
+    def _load(self):
+        data = _load_json(IMPORTANCE_FILE, {})
+        self.scores = data.get("scores", {})
+
+    def _save(self):
+        _save_json(IMPORTANCE_FILE, {"scores": self.scores, "updated": datetime.now().isoformat()})
+
+    def score_fact(self, fact_id: str, content: str, access_count: int = 1) -> float:
+        """Calculate importance score based on content analysis and access patterns."""
+        score = 0.5  # base score
+
+        # Boost for personal info
+        personal = re.compile(r"\b(my|i\s+am|i\s+like|i\s+prefer|i\s+hate|favorite|naam|mera)\b", re.IGNORECASE)
+        if personal.search(content):
+            score += 0.2
+
+        # Boost for factual/reference data
+        factual = re.compile(r"\b(password|key|address|phone|email|birthday|api|secret|config)\b", re.IGNORECASE)
+        if factual.search(content):
+            score += 0.3
+
+        # Boost for emotional significance
+        emotional = re.compile(r"\b(love|important|critical|always|never|must|need)\b", re.IGNORECASE)
+        if emotional.search(content):
+            score += 0.1
+
+        # Access frequency bonus (capped at 0.2)
+        score += min(access_count * 0.02, 0.2)
+
+        score = min(score, 1.0)
+        self.scores[fact_id] = {"score": score, "access_count": access_count, "last_access": time.time()}
+        self._save()
+        return score
+
+    def decay(self, half_life_days: int = 30) -> dict:
+        """Apply time-based decay to all memory scores."""
+        now = time.time()
+        decayed = 0
+        for fid, data in self.scores.items():
+            age_days = (now - data.get("last_access", now)) / 86400
+            decay_factor = 0.5 ** (age_days / half_life_days)
+            old_score = data["score"]
+            data["score"] = max(round(old_score * decay_factor, 3), 0.01)
+            if data["score"] < old_score:
+                decayed += 1
+        self._save()
+        return {"decayed": decayed, "total": len(self.scores), "half_life_days": half_life_days}
+
+    def get_important(self, threshold: float = 0.7, limit: int = 20) -> list:
+        """Get memories above importance threshold."""
+        return sorted(
+            [{"id": k, **v} for k, v in self.scores.items() if v["score"] >= threshold],
+            key=lambda x: x["score"], reverse=True,
+        )[:limit]
+
+    def get_fading(self, threshold: float = 0.3, limit: int = 20) -> list:
+        """Get memories that are fading (below threshold)."""
+        return sorted(
+            [{"id": k, **v} for k, v in self.scores.items() if v["score"] < threshold],
+            key=lambda x: x["score"],
+        )[:limit]
+
+    def get_stats(self) -> dict:
+        scores = [v["score"] for v in self.scores.values()]
+        return {
+            "total_scored": len(self.scores),
+            "avg_score": round(sum(scores) / max(len(scores), 1), 3),
+            "high_importance": sum(1 for s in scores if s >= 0.7),
+            "medium_importance": sum(1 for s in scores if 0.3 <= s < 0.7),
+            "low_importance": sum(1 for s in scores if s < 0.3),
+        }
+
+
+# ========================
+# KNOWLEDGE INDEXER (V13 → 90%+)
+# ========================
+
+KB_INDEX_FILE = DATA_DIR / "knowledge_index.json"
+
+class KnowledgeIndexer:
+    """Auto-categorizes and indexes knowledge for faster retrieval."""
+
+    CATEGORIES = {
+        "personal": re.compile(r"\b(my|i\s+am|i\s+like|name\s+is|birthday|age|live\s+in)\b", re.IGNORECASE),
+        "technical": re.compile(r"\b(api|code|server|database|python|react|docker|git)\b", re.IGNORECASE),
+        "preference": re.compile(r"\b(prefer|like|dislike|favorite|hate|enjoy|avoid)\b", re.IGNORECASE),
+        "task": re.compile(r"\b(todo|task|remind|deadline|meeting|schedule|plan)\b", re.IGNORECASE),
+        "reference": re.compile(r"\b(password|key|url|link|address|phone|email|ip)\b", re.IGNORECASE),
+    }
+
+    def __init__(self):
+        self.index: dict = {}
+        self._load()
+
+    def _load(self):
+        self.index = _load_json(KB_INDEX_FILE, {"categories": {}, "updated": ""})
+
+    def _save(self):
+        self.index["updated"] = datetime.now().isoformat()
+        _save_json(KB_INDEX_FILE, self.index)
+
+    def categorize(self, fact_id: str, content: str) -> str:
+        """Auto-categorize a fact based on content patterns."""
+        for cat, pattern in self.CATEGORIES.items():
+            if pattern.search(content):
+                if cat not in self.index["categories"]:
+                    self.index["categories"][cat] = []
+                if fact_id not in self.index["categories"][cat]:
+                    self.index["categories"][cat].append(fact_id)
+                self._save()
+                return cat
+        # Default category
+        if "general" not in self.index["categories"]:
+            self.index["categories"]["general"] = []
+        if fact_id not in self.index["categories"]["general"]:
+            self.index["categories"]["general"].append(fact_id)
+        self._save()
+        return "general"
+
+    def search_by_category(self, category: str) -> list:
+        return self.index.get("categories", {}).get(category, [])
+
+    def get_all_categories(self) -> dict:
+        return {cat: len(ids) for cat, ids in self.index.get("categories", {}).items()}
+
+    def rebuild_index(self, facts: list) -> dict:
+        """Rebuild the entire index from a list of (id, content) tuples."""
+        self.index = {"categories": {}, "updated": ""}
+        for fid, content in facts:
+            self.categorize(fid, content)
+        return {"rebuilt": True, "categories": self.get_all_categories()}
+
+    def get_stats(self) -> dict:
+        cats = self.index.get("categories", {})
+        return {
+            "total_indexed": sum(len(v) for v in cats.values()),
+            "categories": self.get_all_categories(),
+            "last_updated": self.index.get("updated", "never"),
+        }
+
+
 # Module-level singletons
 episodic_memory = EpisodicMemory()
 memory_compressor = MemoryCompressor()
+memory_decay = MemoryDecay()
+knowledge_indexer = KnowledgeIndexer()
 
 
 class MnemosyneModule(BaseModule):

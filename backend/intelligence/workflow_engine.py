@@ -409,6 +409,164 @@ class WorkflowEngine:
         self._save_workflows()
         return {"success": True, "count": len(self.workflows)}
 
+    # ========================
+    # PARALLEL EXECUTION (V19 → 85%+)
+    # ========================
+
+    async def execute_parallel(self, workflow_id: str, modules: dict = None, context: dict = None) -> dict:
+        """Execute workflow steps in parallel where possible (steps without dependencies)."""
+        w = self.workflows.get(workflow_id)
+        if not w:
+            return {"success": False, "error": f"Workflow '{workflow_id}' not found"}
+
+        start_time = time.time()
+        steps = w.get("steps", [])
+
+        # Group steps: parallel-eligible (no depends_on) vs sequential
+        parallel_steps = [s for s in steps if not s.get("depends_on")]
+        sequential_steps = [s for s in steps if s.get("depends_on")]
+
+        results = []
+        step_context = dict(context or {})
+
+        # Execute parallel steps concurrently
+        if parallel_steps:
+            async def _run_step(step):
+                step_result = {"step_id": step.get("id", "?"), "description": step.get("description", ""), "status": "pending"}
+                module_name = step.get("module")
+                if module_name and modules and module_name in modules:
+                    mod = modules[module_name]
+                    if hasattr(mod, "enabled") and mod.enabled:
+                        try:
+                            result = mod.execute(step.get("description", ""), step_context)
+                            step_result["status"] = "completed"
+                            step_result["response"] = result.get("response", "")[:500]
+                        except Exception as e:
+                            step_result["status"] = "error"
+                            step_result["error"] = str(e)[:200]
+                    else:
+                        step_result["status"] = "skipped"
+                else:
+                    step_result["status"] = "skipped"
+                return step_result
+
+            parallel_results = await asyncio.gather(*[_run_step(s) for s in parallel_steps], return_exceptions=True)
+            for pr in parallel_results:
+                if isinstance(pr, Exception):
+                    results.append({"status": "error", "error": str(pr)[:200]})
+                else:
+                    results.append(pr)
+
+        # Execute sequential steps in order
+        for step in sequential_steps:
+            step_result = await self._execute_single_step(step, modules, step_context)
+            results.append(step_result)
+            if step_result.get("response"):
+                step_context["previous_step"] = step_result["response"]
+
+        duration = time.time() - start_time
+        w["run_count"] = w.get("run_count", 0) + 1
+        w["last_run"] = datetime.now().isoformat()
+        self._save_workflows()
+
+        completed = sum(1 for r in results if r.get("status") == "completed")
+        self._log_execution(workflow_id, "parallel_completed", results, duration)
+
+        return {
+            "success": True, "workflow": w["name"], "mode": "parallel",
+            "parallel_steps": len(parallel_steps), "sequential_steps": len(sequential_steps),
+            "steps_completed": completed, "duration": round(duration, 2), "results": results,
+        }
+
+    async def _execute_single_step(self, step: dict, modules: dict, context: dict) -> dict:
+        step_result = {"step_id": step.get("id", "?"), "description": step.get("description", ""), "status": "pending"}
+        module_name = step.get("module")
+        if module_name and modules and module_name in modules:
+            mod = modules[module_name]
+            if hasattr(mod, "enabled") and mod.enabled:
+                try:
+                    result = mod.execute(step.get("description", ""), context)
+                    step_result["status"] = "completed"
+                    step_result["response"] = result.get("response", "")[:500]
+                except Exception as e:
+                    step_result["status"] = "error"
+                    step_result["error"] = str(e)[:200]
+            else:
+                step_result["status"] = "skipped"
+        else:
+            step_result["status"] = "skipped"
+        return step_result
+
+    # ========================
+    # CONDITION TRIGGERS (V19 → 85%+)
+    # ========================
+
+    def add_condition_trigger(self, workflow_id: str, condition: dict) -> dict:
+        """Add a conditional trigger (e.g., time-based, event, keyword)."""
+        if workflow_id not in self.workflows:
+            return {"success": False, "error": f"Workflow '{workflow_id}' not found"}
+
+        trigger = {
+            "id": f"cond_{int(time.time())}",
+            "workflow_id": workflow_id,
+            "type": condition.get("type", "condition"),
+            "field": condition.get("field", ""),
+            "operator": condition.get("operator", "equals"),
+            "value": condition.get("value", ""),
+            "enabled": True,
+            "created": datetime.now().isoformat(),
+            "fires": 0,
+        }
+        self.triggers.append(trigger)
+        self._save_triggers()
+        return {"success": True, "trigger": trigger}
+
+    def check_conditions(self, event_data: dict) -> list:
+        """Check all condition triggers against event data, return matching workflow IDs."""
+        matched = []
+        for trigger in self.triggers:
+            if not trigger.get("enabled"):
+                continue
+            if trigger.get("type") != "condition":
+                continue
+
+            field = trigger.get("field", "")
+            operator = trigger.get("operator", "equals")
+            expected = trigger.get("value", "")
+            actual = str(event_data.get(field, ""))
+
+            if operator == "equals" and actual == expected:
+                matched.append(trigger["workflow_id"])
+                trigger["fires"] = trigger.get("fires", 0) + 1
+            elif operator == "contains" and expected in actual:
+                matched.append(trigger["workflow_id"])
+                trigger["fires"] = trigger.get("fires", 0) + 1
+            elif operator == "starts_with" and actual.startswith(expected):
+                matched.append(trigger["workflow_id"])
+                trigger["fires"] = trigger.get("fires", 0) + 1
+            elif operator == "gt":
+                try:
+                    if float(actual) > float(expected):
+                        matched.append(trigger["workflow_id"])
+                        trigger["fires"] = trigger.get("fires", 0) + 1
+                except ValueError:
+                    pass
+
+        if matched:
+            self._save_triggers()
+        return matched
+
+    def get_trigger_stats(self) -> dict:
+        by_type = {}
+        for t in self.triggers:
+            ttype = t.get("type", "unknown")
+            by_type[ttype] = by_type.get(ttype, 0) + 1
+        return {
+            "total_triggers": len(self.triggers),
+            "by_type": by_type,
+            "total_fires": sum(t.get("fires", 0) for t in self.triggers),
+        }
+
 
 # Singleton
 workflow_engine = WorkflowEngine()

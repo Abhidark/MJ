@@ -50,7 +50,18 @@ from intelligence.user_profile import build_user_profile, get_profile_summary
 from intelligence.workflow_engine import workflow_engine
 from intelligence.multi_agent import multi_agent
 from intelligence.db_readiness import get_db_status
-from human_layer.model_manager import get_cost_stats, set_budget_limit, log_token_usage, cost_aware_route
+from human_layer.model_manager import (
+    get_cost_stats, set_budget_limit, log_token_usage, cost_aware_route,
+    route_with_fallback, get_benchmarks, log_benchmark, get_best_provider_for_task,
+    create_ab_test, ab_route, log_ab_result, get_ab_results,
+)
+from intelligence.db_readiness import export_data, garbage_collect, get_migration_plan
+from modules.mnemosyne.module import memory_decay, knowledge_indexer
+from modules.chronos.module import google_calendar
+from plugins.plugin_store import plugin_store
+from self_healer.self_improver import (
+    performance_tracker, prompt_improver, memory_optimizer, auto_tuner, get_self_improve_status,
+)
 
 # Intelligence Layer
 from intelligence.web_browser import deep_search, deep_research, format_search_for_llm, format_research_for_llm, needs_web_search_v2
@@ -3363,6 +3374,273 @@ async def cost_route(request: Request):
 async def db_status():
     return get_db_status()
 
+@app.get("/db/export")
+async def db_export():
+    return export_data()
+
+@app.post("/db/garbage-collect")
+async def db_gc(request: Request):
+    data = await request.json()
+    return garbage_collect(data.get("max_age_days", 90))
+
+@app.get("/db/migration-plan")
+async def db_migration_plan():
+    return get_migration_plan()
+
+
+# ===== V22 BENCHMARKING & FALLBACK =====
+
+@app.get("/provider/benchmarks")
+async def provider_benchmarks():
+    task = ""
+    return get_benchmarks(task)
+
+@app.post("/provider/benchmark")
+async def log_provider_benchmark(request: Request):
+    d = await request.json()
+    log_benchmark(d.get("provider", ""), d.get("model", ""), d.get("task_type", "chat"),
+                  d.get("latency_ms", 0), d.get("tokens", 0), d.get("quality", 0))
+    return {"logged": True}
+
+@app.get("/provider/best/{task_type}")
+async def best_provider(task_type: str):
+    return get_best_provider_for_task(task_type)
+
+@app.post("/provider/fallback-route")
+async def fallback_route(request: Request):
+    d = await request.json()
+    return route_with_fallback(d.get("task_type", "chat"), d.get("strategy", "default"))
+
+@app.post("/provider/ab-test")
+async def create_ab(request: Request):
+    d = await request.json()
+    return create_ab_test(d.get("name", ""), d.get("provider_a", ""), d.get("provider_b", ""), d.get("split", 0.5))
+
+@app.post("/provider/ab-route")
+async def ab_route_ep(request: Request):
+    d = await request.json()
+    return ab_route(d.get("test_name", ""), d.get("task_type", "chat"))
+
+@app.post("/provider/ab-result")
+async def ab_result(request: Request):
+    d = await request.json()
+    return log_ab_result(d.get("test_name", ""), d.get("variant", ""), d.get("score", 0), d.get("latency_ms", 0))
+
+@app.get("/provider/ab-results")
+async def ab_results():
+    return get_ab_results()
+
+
+# ===== V13 MNEMOSYNE ADVANCED =====
+
+@app.get("/memory/importance")
+async def memory_importance():
+    return memory_decay.get_stats()
+
+@app.post("/memory/score-fact")
+async def score_fact(request: Request):
+    d = await request.json()
+    score = memory_decay.score_fact(d.get("fact_id", ""), d.get("content", ""), d.get("access_count", 1))
+    return {"fact_id": d.get("fact_id"), "score": score}
+
+@app.post("/memory/decay")
+async def run_decay(request: Request):
+    d = await request.json()
+    return memory_decay.decay(d.get("half_life_days", 30))
+
+@app.get("/memory/important")
+async def important_memories():
+    return {"memories": memory_decay.get_important()}
+
+@app.get("/memory/fading")
+async def fading_memories():
+    return {"memories": memory_decay.get_fading()}
+
+@app.get("/memory/kb-index")
+async def kb_index():
+    return knowledge_indexer.get_stats()
+
+@app.get("/memory/kb-categories")
+async def kb_categories():
+    return knowledge_indexer.get_all_categories()
+
+@app.get("/memory/kb-search/{category}")
+async def kb_search(category: str):
+    return {"category": category, "facts": knowledge_indexer.search_by_category(category)}
+
+
+# ===== V14 CHRONOS ADVANCED =====
+
+@app.get("/calendar/recurring")
+async def calendar_recurring():
+    from modules.chronos.module import calendar_engine
+    return {"events": calendar_engine.expand_recurring()}
+
+@app.get("/calendar/with-recurring")
+async def calendar_with_recurring():
+    from modules.chronos.module import calendar_engine
+    return {"events": calendar_engine.get_events_with_recurring()}
+
+@app.get("/calendar/google-status")
+async def google_cal_status():
+    return google_calendar.get_status()
+
+@app.post("/calendar/google-connect")
+async def google_cal_connect(request: Request):
+    d = await request.json()
+    return google_calendar.connect(d.get("credentials_path", ""))
+
+
+# ===== V19 WORKFLOW ADVANCED =====
+
+@app.post("/workflows/{wid}/parallel")
+async def workflow_parallel(wid: str):
+    return await workflow_engine.execute_parallel(wid)
+
+@app.post("/workflows/condition-trigger")
+async def add_condition_trigger(request: Request):
+    d = await request.json()
+    return workflow_engine.add_condition_trigger(d.get("workflow_id", ""), d.get("condition", {}))
+
+@app.post("/workflows/check-conditions")
+async def check_conditions(request: Request):
+    d = await request.json()
+    matched = workflow_engine.check_conditions(d.get("event_data", {}))
+    return {"matched_workflows": matched}
+
+@app.get("/workflows/trigger-stats")
+async def trigger_stats():
+    return workflow_engine.get_trigger_stats()
+
+
+# ===== V20 MULTI-AGENT ADVANCED =====
+
+@app.get("/agents/status")
+async def agent_statuses():
+    return multi_agent.get_agent_statuses()
+
+@app.post("/agents/status")
+async def update_agent_status(request: Request):
+    d = await request.json()
+    return multi_agent.update_agent_status(d.get("agent", ""), d.get("status", "idle"), d.get("detail", ""))
+
+@app.get("/agents/locks")
+async def resource_locks():
+    return multi_agent.get_resource_locks()
+
+@app.post("/agents/acquire")
+async def acquire_resource(request: Request):
+    d = await request.json()
+    return multi_agent.acquire_resource(d.get("agent", ""), d.get("resource", ""))
+
+@app.post("/agents/release")
+async def release_resource(request: Request):
+    d = await request.json()
+    return multi_agent.release_resource(d.get("agent", ""), d.get("resource", ""))
+
+@app.post("/agents/resolve-conflict")
+async def resolve_conflict(request: Request):
+    d = await request.json()
+    return multi_agent.resolve_conflict(d.get("agents", []), d.get("resource", ""), d.get("strategy", "priority"))
+
+@app.post("/agents/coordinate")
+async def request_coordination(request: Request):
+    d = await request.json()
+    return multi_agent.request_coordination(d.get("requester", ""), d.get("targets", []), d.get("task", ""), d.get("data"))
+
+@app.get("/agents/coordination")
+async def coordination_tasks():
+    return multi_agent.get_coordination_tasks()
+
+
+# ===== V21 PLUGIN MARKETPLACE =====
+
+@app.get("/store/browse")
+async def store_browse(category: str = "all", search: str = "", sort: str = "downloads"):
+    return plugin_store.browse(category, search, sort)
+
+@app.get("/store/plugin/{plugin_id}")
+async def store_plugin_detail(plugin_id: str):
+    return plugin_store.get_plugin_details(plugin_id)
+
+@app.post("/store/install/{plugin_id}")
+async def store_install(plugin_id: str):
+    return plugin_store.install_plugin(plugin_id)
+
+@app.post("/store/uninstall/{plugin_id}")
+async def store_uninstall(plugin_id: str):
+    return plugin_store.uninstall_plugin(plugin_id)
+
+@app.get("/store/installed")
+async def store_installed():
+    return plugin_store.get_installed()
+
+@app.post("/store/rate/{plugin_id}")
+async def store_rate(plugin_id: str, request: Request):
+    d = await request.json()
+    return plugin_store.rate_plugin(plugin_id, d.get("score", 5.0), d.get("review", ""))
+
+@app.get("/store/stats")
+async def store_stats():
+    return plugin_store.get_store_stats()
+
+@app.get("/store/sandbox/{plugin_id}")
+async def store_sandbox(plugin_id: str):
+    return plugin_store.sandbox_check(plugin_id)
+
+
+# ===== V24 SELF-IMPROVING =====
+
+@app.get("/self-improve/status")
+async def self_improve_status():
+    return get_self_improve_status()
+
+@app.get("/self-improve/performance")
+async def perf_stats():
+    return performance_tracker.get_stats()
+
+@app.get("/self-improve/slow-queries")
+async def slow_queries():
+    return {"queries": performance_tracker.get_slow_queries()}
+
+@app.get("/self-improve/errors")
+async def perf_errors():
+    return performance_tracker.get_error_patterns()
+
+@app.post("/self-improve/log")
+async def log_perf(request: Request):
+    d = await request.json()
+    performance_tracker.log_request(d.get("query", ""), d.get("module", ""), d.get("latency_ms", 0),
+                                     d.get("tokens", 0), d.get("success", True), d.get("quality", 0))
+    return {"logged": True}
+
+@app.get("/self-improve/memory")
+async def memory_analysis():
+    return memory_optimizer.analyze()
+
+@app.post("/self-improve/compact")
+async def compact_memory(request: Request):
+    d = await request.json()
+    return memory_optimizer.compact_file(d.get("filename", ""), d.get("max_records", 200))
+
+@app.get("/self-improve/prompt-report")
+async def prompt_report():
+    return prompt_improver.get_effectiveness_report()
+
+@app.post("/self-improve/prompt-suggest")
+async def prompt_suggest(request: Request):
+    d = await request.json()
+    return prompt_improver.suggest_improvement(d.get("prompt_id", ""), d.get("prompt", ""))
+
+@app.get("/self-improve/optimizations")
+async def optimization_suggestions():
+    stats = performance_tracker.get_stats()
+    return {"suggestions": auto_tuner.suggest_optimizations(stats)}
+
+@app.get("/self-improve/optimization-history")
+async def optimization_history():
+    return {"history": auto_tuner.get_optimization_history()}
+
 
 # SPA catch-all: serve React index.html for client-side routes
 @app.get("/{path:path}")
@@ -3383,6 +3661,7 @@ async def spa_catch_all(path: str):
         "mouse", "browser-control", "calendar", "pipelines", "agent-groups",
         "agent-mail", "agent-mail-stats", "planner", "productivity", "db",
         "smart-home", "workflows", "dev",
+        "store", "agents", "self-improve", "memory",
     }
     if first_segment in backend_prefixes:
         return JSONResponse({"error": "Not found"}, status_code=404)

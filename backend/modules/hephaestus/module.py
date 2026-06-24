@@ -122,6 +122,16 @@ class HephaestusModule(BaseModule):
         re.IGNORECASE,
     )
 
+    CICD_KEYWORDS = re.compile(
+        r"\b(ci/?cd|pipeline|github\s+actions?|gitlab\s+ci|jenkins|"
+        r"continuous\s+(?:integration|deployment|delivery)|"
+        r"workflow\s+(?:file|yaml|yml)|"
+        r"build\s+pipeline|deploy\s+pipeline|"
+        r"lint(?:ing)?|code\s+quality|eslint|pylint|flake8|ruff|"
+        r"pre-commit|husky|format(?:ting)?|prettier)\b",
+        re.IGNORECASE,
+    )
+
     LANGUAGE_PATTERNS = re.compile(
         r"\b(python|javascript|typescript|java|c\+\+|c#|csharp|"
         r"rust|go|golang|ruby|php|swift|kotlin|dart|html|css|"
@@ -204,6 +214,8 @@ class HephaestusModule(BaseModule):
             return 0.94
         if self.TEST_KEYWORDS.search(text):
             return 0.93
+        if self.CICD_KEYWORDS.search(text):
+            return 0.93
         if self.DEPLOY_KEYWORDS.search(text):
             return 0.92
         if self.EXECUTION_KEYWORDS.search(text):
@@ -228,6 +240,8 @@ class HephaestusModule(BaseModule):
     # ========================
 
     def execute(self, text: str, context: dict) -> dict:
+        if self.CICD_KEYWORDS.search(text):
+            return self._handle_cicd(text, context)
         if self.DEBUG_KEYWORDS.search(text):
             return self._handle_debug(text, context)
         if self.TEST_KEYWORDS.search(text):
@@ -995,6 +1009,136 @@ class HephaestusModule(BaseModule):
             "project_root": self._project_root,
             "allow_execution": self._allow_execution,
             "allow_git_write": self._allow_git_write,
+        }
+
+    # ========================
+    # CI/CD PIPELINE & LINTING (V9 upgrade)
+    # ========================
+
+    CICD_TEMPLATES = {
+        "github_actions": {
+            "name": "GitHub Actions",
+            "file": ".github/workflows/ci.yml",
+            "content": """name: CI Pipeline
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run linting
+        run: |
+          pip install ruff
+          ruff check .
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontend
+        run: |
+          cd frontend-react
+          npm ci
+          npm run build
+""",
+        },
+        "gitlab_ci": {
+            "name": "GitLab CI",
+            "file": ".gitlab-ci.yml",
+            "content": """stages:\n  - lint\n  - test\n  - build\n  - deploy\n\nlint:\n  stage: lint\n  script:\n    - pip install ruff\n    - ruff check .\n\ntest:\n  stage: test\n  script:\n    - pip install -r requirements.txt\n    - pytest tests/ -v\n\nbuild:\n  stage: build\n  script:\n    - cd frontend-react && npm ci && npm run build\n  artifacts:\n    paths:\n      - frontend-react/dist/\n\ndeploy:\n  stage: deploy\n  script:\n    - echo "Deploy to production"\n  only:\n    - main\n""",
+        },
+        "docker_compose": {
+            "name": "Docker Compose",
+            "file": "docker-compose.yml",
+            "content": """version: '3.8'\nservices:\n  backend:\n    build: ./backend\n    ports:\n      - "8000:8000"\n    volumes:\n      - ./backend/data:/app/data\n    environment:\n      - OLLAMA_HOST=ollama:11434\n    depends_on:\n      - ollama\n\n  ollama:\n    image: ollama/ollama\n    ports:\n      - "11434:11434"\n    volumes:\n      - ollama_data:/root/.ollama\n\n  frontend:\n    build: ./frontend-react\n    ports:\n      - "3000:3000"\n\nvolumes:\n  ollama_data:\n""",
+        },
+    }
+
+    LINT_CONFIGS = {
+        "python": {
+            "ruff": {"file": "ruff.toml", "content": '[lint]\nselect = ["E", "F", "W", "I"]\nignore = ["E501"]\n\n[format]\nquote-style = "double"\n'},
+            "pylint": {"file": ".pylintrc", "content": "[MASTER]\ndisable=C0114,C0115,C0116,C0301,R0903\n"},
+        },
+        "javascript": {
+            "eslint": {"file": ".eslintrc.json", "content": '{\n  "env": {"browser": true, "es2021": true},\n  "extends": ["eslint:recommended"],\n  "parserOptions": {"ecmaVersion": "latest", "sourceType": "module", "ecmaFeatures": {"jsx": true}},\n  "rules": {"no-unused-vars": "warn", "no-console": "off"}\n}'},
+            "prettier": {"file": ".prettierrc", "content": '{\n  "semi": true,\n  "singleQuote": true,\n  "tabWidth": 2,\n  "trailingComma": "es5"\n}'},
+        },
+    }
+
+    def _handle_cicd(self, text: str, context: dict) -> dict:
+        text_lower = text.lower()
+
+        # Lint config generation
+        if re.search(r"lint|eslint|pylint|ruff|flake8|prettier|format", text_lower):
+            return self._generate_lint_config(text_lower)
+
+        # Pipeline generation
+        if re.search(r"github\s+actions?", text_lower):
+            return self._generate_pipeline("github_actions")
+        if re.search(r"gitlab", text_lower):
+            return self._generate_pipeline("gitlab_ci")
+        if re.search(r"docker", text_lower):
+            return self._generate_pipeline("docker_compose")
+
+        # Generic CI/CD overview
+        return self._cicd_overview(text_lower)
+
+    def _generate_pipeline(self, template_key: str) -> dict:
+        tpl = self.CICD_TEMPLATES.get(template_key)
+        if not tpl:
+            return {"response": f"Unknown template: {template_key}", "confidence": 0.5}
+
+        return {
+            "response": f"## {tpl['name']} Pipeline\n\n**File:** `{tpl['file']}`\n\n```yaml\n{tpl['content']}\n```\n\nSave this as `{tpl['file']}` in your project root.",
+            "confidence": 0.95,
+            "data": {"template": template_key, "file": tpl["file"], "content": tpl["content"]},
+        }
+
+    def _generate_lint_config(self, text: str) -> dict:
+        configs = []
+        if any(k in text for k in ("ruff", "pylint", "python", "lint")):
+            for name, cfg in self.LINT_CONFIGS.get("python", {}).items():
+                configs.append(f"**{name}** → `{cfg['file']}`\n```\n{cfg['content']}\n```")
+        if any(k in text for k in ("eslint", "prettier", "javascript", "js", "format")):
+            for name, cfg in self.LINT_CONFIGS.get("javascript", {}).items():
+                configs.append(f"**{name}** → `{cfg['file']}`\n```\n{cfg['content']}\n```")
+
+        if not configs:
+            configs = [f"**{n}** → `{c['file']}`" for lang in self.LINT_CONFIGS.values() for n, c in lang.items()]
+
+        return {
+            "response": "## Linting & Formatting Configs\n\n" + "\n\n".join(configs),
+            "confidence": 0.92,
+            "data": {"type": "lint_config"},
+        }
+
+    def _cicd_overview(self, text: str) -> dict:
+        templates = "\n".join(f"- **{t['name']}** → `{t['file']}`" for t in self.CICD_TEMPLATES.values())
+        return {
+            "response": (
+                "## CI/CD Pipeline Setup\n\n"
+                "Available pipeline templates:\n" + templates + "\n\n"
+                "**Linting tools:** ruff (Python), ESLint + Prettier (JS)\n\n"
+                "Ask me to generate any specific pipeline config!\n"
+                "Examples:\n- 'generate github actions pipeline'\n"
+                "- 'create eslint config'\n- 'setup docker compose'"
+            ),
+            "confidence": 0.90,
+            "data": {"type": "cicd_overview", "templates": list(self.CICD_TEMPLATES.keys())},
         }
 
     def update_settings(self, settings: dict):
