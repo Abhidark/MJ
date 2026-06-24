@@ -199,6 +199,36 @@ export const safetyAPI = {
   clearAudit: () => api.post('/safety/audit/clear'),
 };
 
+// --- REFLECTION ENGINE (V16) ---
+export const reflectionAPI = {
+  logMistake: (module, type, query, response = '') => api.post('/reflection/log-mistake', { message: `${module}|${type}|${query}|${response}` }),
+  logSuccess: (module) => api.post('/reflection/log-success', { message: module }),
+  getMistakes: (limit = 50, module = '') => api.get(`/reflection/mistakes?limit=${limit}${module ? '&module=' + module : ''}`),
+  generateReport: (days = 7) => api.post(`/reflection/report?days=${days}`),
+  getReports: (limit = 10) => api.get(`/reflection/reports?limit=${limit}`),
+  getDaily: () => api.get('/reflection/daily'),
+  getScores: () => api.get('/reflection/scores'),
+  getScore: (module) => api.get(`/reflection/scores/${module}`),
+  getSuggestions: () => api.get('/reflection/suggestions'),
+  getStats: () => api.get('/reflection/stats'),
+};
+
+// --- LEARNING ENGINE (V17) ---
+export const learningAPI = {
+  recordAction: (action, module = '') => api.post('/learning/record', { message: `${action}|${module}` }),
+  learn: (message) => api.post('/learning/learn', { message }),
+  getHabits: () => api.get('/learning/habits'),
+  detectHabits: () => api.post('/learning/habits/detect'),
+  getPreferences: () => api.get('/learning/preferences'),
+  getPreferencePrompt: () => api.get('/learning/preference-prompt'),
+  logPromptFeedback: (type, positive, notes = '') => api.post('/learning/prompt-feedback', { message: `${type}|${positive}|${notes}` }),
+  getPromptSuggestions: () => api.get('/learning/prompt-suggestions'),
+  getPromptStats: () => api.get('/learning/prompt-stats'),
+  getWorkflows: () => api.get('/learning/workflows'),
+  detectWorkflows: () => api.post('/learning/workflows/detect'),
+  getStats: () => api.get('/learning/stats'),
+};
+
 // --- PLUGINS ---
 export const pluginAPI = {
   getPlugins: () => api.get('/plugins'),

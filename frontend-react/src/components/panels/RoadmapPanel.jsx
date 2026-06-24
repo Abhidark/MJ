@@ -21,8 +21,8 @@ const ROADMAP = [
     { v:'V15', name:'Sentinel (Security)', desc:'Permissions, encryption, audit', pct:20, features:'Hashing ⚠️ | Tool Sandbox ⚠️ | Permissions ❌ | Secrets ❌ | Audit Logs ❌ | Threats ❌' },
   ]},
   { phase: 'Phase 3 — Intelligence Layer', items: [
-    { v:'V16', name:'Reflection Engine', desc:'Mistake detection, learning reports', pct:30, features:'Mistake Detection ✅ | Learning Reports ⚠️ | Suggestions ⚠️ | Daily Reflection ❌ | Agent Score ❌' },
-    { v:'V17', name:'Learning Engine', desc:'Habits, preferences, prompt tuning', pct:35, features:'Preference Learning ✅ | Habit Learning ⚠️ | Prompt Optimization ❌ | Workflow Learning ❌' },
+    { v:'V16', name:'Reflection Engine', desc:'Mistake detection, learning reports', pct:100, features:'Mistake Detection ✅ | Learning Reports ✅ | Suggestions ✅ | Daily Reflection ✅ | Agent Score ✅' },
+    { v:'V17', name:'Learning Engine', desc:'Habits, preferences, prompt tuning', pct:100, features:'Preference Learning ✅ | Habit Learning ✅ | Prompt Optimization ✅ | Workflow Learning ✅' },
     { v:'V18', name:'Dashboard 2.0 (Orb UI)', desc:'Orb, HUD, stats, alerts, AI flow', pct:100, features:'Orb ✅ | Live Stats ✅ | CPU/RAM/VRAM ✅ | Notifications ✅ | Voice Viz ✅ | Memory Graph ✅ | Timeline ✅ | Agent Network ✅' },
     { v:'V19', name:'Workflow Engine', desc:'Morning routine, automation chains', pct:5, features:'Daily Briefing ⚠️ | Morning Routine ❌ | News ❌ | Email Auto ❌ | Calendar ❌ | Auto Tasks ❌' },
     { v:'V20', name:'Multi-Agent Collaboration', desc:'Agent pipeline, parallel execution', pct:5, features:'Shared Context ⚠️ | Agent Pipeline ❌ | Parallel Execution ❌' },
