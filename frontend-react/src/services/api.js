@@ -217,4 +217,60 @@ export const weatherAPI = {
   post: (params) => api.post('/weather', params),
 };
 
+// --- AGENT FRAMEWORK ---
+export const frameworkAPI = {
+  getStatus: () => api.get('/framework/status'),
+  // Message Bus
+  busPublish: (topic, sender, data) => {
+    const form = new FormData();
+    form.append('topic', topic);
+    form.append('sender', sender || 'frontend');
+    if (data) form.append('data', JSON.stringify(data));
+    return api.post('/framework/bus/publish', form);
+  },
+  busHistory: (topic, limit = 50) => api.get('/framework/bus/history', { params: { topic, limit } }),
+  busStats: () => api.get('/framework/bus/stats'),
+  // Events
+  eventsEmit: (name, source, data) => {
+    const form = new FormData();
+    form.append('name', name);
+    form.append('source', source || 'frontend');
+    if (data) form.append('data', JSON.stringify(data));
+    return api.post('/framework/events/emit', form);
+  },
+  eventsHistory: (name, limit = 50) => api.get('/framework/events/history', { params: { name, limit } }),
+  eventsStats: () => api.get('/framework/events/stats'),
+  eventsTypes: () => api.get('/framework/events/types'),
+  // Shared Memory
+  memorySet: (key, value, namespace = 'global', ttl = null) => {
+    const form = new FormData();
+    form.append('key', key);
+    form.append('value', JSON.stringify(value));
+    form.append('namespace', namespace);
+    if (ttl) form.append('ttl', ttl);
+    return api.post('/framework/memory/set', form);
+  },
+  memoryGet: (key, namespace = 'global') => api.get(`/framework/memory/get/${key}`, { params: { namespace } }),
+  memoryAll: () => api.get('/framework/memory/all'),
+  memoryNamespace: (ns) => api.get(`/framework/memory/namespace/${ns}`),
+  memoryStats: () => api.get('/framework/memory/stats'),
+  memoryDelete: (key, namespace = 'global') => api.delete(`/framework/memory/${key}`, { params: { namespace } }),
+  // Task Queue
+  queueSubmit: (name, handler, params = {}, priority = 5) => {
+    const form = new FormData();
+    form.append('name', name);
+    form.append('handler', handler);
+    form.append('params', JSON.stringify(params));
+    form.append('priority', priority);
+    return api.post('/framework/queue/submit', form);
+  },
+  queueProcess: () => api.post('/framework/queue/process'),
+  queueProcessAll: () => api.post('/framework/queue/process-all'),
+  queueList: () => api.get('/framework/queue'),
+  queueStats: () => api.get('/framework/queue/stats'),
+  queueHistory: (limit = 50) => api.get('/framework/queue/history', { params: { limit } }),
+  queueTask: (taskId) => api.get(`/framework/queue/${taskId}`),
+  queueCancel: (taskId) => api.delete(`/framework/queue/${taskId}`),
+};
+
 export default api;
