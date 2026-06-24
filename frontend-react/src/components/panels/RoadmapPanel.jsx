@@ -14,7 +14,7 @@ const ROADMAP = [
     { v:'V8', name:'Athena (Knowledge)', desc:'Search, RAG, PDF, research', pct:50, features:'Web Search ✅ | RAG (TF-IDF) ✅ | Deep Research ⚠️ | PDF Reader ⚠️ | Knowledge Graph ❌ | Citations ❌' },
     { v:'V9', name:'Hephaestus (Developer)', desc:'Coding, git, debugging, testing', pct:45, features:'Code Context ✅ | Git (9 cmds) ✅ | Debugging ⚠️ | APIs ⚠️ | Docs ❌ | Testing ❌ | Deploy ❌' },
     { v:'V10', name:'Apollo (Creative)', desc:'Image gen, writing, video, design', pct:30, features:'Image Gen ✅ | Creative Writing ✅ | Video ❌ | UI Design ❌ | Logo ❌ | Presentation ❌' },
-    { v:'V11', name:'Ares (Execution)', desc:'Desktop, keyboard, apps, browser', pct:70, features:'Desktop Control ✅ | Keyboard ✅ | Windows API ✅ | App Mgmt ✅ | Browser ⚠️ | Mouse ❌' },
+    { v:'V11', name:'Ares (Execution)', desc:'Desktop, keyboard, apps, browser, mouse', pct:100, features:'Desktop Control ✅ | Keyboard ✅ | Windows API ✅ | App Mgmt ✅ | Browser ✅ | Mouse ✅' },
     { v:'V12', name:'Argus (Vision)', desc:'OCR, camera, object detection', pct:25, features:'OCR ✅ | Screenshot ⚠️ | Camera ❌ | Object Detection ❌ | Screen AI ❌' },
     { v:'V13', name:'Mnemosyne (Memory Agent)', desc:'Episodic, semantic, preferences', pct:40, features:'User Preferences ✅ | Knowledge Base ⚠️ | Semantic ⚠️ | Episodic ❌ | Compression ❌' },
     { v:'V14', name:'Chronos (Time Agent)', desc:'Reminders, scheduling, tracking', pct:40, features:'Reminders ✅ | Productivity Tracking ✅ | Scheduling ⚠️ | Calendar ❌ | Daily Planning ❌' },
