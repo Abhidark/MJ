@@ -1,8 +1,9 @@
 """
-Zeus — Master Brain v3. Orchestrates all MJ modules.
+Zeus — Master Brain v4. Orchestrates all MJ modules.
 Routes user input to the right module based on confidence scores.
 Supports: intent classification, task planning, error recovery,
-parallel execution, priority routing, module chaining, execution history.
+parallel execution, priority routing, module chaining, execution history,
+circuit breaker, local task breakdown, workflow templates.
 """
 
 import json
@@ -98,6 +99,12 @@ class Zeus:
         self._load_workflows()
         self._intent_cache = {}  # LRU-style cache for recent intents
         self._cache_max = 50
+        self._circuit_breakers: Dict[str, Dict] = {}
+        self._recovery_stats = {
+            "total_executions": 0, "total_errors": 0,
+            "recovery_attempts": 0, "successful_recoveries": 0, "failed_recoveries": 0,
+        }
+        self._register_default_workflows()
 
     # ========================
     # MODULE REGISTRATION
@@ -271,6 +278,159 @@ Keep it minimal — 2-4 steps max. Use null for module if the main LLM should ha
         }
 
     # ========================
+    # LOCAL TASK BREAKDOWN
+    # ========================
+
+    # Rule-based task patterns — works without LLM
+    TASK_PATTERNS = {
+        "search_and_summarize": {
+            "triggers": re.compile(r"(search|find|look up|research).+(and|then|phir|aur).+(summarize|explain|tell|bata)", re.I),
+            "steps": [
+                {"step": 1, "module": "sherlock", "action": "search", "description": "Search for information"},
+                {"step": 2, "module": None, "action": "summarize", "description": "Summarize the results"},
+            ]
+        },
+        "file_and_email": {
+            "triggers": re.compile(r"(create|write|make).+(file|document|report).+(send|email|mail|bhej)", re.I),
+            "steps": [
+                {"step": 1, "module": "hephaestus", "action": "create_file", "description": "Create the file"},
+                {"step": 2, "module": "hermes", "action": "send_email", "description": "Send via email"},
+            ]
+        },
+        "search_and_save": {
+            "triggers": re.compile(r"(search|find|dhundh).+(save|store|note|yaad|likh)", re.I),
+            "steps": [
+                {"step": 1, "module": "sherlock", "action": "search", "description": "Search for data"},
+                {"step": 2, "module": "mnemosyne", "action": "save", "description": "Save to memory"},
+            ]
+        },
+        "calculate_and_explain": {
+            "triggers": re.compile(r"(calculate|compute|solve|hisab).+(explain|samjha|why|kaise)", re.I),
+            "steps": [
+                {"step": 1, "module": "vulcan", "action": "calculate", "description": "Perform calculation"},
+                {"step": 2, "module": None, "action": "explain", "description": "Explain the result"},
+            ]
+        },
+        "open_and_search": {
+            "triggers": re.compile(r"(open|launch|khol).+(search|find|dhundh)", re.I),
+            "steps": [
+                {"step": 1, "module": None, "action": "open_app", "description": "Open the application"},
+                {"step": 2, "module": "sherlock", "action": "search", "description": "Search within"},
+            ]
+        },
+        "remind_after_task": {
+            "triggers": re.compile(r"(after|baad me|then|phir).+(remind|yaad|notification|alert)", re.I),
+            "steps": [
+                {"step": 1, "module": None, "action": "execute_task", "description": "Execute primary task"},
+                {"step": 2, "module": "chronos", "action": "remind", "description": "Set reminder"},
+            ]
+        },
+    }
+
+    def breakdown_task(self, text: str) -> Dict:
+        """
+        Break a complex request into atomic steps using rule-based patterns.
+        Works entirely offline — no LLM required.
+        Returns: {"is_complex": bool, "steps": [...], "pattern": str|None}
+        """
+        text_lower = text.lower().strip()
+
+        # Check against known multi-step patterns
+        for pattern_name, pattern in self.TASK_PATTERNS.items():
+            if pattern["triggers"].search(text_lower):
+                return {
+                    "is_complex": True,
+                    "pattern": pattern_name,
+                    "steps": pattern["steps"],
+                    "original": text,
+                }
+
+        # Detect sequential keywords ("and then", "after that", "phir", "uske baad")
+        seq_markers = re.split(r'\b(and then|then|after that|phir|uske baad|aur phir|fir)\b', text_lower)
+        if len(seq_markers) > 2:
+            steps = []
+            step_num = 0
+            for i, segment in enumerate(seq_markers):
+                segment = segment.strip()
+                if not segment or segment in ("and then", "then", "after that", "phir", "uske baad", "aur phir", "fir"):
+                    continue
+                step_num += 1
+                # Try to find best module for this step
+                route = self.route(segment, "", {})
+                mod_name = route[0].name if route else None
+                steps.append({
+                    "step": step_num,
+                    "module": mod_name,
+                    "action": "auto",
+                    "description": segment.strip(),
+                })
+            if len(steps) > 1:
+                return {"is_complex": True, "pattern": "sequential", "steps": steps, "original": text}
+
+        # Detect comma-separated or "and"-separated parallel tasks
+        and_parts = re.split(r'\b(aur|and|,)\b', text_lower)
+        task_parts = [p.strip() for p in and_parts if p.strip() and p.strip() not in ("aur", "and", ",")]
+        if len(task_parts) >= 3:
+            steps = []
+            for i, part in enumerate(task_parts, 1):
+                route = self.route(part, "", {})
+                mod_name = route[0].name if route else None
+                steps.append({"step": i, "module": mod_name, "action": "auto", "description": part})
+            return {"is_complex": True, "pattern": "parallel", "steps": steps, "original": text}
+
+        # Simple single-step task
+        return {"is_complex": False, "pattern": None, "steps": [], "original": text}
+
+    async def plan_and_execute(self, text: str, context: Dict = None) -> Dict:
+        """Full pipeline: breakdown → plan → execute. Uses local rules first, LLM fallback."""
+        context = context or {}
+
+        # Step 1: Try local breakdown
+        breakdown = self.breakdown_task(text)
+
+        if breakdown["is_complex"] and breakdown["steps"]:
+            # Execute the plan
+            results = []
+            plan_ctx = dict(context)
+            for step in breakdown["steps"]:
+                mod_name = step.get("module")
+                if mod_name and mod_name in self.modules:
+                    mod = self.modules[mod_name]
+                    if mod.enabled:
+                        result = await self.execute_with_recovery(mod, text, plan_ctx)
+                        results.append({"step": step["step"], "module": mod_name, "result": result})
+                        plan_ctx["previous_step"] = result.get("response", "")
+                else:
+                    results.append({"step": step["step"], "module": None, "action": step.get("action"), "result": {"response": "Handled by main LLM"}})
+
+            return {
+                "response": results[-1].get("result", {}).get("response", "") if results else "No steps executed.",
+                "breakdown": breakdown,
+                "plan_results": results,
+                "action": "plan_complete",
+                "method": "local_rules",
+            }
+
+        # Step 2: Fallback to LLM planning if available
+        intent_info = await self.classify_intent(text)
+        if intent_info.get("needs_planning"):
+            plan = await self.plan_task(text, intent_info)
+            if plan and len(plan) > 1:
+                result = await self.execute_plan(plan, text, context)
+                result["method"] = "llm_planning"
+                return result
+
+        # Step 3: Simple single-step — route normally
+        route_result = self.route(text, intent_info.get("intent", ""), context)
+        if route_result:
+            mod, score = route_result
+            result = await self.execute_with_recovery(mod, text, context, score)
+            result["method"] = "direct_route"
+            return result
+
+        return {"response": "No module could handle this request.", "action": "no_match", "method": "none"}
+
+    # ========================
     # SMART ROUTING
     # ========================
 
@@ -340,53 +500,136 @@ Keep it minimal — 2-4 steps max. Use null for module if the main LLM should ha
         }
 
     # ========================
+    # CIRCUIT BREAKER
+    # ========================
+
+    def _check_circuit(self, module_name: str) -> bool:
+        """Check if module circuit is open (too many failures). Returns True if OK to execute."""
+        state = self._circuit_breakers.get(module_name)
+        if not state:
+            return True
+        if state["state"] == "open":
+            # Check if cooldown has passed
+            if time.time() - state["last_failure"] > state["cooldown"]:
+                state["state"] = "half-open"
+                return True
+            return False
+        return True
+
+    def _record_circuit(self, module_name: str, success: bool):
+        """Update circuit breaker after execution."""
+        if module_name not in self._circuit_breakers:
+            self._circuit_breakers[module_name] = {
+                "failures": 0, "successes": 0, "state": "closed",
+                "last_failure": 0, "cooldown": 30, "threshold": 3,
+            }
+        state = self._circuit_breakers[module_name]
+        if success:
+            state["successes"] += 1
+            if state["state"] == "half-open":
+                state["state"] = "closed"
+                state["failures"] = 0
+        else:
+            state["failures"] += 1
+            state["last_failure"] = time.time()
+            if state["failures"] >= state["threshold"]:
+                state["state"] = "open"
+                logger.warning(f"Circuit OPEN for module {module_name} after {state['failures']} failures")
+
+    @staticmethod
+    def _categorize_error(error: Exception) -> Dict:
+        """Categorize an error for better recovery decisions."""
+        err_str = str(error).lower()
+        if any(w in err_str for w in ["timeout", "timed out", "deadline"]):
+            return {"category": "timeout", "retryable": True, "severity": "medium"}
+        if any(w in err_str for w in ["connection", "refused", "unreachable", "network"]):
+            return {"category": "network", "retryable": True, "severity": "high"}
+        if any(w in err_str for w in ["permission", "denied", "forbidden", "unauthorized"]):
+            return {"category": "permission", "retryable": False, "severity": "high"}
+        if any(w in err_str for w in ["not found", "missing", "no such"]):
+            return {"category": "not_found", "retryable": False, "severity": "low"}
+        if any(w in err_str for w in ["memory", "oom", "out of memory"]):
+            return {"category": "resource", "retryable": False, "severity": "critical"}
+        if any(w in err_str for w in ["import", "module", "attribute"]):
+            return {"category": "dependency", "retryable": False, "severity": "medium"}
+        return {"category": "unknown", "retryable": True, "severity": "medium"}
+
+    # ========================
     # EXECUTION WITH RECOVERY
     # ========================
 
     async def execute_module(self, module, text: str, context: Dict = None, confidence: float = 0.0) -> Dict:
-        """Execute a single module with timing and history tracking."""
+        """Execute a single module with timing, circuit breaker, and history tracking."""
         context = context or {}
+
+        # Circuit breaker check
+        if not self._check_circuit(module.name):
+            logger.warning(f"Circuit OPEN — skipping {module.name}")
+            return {
+                "response": f"Module {module.display_name} temporarily unavailable (circuit open).",
+                "data": None, "action": "error",
+                "_meta": {"module": module.name, "error": "circuit_open", "circuit": "open"}
+            }
+
         start = time.time()
         try:
             result = await module.execute_async(text, context)
             duration = (time.time() - start) * 1000
             self._record_execution(module.name, confidence, duration, True, text)
+            self._record_circuit(module.name, True)
+            self._recovery_stats["total_executions"] += 1
             result["_meta"] = {"module": module.name, "confidence": confidence, "duration_ms": round(duration, 1)}
             return result
         except Exception as e:
             duration = (time.time() - start) * 1000
+            err_info = self._categorize_error(e)
             self._record_execution(module.name, confidence, duration, False, text)
-            logger.error(f"Module {module.name} execution error: {e}")
+            self._record_circuit(module.name, False)
+            self._recovery_stats["total_executions"] += 1
+            self._recovery_stats["total_errors"] += 1
+            logger.error(f"Module {module.name} error [{err_info['category']}]: {e}")
             return {
                 "response": f"Module {module.display_name} error: {e}",
                 "data": None, "action": "error",
-                "_meta": {"module": module.name, "error": str(e)}
+                "_meta": {"module": module.name, "error": str(e), "error_info": err_info}
             }
 
     async def execute_with_recovery(self, primary_module, text: str, context: Dict = None, confidence: float = 0.0) -> Dict:
-        """Execute with automatic fallback to next best module on failure."""
+        """Execute with automatic fallback, circuit breaker, and error-aware retry."""
         context = context or {}
         result = await self.execute_module(primary_module, text, context, confidence)
 
         # Check if execution failed
         if result.get("action") == "error" or result.get("_meta", {}).get("error"):
-            logger.info(f"Primary module {primary_module.name} failed, attempting recovery...")
+            err_info = result.get("_meta", {}).get("error_info", {})
+            logger.info(f"Primary module {primary_module.name} failed [{err_info.get('category', '?')}], attempting recovery...")
+            self._recovery_stats["recovery_attempts"] += 1
+
+            # Only attempt fallback if error is potentially recoverable by another module
+            if err_info.get("category") == "permission":
+                result["_meta"]["recovery_attempted"] = False
+                result["_meta"]["skip_reason"] = "permission_error_not_recoverable"
+                return result
 
             # Find fallback modules
             fallbacks = self.route_all(text, "", context, min_confidence=0.2)
             for fallback_mod, fb_score in fallbacks:
                 if fallback_mod.name == primary_module.name:
-                    continue  # Skip the one that failed
+                    continue
+                if not self._check_circuit(fallback_mod.name):
+                    continue  # Skip modules with open circuits
                 logger.info(f"Trying fallback: {fallback_mod.name} (confidence: {fb_score})")
                 fb_result = await self.execute_module(fallback_mod, text, context, fb_score)
                 if fb_result.get("action") != "error":
                     fb_result["_meta"]["recovery"] = True
                     fb_result["_meta"]["original_module"] = primary_module.name
+                    self._recovery_stats["successful_recoveries"] += 1
                     return fb_result
 
-            # All fallbacks failed — return original error with recovery info
+            # All fallbacks failed
             result["_meta"]["recovery_attempted"] = True
             result["_meta"]["recovery_failed"] = True
+            self._recovery_stats["failed_recoveries"] += 1
 
         return result
 
@@ -462,6 +705,96 @@ Keep it minimal — 2-4 steps max. Use null for module if the main LLM should ha
             "steps_completed": len(results),
             "results": results,
             "action": "workflow_complete"
+        }
+
+    def delete_workflow(self, name: str) -> bool:
+        """Delete a workflow by name."""
+        if name in self.workflows:
+            del self.workflows[name]
+            self._save_workflows()
+            return True
+        return False
+
+    def update_workflow(self, name: str, steps: List[Dict] = None, description: str = None) -> bool:
+        """Update an existing workflow."""
+        if name not in self.workflows:
+            return False
+        if steps is not None:
+            self.workflows[name]["steps"] = steps
+        if description is not None:
+            self.workflows[name]["description"] = description
+        self.workflows[name]["updated"] = time.time()
+        self._save_workflows()
+        return True
+
+    def _register_default_workflows(self):
+        """Register built-in workflow templates if they don't exist."""
+        defaults = {
+            "morning_briefing": {
+                "name": "morning_briefing",
+                "description": "Daily morning briefing: weather + news + tasks",
+                "steps": [
+                    {"module": "atlas", "action": "weather", "description": "Get today's weather"},
+                    {"module": "sherlock", "action": "news", "description": "Get latest news"},
+                    {"module": "chronos", "action": "tasks", "description": "Show pending reminders"},
+                ],
+                "created": time.time(),
+            },
+            "research_and_save": {
+                "name": "research_and_save",
+                "description": "Deep research a topic and save to knowledge base",
+                "steps": [
+                    {"module": "sherlock", "action": "deep_search", "description": "Research the topic"},
+                    {"module": "mnemosyne", "action": "save", "description": "Save findings to memory"},
+                ],
+                "created": time.time(),
+            },
+            "code_review": {
+                "name": "code_review",
+                "description": "Analyze code, find issues, suggest fixes",
+                "steps": [
+                    {"module": "hephaestus", "action": "analyze", "description": "Analyze the code"},
+                    {"module": "athena", "action": "suggest", "description": "Suggest improvements"},
+                ],
+                "created": time.time(),
+            },
+            "security_check": {
+                "name": "security_check",
+                "description": "Run security checks on the system",
+                "steps": [
+                    {"module": "sentinel", "action": "scan", "description": "Scan for issues"},
+                    {"module": "argus", "action": "monitor", "description": "Check system health"},
+                ],
+                "created": time.time(),
+            },
+            "creative_pipeline": {
+                "name": "creative_pipeline",
+                "description": "Generate creative content with research backing",
+                "steps": [
+                    {"module": "sherlock", "action": "research", "description": "Research the topic"},
+                    {"module": "apollo", "action": "create", "description": "Generate creative content"},
+                ],
+                "created": time.time(),
+            },
+        }
+        for name, workflow in defaults.items():
+            if name not in self.workflows:
+                self.workflows[name] = workflow
+        self._save_workflows()
+
+    def get_recovery_stats(self) -> Dict:
+        """Get error recovery and circuit breaker statistics."""
+        circuits = {}
+        for name, state in self._circuit_breakers.items():
+            circuits[name] = {
+                "state": state["state"],
+                "failures": state["failures"],
+                "successes": state["successes"],
+                "last_failure": state["last_failure"],
+            }
+        return {
+            "recovery": self._recovery_stats,
+            "circuits": circuits,
         }
 
     # ========================

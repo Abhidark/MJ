@@ -1,0 +1,92 @@
+{
+  "morning_briefing": {
+    "name": "morning_briefing",
+    "description": "Daily morning briefing: weather + news + tasks",
+    "steps": [
+      {
+        "module": "atlas",
+        "action": "weather",
+        "description": "Get today's weather"
+      },
+      {
+        "module": "sherlock",
+        "action": "news",
+        "description": "Get latest news"
+      },
+      {
+        "module": "chronos",
+        "action": "tasks",
+        "description": "Show pending reminders"
+      }
+    ],
+    "created": 1782282593.2588077
+  },
+  "research_and_save": {
+    "name": "research_and_save",
+    "description": "Deep research a topic and save to knowledge base",
+    "steps": [
+      {
+        "module": "sherlock",
+        "action": "deep_search",
+        "description": "Research the topic"
+      },
+      {
+        "module": "mnemosyne",
+        "action": "save",
+        "description": "Save findings to memory"
+      }
+    ],
+    "created": 1782282593.2588077
+  },
+  "code_review": {
+    "name": "code_review",
+    "description": "Analyze code, find issues, suggest fixes",
+    "steps": [
+      {
+        "module": "hephaestus",
+        "action": "analyze",
+        "description": "Analyze the code"
+      },
+      {
+        "module": "athena",
+        "action": "suggest",
+        "description": "Suggest improvements"
+      }
+    ],
+    "created": 1782282593.2588077
+  },
+  "security_check": {
+    "name": "security_check",
+    "description": "Run security checks on the system",
+    "steps": [
+      {
+        "module": "sentinel",
+        "action": "scan",
+        "description": "Scan for issues"
+      },
+      {
+        "module": "argus",
+        "action": "monitor",
+        "description": "Check system health"
+      }
+    ],
+    "created": 1782282593.2588077
+  },
+  "creative_pipeline": {
+    "name": "creative_pipeline",
+    "description": "Generate creative content with research backing",
+    "steps": [
+      {
+        "module": "sherlock",
+        "action": "research",
+        "description": "Research the topic"
+      },
+      {
+        "module": "apollo",
+        "action": "create",
+        "description": "Generate creative content"
+      }
+    ],
+    "created": 1782282593.2588077
+  }
+}

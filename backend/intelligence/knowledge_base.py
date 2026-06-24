@@ -56,13 +56,69 @@ def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> list:
     return chunks
 
 
+def _extract_pdf_metadata(file_path: str) -> Dict:
+    """Extract PDF metadata (title, author, pages, creation date)."""
+    meta = {"title": "", "author": "", "pages": 0, "created": "", "producer": ""}
+    try:
+        import PyPDF2
+        with open(file_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            meta["pages"] = len(reader.pages)
+            info = reader.metadata
+            if info:
+                meta["title"] = str(info.get("/Title", "") or "")
+                meta["author"] = str(info.get("/Author", "") or "")
+                meta["producer"] = str(info.get("/Producer", "") or "")
+                meta["created"] = str(info.get("/CreationDate", "") or "")
+    except Exception:
+        pass
+    return meta
+
+
 def _extract_text_from_pdf(file_path: str) -> List[Dict]:
-    """Extract text from PDF with page numbers for citations.
-    Returns list of {page: int, text: str} dicts.
-    Tries PyPDF2 first, then pdfplumber, then falls back to basic extraction."""
+    """Extract text from PDF with page numbers, tables, and metadata.
+    Returns list of {page: int, text: str, tables: list} dicts.
+    Tries pdfplumber first (best for tables), then PyPDF2, then basic."""
     pages = []
 
-    # Try PyPDF2 first (lightweight, pure Python)
+    # Try pdfplumber first (better for tables and complex layouts)
+    try:
+        import pdfplumber
+        with pdfplumber.open(file_path) as pdf:
+            for i, page in enumerate(pdf.pages):
+                text = page.extract_text() or ""
+                # Extract tables
+                tables = []
+                try:
+                    raw_tables = page.extract_tables()
+                    for t in (raw_tables or []):
+                        if t and len(t) > 1:
+                            # Convert table to readable text
+                            table_text = "\n".join(
+                                " | ".join(str(cell or "") for cell in row)
+                                for row in t
+                            )
+                            tables.append(table_text)
+                except Exception:
+                    pass
+
+                page_text = text.strip()
+                if tables:
+                    page_text += "\n\n[TABLE DATA]\n" + "\n---\n".join(tables)
+
+                if page_text.strip():
+                    pages.append({"page": i + 1, "text": page_text, "tables": len(tables)})
+
+        if pages:
+            total_tables = sum(p.get("tables", 0) for p in pages)
+            logger.info(f"PDF extracted via pdfplumber: {len(pages)} pages, {total_tables} tables from {file_path}")
+            return pages
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"pdfplumber failed for {file_path}: {e}")
+
+    # Fallback: PyPDF2 (lightweight, pure Python, no table support)
     try:
         import PyPDF2
         with open(file_path, "rb") as f:
@@ -70,7 +126,7 @@ def _extract_text_from_pdf(file_path: str) -> List[Dict]:
             for i, page in enumerate(reader.pages):
                 text = page.extract_text() or ""
                 if text.strip():
-                    pages.append({"page": i + 1, "text": text.strip()})
+                    pages.append({"page": i + 1, "text": text.strip(), "tables": 0})
         if pages:
             logger.info(f"PDF extracted via PyPDF2: {len(pages)} pages from {file_path}")
             return pages
@@ -78,22 +134,6 @@ def _extract_text_from_pdf(file_path: str) -> List[Dict]:
         pass
     except Exception as e:
         logger.warning(f"PyPDF2 failed for {file_path}: {e}")
-
-    # Try pdfplumber (better for complex layouts)
-    try:
-        import pdfplumber
-        with pdfplumber.open(file_path) as pdf:
-            for i, page in enumerate(pdf.pages):
-                text = page.extract_text() or ""
-                if text.strip():
-                    pages.append({"page": i + 1, "text": text.strip()})
-        if pages:
-            logger.info(f"PDF extracted via pdfplumber: {len(pages)} pages from {file_path}")
-            return pages
-    except ImportError:
-        pass
-    except Exception as e:
-        logger.warning(f"pdfplumber failed for {file_path}: {e}")
 
     logger.error(f"No PDF library available. Install: pip install PyPDF2 pdfplumber")
     return []
@@ -260,6 +300,15 @@ def ingest_document(filename: str, content: str, metadata: dict = None) -> dict:
     chunk_file = CHUNKS_DIR / f"{doc_id}.json"
     chunk_file.write_text(json.dumps(chunk_data, ensure_ascii=False), encoding="utf-8")
 
+    # Extract PDF metadata if applicable
+    ext = Path(filename).suffix.lower()
+    pdf_meta = {}
+    if ext == ".pdf":
+        try:
+            pdf_meta = _extract_pdf_metadata(content)  # content = file path for PDF
+        except Exception:
+            pass
+
     # Update index
     doc_entry = {
         "id": doc_id,
@@ -268,7 +317,7 @@ def ingest_document(filename: str, content: str, metadata: dict = None) -> dict:
         "chunk_count": len(chunks),
         "char_count": len(clean_text),
         "ingested_at": datetime.now().isoformat(),
-        "metadata": metadata or {}
+        "metadata": {**(metadata or {}), **pdf_meta},
     }
     index["documents"].append(doc_entry)
     index["total_chunks"] = sum(d["chunk_count"] for d in index["documents"])

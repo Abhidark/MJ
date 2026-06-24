@@ -19,7 +19,8 @@ export default function Header({ onEditDashboard, onSettings, onAIFlow, aiFlowOp
   const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const cpu = stats?.cpu_percent ?? '--';
   const ram = stats?.ram_percent ?? '--';
-  const ollamaUp = stats?.ollama_status === 'running';
+  // System is ONLINE if backend is responding (stats exist)
+  const systemUp = !!stats;
 
   return (
     <div className="top-bar">
@@ -47,8 +48,8 @@ export default function Header({ onEditDashboard, onSettings, onAIFlow, aiFlowOp
           <div>RAM</div>
         </div>
         <div className="widget-mini">
-          <div className="val" style={{ color: ollamaUp ? 'var(--success)' : 'var(--error)' }}>
-            {ollamaUp ? 'ONLINE' : 'OFFLINE'}
+          <div className="val" style={{ color: systemUp ? 'var(--success)' : 'var(--error)' }}>
+            {systemUp ? 'ONLINE' : 'OFFLINE'}
           </div>
           <div>SYSTEM</div>
         </div>

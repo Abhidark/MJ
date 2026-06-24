@@ -1,9 +1,16 @@
 {
   "date": "2026-06-24",
   "apps": {
-    "Claude": 21.629218,
-    "Google Chrome": 55.505007,
-    "uvicorn  main:app --host 0.0.0": 10.916289
+    "Claude": 524.7274899999999,
+    "Google Chrome": 314.891099,
+    "uvicorn  main:app --host 0.0.0": 57.046192,
+    "Snipping Tool Overlay": 13.536259999999999,
+    "Command Prompt": 50.010075,
+    "Unknown": 30.403977999999995,
+    "File Explorer": 13.315249999999999,
+    "VS Code": 178.806061,
+    "Windows Default Lock Screen": 1065.860321,
+    "Stopping": 6.873094
   },
-  "session_start": "2026-06-24T09:26:08.954561"
+  "session_start": "2026-06-24T12:43:23.889383"
 }
