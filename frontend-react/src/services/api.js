@@ -57,7 +57,6 @@ export const memoryAPI = {
   getCoreMemory: () => api.get('/core-memory'),
   remember: (fact) => api.post('/remember', { fact }),
   getContextMemory: () => api.get('/context-memory'),
-  // V2 Memory Engine
   getShortTermMemory: () => api.get('/short-term-memory'),
   getShortTermTurns: (n = 10) => api.get(`/short-term-memory/turns?n=${n}`),
   getShortTermSlots: () => api.get('/short-term-memory/slots'),
@@ -104,7 +103,6 @@ export const modelAPI = {
   routePreview: (message) => api.post('/models/route', { message }),
   getProvider: () => api.get('/provider'),
   setProvider: (provider) => api.post('/provider/set', { provider }),
-  // V22 Hybrid AI -- multi-provider
   checkProvider: (name) => api.get(`/provider/check/${name}`),
   smartRoute: (taskType) => api.get(`/provider/smart-route/${taskType}`),
   smartRouteAll: () => api.get('/provider/smart-route'),
@@ -119,7 +117,6 @@ export const zeusAPI = {
   getStats: () => api.get('/zeus/stats'),
   getHistory: (limit = 20) => api.get('/zeus/history', { params: { limit } }),
   route: (message) => api.post('/zeus/route', { message }),
-  // Workflows
   getWorkflows: () => api.get('/zeus/workflows'),
   getWorkflow: (name) => api.get(`/zeus/workflows/${name}`),
   createWorkflow: (name, description, steps) => {
@@ -131,11 +128,9 @@ export const zeusAPI = {
   },
   deleteWorkflow: (name) => api.delete(`/zeus/workflows/${name}`),
   runWorkflow: (name, message) => api.post(`/zeus/workflows/${name}/run`, { message }),
-  // Planning
   plan: (message) => api.post('/zeus/plan', { message }),
   breakdown: (message) => api.post('/zeus/breakdown', { message }),
   smartRoute: (message) => api.post('/zeus/smart-route', { message }),
-  // Recovery
   getRecovery: () => api.get('/zeus/recovery'),
 };
 
@@ -168,16 +163,13 @@ export const knowledgeAPI = {
     });
   },
   deleteDoc: (docId) => api.delete(`/knowledge-base/${docId}`),
-  // Deep Research
   deepResearch: (message) => api.post('/research', { message }),
-  // Knowledge Graph
   graphStats: () => api.get('/knowledge/graph/stats'),
   graphGetAll: (limit = 200) => api.get(`/knowledge/graph?limit=${limit}`),
   graphGetNode: (label) => api.get(`/knowledge/graph/node/${encodeURIComponent(label)}`),
   graphSearch: (q, limit = 10) => api.get(`/knowledge/graph/search?q=${encodeURIComponent(q)}&limit=${limit}`),
   graphFindPath: (from, to) => api.get(`/knowledge/graph/path?from_node=${encodeURIComponent(from)}&to_node=${encodeURIComponent(to)}`),
   graphBuild: () => api.post('/knowledge/graph/build'),
-  // Citations
   getCitations: () => api.get('/citations'),
   getBibliography: (format = 'apa') => api.get(`/citations/bibliography?format=${format}`),
   getCitationStats: () => api.get('/citations/stats'),
@@ -340,7 +332,6 @@ export const weatherAPI = {
 // --- AGENT FRAMEWORK ---
 export const frameworkAPI = {
   getStatus: () => api.get('/framework/status'),
-  // Message Bus
   busPublish: (topic, sender, data) => {
     const form = new FormData();
     form.append('topic', topic);
@@ -350,7 +341,6 @@ export const frameworkAPI = {
   },
   busHistory: (topic, limit = 50) => api.get('/framework/bus/history', { params: { topic, limit } }),
   busStats: () => api.get('/framework/bus/stats'),
-  // Events
   eventsEmit: (name, source, data) => {
     const form = new FormData();
     form.append('name', name);
@@ -361,7 +351,6 @@ export const frameworkAPI = {
   eventsHistory: (name, limit = 50) => api.get('/framework/events/history', { params: { name, limit } }),
   eventsStats: () => api.get('/framework/events/stats'),
   eventsTypes: () => api.get('/framework/events/types'),
-  // Shared Memory
   memorySet: (key, value, namespace = 'global', ttl = null) => {
     const form = new FormData();
     form.append('key', key);
