@@ -1,7 +1,7 @@
 """
-Hermes Module v2 — Notifications, Reminders & Alerts for MJ Assistant.
-Desktop toast notifications (Windows), scheduled reminders with persistent history,
-and reminder management (list, cancel, snooze).
+Hermes Module v3 — Communications Hub for MJ Assistant.
+Desktop notifications, scheduled reminders, and multi-platform messaging:
+Discord, Slack, Telegram, WhatsApp, SMS + Gmail/Outlook email.
 """
 
 import re
@@ -27,8 +27,8 @@ class HermesModule(BaseModule):
     name = "hermes"
     display_name = "Hermes"
     icon = "📡"
-    description = "Notifications & Reminders — desktop alerts, scheduled reminders, notification history"
-    version = "2.0"
+    description = "Communications Hub — notifications, reminders, messaging (Discord/Slack/Telegram/WhatsApp/SMS)"
+    version = "3.0"
     category = "utility"
     enabled = True
 
@@ -36,6 +36,7 @@ class HermesModule(BaseModule):
     _max_history = 100
     _scheduler_running = False
     _scheduler_thread = None
+    _messaging_hub = None
 
     NOTIFICATION_KEYWORDS = re.compile(
         r"\b(notify|notification|alert|desktop\s+alert|toast|popup?\s*notification|"
@@ -61,12 +62,31 @@ class HermesModule(BaseModule):
         re.IGNORECASE,
     )
 
+    MESSAGING_KEYWORDS = re.compile(
+        r"\b(discord|slack|telegram|whatsapp|wa\s+pe|sms|text\s+message|"
+        r"send\s+(?:message|msg)\s+(?:on|to|via)|"
+        r"(?:message|msg)\s+(?:bhej|bhejo|send)\s+(?:on|to|pe|par)|"
+        r"broadcast\s+(?:message|msg)|"
+        r"(?:bhej|bhejo|send)\s+(?:discord|slack|telegram|whatsapp|sms))\b",
+        re.IGNORECASE,
+    )
+
     def __init__(self):
         self._reminders = self._load_reminders()
         self._history = self._load_history()
         self._start_scheduler()
+        # Lazy-load messaging hub
+        try:
+            from modules.hermes.messaging_hub import messaging_hub
+            self._messaging_hub = messaging_hub
+        except Exception as e:
+            logger.warning(f"Messaging hub not available: {e}")
+            self._messaging_hub = None
 
     def can_handle(self, text: str, intent: str, context: dict) -> float:
+        if self.MESSAGING_KEYWORDS.search(text):
+            return 0.96
+
         if self.REMINDER_KEYWORDS.search(text):
             return 0.95
 
@@ -76,7 +96,7 @@ class HermesModule(BaseModule):
         if self.NOTIFICATION_KEYWORDS.search(text):
             return 0.90
 
-        if intent in ("notification", "reminder", "alert"):
+        if intent in ("notification", "reminder", "alert", "messaging", "message"):
             return 0.85
 
         return 0.0
@@ -84,6 +104,10 @@ class HermesModule(BaseModule):
     def execute(self, text: str, context: dict) -> dict:
         """Route to appropriate handler."""
         text_lower = text.lower()
+
+        # Messaging (Discord, Slack, Telegram, WhatsApp, SMS)
+        if self.MESSAGING_KEYWORDS.search(text):
+            return self._handle_messaging(text)
 
         # Reminder management (cancel, list, snooze)
         if self.HISTORY_KEYWORDS.search(text):
@@ -107,6 +131,80 @@ class HermesModule(BaseModule):
 
         # Fallback
         return self._send_instant(text)
+
+    # ========================
+    # MESSAGING
+    # ========================
+
+    def _handle_messaging(self, text: str) -> dict:
+        """Route messaging requests to the messaging hub."""
+        if not self._messaging_hub:
+            return {
+                "response": "Messaging hub is not available. Check backend logs.",
+                "data": None, "action": "error",
+            }
+
+        hub = self._messaging_hub
+        platform = hub.detect_platform(text)
+
+        if not platform:
+            # Check for broadcast
+            if re.search(r"\bbroadcast\b", text, re.IGNORECASE):
+                message = hub.extract_message(text)
+                # Run async in sync context
+                import asyncio
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        import concurrent.futures
+                        with concurrent.futures.ThreadPoolExecutor() as pool:
+                            result = pool.submit(asyncio.run, hub.broadcast(message)).result()
+                    else:
+                        result = loop.run_until_complete(hub.broadcast(message))
+                except RuntimeError:
+                    result = asyncio.run(hub.broadcast(message))
+
+                return {
+                    "response": f"Broadcast sent to {result['sent']} platform(s), {result['failed']} failed.",
+                    "data": result, "action": "broadcast_sent",
+                }
+
+            enabled = hub.get_enabled_platforms()
+            if enabled:
+                return {
+                    "response": f"Which platform? Available: {', '.join(enabled)}. Say 'send on discord: your message'",
+                    "data": {"enabled": enabled}, "action": "platform_needed",
+                }
+            return {
+                "response": "No messaging platforms configured. Use Settings to set up Discord, Slack, Telegram, WhatsApp, or SMS.",
+                "data": None, "action": "not_configured",
+            }
+
+        message = hub.extract_message(text)
+
+        # Run async send
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    result = pool.submit(asyncio.run, hub.send(platform, message)).result()
+            else:
+                result = loop.run_until_complete(hub.send(platform, message))
+        except RuntimeError:
+            result = asyncio.run(hub.send(platform, message))
+
+        if result.get("success"):
+            return {
+                "response": f"Message sent to {platform.capitalize()}: \"{message[:80]}\"",
+                "data": result, "action": "message_sent",
+            }
+        else:
+            return {
+                "response": f"Failed to send to {platform.capitalize()}: {result.get('error', 'Unknown error')}",
+                "data": result, "action": "error",
+            }
 
     # ========================
     # INSTANT NOTIFICATION
@@ -416,19 +514,27 @@ $notify.Dispose()
     # ========================
 
     def get_system_prompt_addition(self) -> str:
+        platforms = []
+        if self._messaging_hub:
+            platforms = self._messaging_hub.get_enabled_platforms()
+        platform_str = f" Messaging enabled on: {', '.join(platforms)}." if platforms else ""
         return (
-            "You can send desktop notifications and set timed reminders. "
-            "When the user asks to be reminded in X minutes/hours, extract the time delay and message. "
-            "You can also list, cancel, and snooze reminders. "
-            "Example: 'remind me in 30 minutes to take a break' or 'cancel reminder'."
+            "You can send desktop notifications, set timed reminders, and send messages "
+            "across platforms (Discord, Slack, Telegram, WhatsApp, SMS).{platform_str} "
+            "Examples: 'remind me in 30 minutes to take a break', 'send on discord: server is live', "
+            "'broadcast message: deployment done', 'cancel reminder'."
         )
 
     def get_context_for_llm(self, text: str, context: dict) -> str:
         pending = len([r for r in self._reminders if r["status"] == "pending"])
-        ctx = "[Hermes Notification Module] "
+        ctx = "[Hermes Communications Module v3] "
         if pending:
             ctx += f"{pending} pending reminder(s). "
-        ctx += "User wants notification/reminder action."
+        if self._messaging_hub:
+            enabled = self._messaging_hub.get_enabled_platforms()
+            if enabled:
+                ctx += f"Messaging platforms: {', '.join(enabled)}. "
+        ctx += "User wants notification/reminder/messaging action."
         return ctx
 
     def get_settings(self) -> dict:

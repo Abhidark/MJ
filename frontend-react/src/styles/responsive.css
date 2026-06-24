@@ -1,0 +1,165 @@
+/* ============================================================
+   RESPONSIVE -- consolidated media queries for all breakpoints
+   Supplements component-level @media rules in individual CSS.
+   ============================================================ */
+
+/* ── Accessibility: reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .particles-canvas,
+  .scanline-overlay { display: none; }
+  .orb-ring, .orb-ring-2 { animation: none; }
+}
+
+/* ── Large screens (<=1600px) ── */
+@media (max-width: 1600px) {
+  .content-row {
+    gap: 8px;
+  }
+}
+
+/* ── Medium screens (<=1200px) ── */
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 60px !important;
+  }
+  .sidebar .hud-label,
+  .sidebar .hud-value,
+  .sidebar .mini-calendar,
+  .sidebar .focus-timer,
+  .sidebar .nav-label {
+    display: none;
+  }
+  .sidebar .nav-icon {
+    font-size: 18px;
+    margin: 0;
+  }
+  .sidebar .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+  .main-content {
+    margin-left: 60px !important;
+  }
+}
+
+/* ── Small screens (<=900px) ── */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 0 !important;
+    overflow: hidden;
+  }
+  .main-content {
+    margin-left: 0 !important;
+  }
+  .top-bar {
+    padding: 6px 10px;
+  }
+  .top-bar .mj-logo {
+    font-size: 14px;
+  }
+}
+
+/* ── Tablet / Mobile (<=768px) ── */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+  }
+  #root {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .content-row {
+    flex-direction: column;
+  }
+
+  /* Touch-friendly targets */
+  button, .nav-item, .qa-btn, .zeus-model {
+    min-height: 44px;
+  }
+
+  /* Header compact */
+  .top-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+  .top-bar-right {
+    gap: 8px;
+  }
+
+  /* Orb responsive */
+  .orb-section {
+    padding: 10px;
+  }
+
+  /* Chat panel full-width */
+  .chat-panel {
+    width: 100% !important;
+    max-width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  .chat-history {
+    width: 100% !important;
+    position: fixed;
+    left: 0; top: 0;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .chat-history.open {
+    transform: translateX(0);
+  }
+}
+
+/* ── Small mobile (<=480px) ── */
+@media (max-width: 480px) {
+  .top-bar .weather-slot,
+  .top-bar .cpu-mini,
+  .top-bar .ram-mini {
+    display: none;
+  }
+  .top-bar .mj-logo {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  .dash-card {
+    padding: 8px;
+  }
+  .dash-card-title {
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .sysmon-gauge svg {
+    width: 50px;
+    height: 50px;
+  }
+  .qa-btn {
+    padding: 6px 10px;
+    font-size: 9px;
+  }
+  .orb-container {
+    width: 180px;
+    height: 180px;
+  }
+  .orb {
+    width: 180px;
+    height: 180px;
+  }
+  .orb-ring {
+    top: -12px; left: -12px;
+    width: 204px; height: 204px;
+  }
+  .orb-ring-2 {
+    top: -20px; left: -20px;
+    width: 220px; height: 220px;
+  }
+}

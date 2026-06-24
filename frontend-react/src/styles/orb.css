@@ -1,0 +1,292 @@
+/* ═══════════════════════════════════════════════
+   ORB — ported from index.html
+   ═══════════════════════════════════════════════ */
+
+/* ── Orb Section Container ── */
+.orb-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  padding: 20px;
+}
+
+/* ── Orb Container ── */
+.orb-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  cursor: pointer;
+}
+
+/* Rotating rings */
+.orb-ring {
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  animation: ring-rotate 25s linear infinite;
+  pointer-events: none;
+}
+
+.orb-ring::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: rgba(0, 212, 255, 0.9);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.7), 0 0 30px rgba(0, 150, 255, 0.4);
+}
+
+.orb-ring-2 {
+  position: absolute;
+  top: -35px;
+  left: -35px;
+  width: 390px;
+  height: 390px;
+  border-radius: 50%;
+  border: 1px dashed rgba(0, 212, 255, 0.08);
+  animation: ring-rotate 35s linear infinite reverse;
+  pointer-events: none;
+}
+
+@keyframes ring-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* Orb sphere */
+.orb {
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.orb-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+/* ── Status Area ── */
+.orb-status-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+}
+
+/* State indicator */
+.orb-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orb-status .state {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: orbBlink 2s ease-in-out infinite;
+}
+
+.orb-status .state.idle {
+  background: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+}
+
+.orb-status .state.listen {
+  background: #00ff88;
+  box-shadow: 0 0 10px #00ff88;
+}
+
+.orb-status .state.think {
+  background: #ffd900;
+  box-shadow: 0 0 10px #ffd900;
+}
+
+.orb-status .state.speak {
+  background: #9b59b6;
+  box-shadow: 0 0 10px #9b59b6;
+}
+
+.orb-status .state.err {
+  background: #ff3344;
+  box-shadow: 0 0 10px #ff3344;
+}
+
+@keyframes orbBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.state-text {
+  font-weight: 600;
+}
+
+/* ── Mic Status ── */
+.orb-mic-status {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  max-width: 320px;
+  text-align: center;
+  min-height: 18px;
+  font-weight: 400;
+}
+
+/* ── Voice Wave ── */
+.voice-wave {
+  width: 60px;
+  height: 8px;
+  margin: 4px auto 0;
+  border-radius: 4px;
+  background: rgba(0, 180, 255, 0.08);
+  transition: all 0.3s ease;
+}
+
+.voice-wave.active {
+  background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.3), transparent);
+  animation: waveAnim 1.5s ease-in-out infinite;
+}
+
+.voice-wave.wake-active {
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.4), transparent);
+  animation: waveAnim 0.8s ease-in-out infinite;
+}
+
+.voice-wave.processing {
+  background: linear-gradient(90deg, transparent, rgba(255, 170, 0, 0.4), transparent);
+  animation: waveAnim 0.5s ease-in-out infinite;
+}
+
+@keyframes waveAnim {
+  0%, 100% { transform: scaleX(0.6); opacity: 0.4; }
+  50% { transform: scaleX(1); opacity: 1; }
+}
+
+/* ── Mic Toggle Button ── */
+.orb-mic-btn {
+  margin-top: 8px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(0, 150, 255, 0.03);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  letter-spacing: 1px;
+}
+
+.orb-mic-btn:hover {
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.orb-mic-btn.recording {
+  background: rgba(0, 255, 136, 0.08);
+  border-color: #00ff88;
+  color: #00ff88;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
+  animation: mic-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes mic-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 255, 136, 0.15); }
+  50% { box-shadow: 0 0 25px rgba(0, 255, 136, 0.25); }
+}
+
+/* ── Orb Alert ── */
+.orb-alert {
+  margin-top: 8px;
+  max-width: 360px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ff3b30;
+  text-shadow: 0 0 8px rgba(255, 59, 48, 0.5);
+  min-height: 0;
+  opacity: 0;
+  transform: translateY(-5px) scale(0.95);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+  line-height: 1.4;
+  padding: 0;
+}
+
+.orb-alert.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  padding: 6px 14px;
+  background: rgba(255, 59, 48, 0.08);
+  border: 1px solid rgba(255, 59, 48, 0.25);
+  border-radius: 8px;
+  animation: orbAlertPulse 2s ease-in-out infinite;
+}
+
+.orb-alert.success {
+  color: #00ff88;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  background: rgba(0, 255, 136, 0.06);
+  border-color: rgba(0, 255, 136, 0.2);
+  animation: none;
+}
+
+@keyframes orbAlertPulse {
+  0%, 100% { border-color: rgba(255, 59, 48, 0.25); box-shadow: none; }
+  50% { border-color: rgba(255, 59, 48, 0.5); box-shadow: 0 0 15px rgba(255, 59, 48, 0.15); }
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .orb-container {
+    width: 220px;
+    height: 220px;
+  }
+  .orb {
+    width: 220px;
+    height: 220px;
+  }
+  .orb-ring {
+    top: -15px;
+    left: -15px;
+    width: 250px;
+    height: 250px;
+  }
+  .orb-ring-2 {
+    top: -25px;
+    left: -25px;
+    width: 270px;
+    height: 270px;
+  }
+}

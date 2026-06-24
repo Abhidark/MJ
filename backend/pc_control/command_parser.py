@@ -183,5 +183,61 @@ def parse_command(text: str) -> dict | None:
     if any(w in lower for w in ["previous song", "pichla gaana", "previous track"]):
         return {"action": "media", "target": "prev", "name": "previous track"}
 
+    # ---- MOUSE CONTROL ----
+    if any(w in lower for w in ["mouse position", "cursor position", "mouse kahan hai", "cursor kahan"]):
+        return {"action": "mouse", "mouse_action": "position", "params": {}, "name": "mouse position"}
+
+    # Mouse click
+    click_match = re.search(r"(?:click|click karo|mouse click)\s*(?:at\s*)?(\d+)\s*[,x]\s*(\d+)", lower)
+    if click_match:
+        return {"action": "mouse", "mouse_action": "click", "params": {"x": int(click_match.group(1)), "y": int(click_match.group(2))}, "name": "mouse click"}
+    if any(w in lower for w in ["click", "click karo", "mouse click"]) and "double" not in lower and "right" not in lower:
+        return {"action": "mouse", "mouse_action": "click", "params": {}, "name": "mouse click"}
+
+    # Double click
+    if any(w in lower for w in ["double click", "double-click", "double click karo"]):
+        return {"action": "mouse", "mouse_action": "double_click", "params": {}, "name": "double click"}
+
+    # Right click
+    if any(w in lower for w in ["right click", "right-click", "right click karo"]):
+        return {"action": "mouse", "mouse_action": "right_click", "params": {}, "name": "right click"}
+
+    # Mouse move
+    move_match = re.search(r"(?:move mouse|mouse move|cursor move|move cursor)\s*(?:to\s*)?(\d+)\s*[,x]\s*(\d+)", lower)
+    if move_match:
+        return {"action": "mouse", "mouse_action": "move", "params": {"x": int(move_match.group(1)), "y": int(move_match.group(2))}, "name": "mouse move"}
+
+    # Scroll
+    if any(w in lower for w in ["scroll up", "upar scroll", "scroll upar", "page up"]):
+        return {"action": "mouse", "mouse_action": "scroll_up", "params": {"amount": 5}, "name": "scroll up"}
+    if any(w in lower for w in ["scroll down", "niche scroll", "scroll niche", "page down"]):
+        return {"action": "mouse", "mouse_action": "scroll_down", "params": {"amount": 5}, "name": "scroll down"}
+
+    # ---- BROWSER CONTROL ----
+    if any(w in lower for w in ["new tab", "naya tab", "tab kholo", "open new tab"]):
+        return {"action": "browser", "browser_action": "new_tab", "params": {}, "name": "new tab"}
+    if any(w in lower for w in ["close tab", "tab band", "tab close", "tab band karo"]):
+        return {"action": "browser", "browser_action": "close_tab", "params": {}, "name": "close tab"}
+    if any(w in lower for w in ["next tab", "agla tab", "tab switch", "switch tab"]):
+        return {"action": "browser", "browser_action": "next_tab", "params": {}, "name": "next tab"}
+    if any(w in lower for w in ["previous tab", "pichla tab", "prev tab"]):
+        return {"action": "browser", "browser_action": "prev_tab", "params": {}, "name": "previous tab"}
+    if any(w in lower for w in ["refresh", "reload", "page refresh", "refresh karo", "reload karo"]):
+        return {"action": "browser", "browser_action": "refresh", "params": {}, "name": "refresh"}
+    if any(w in lower for w in ["go back", "back jao", "piche jao", "browser back"]):
+        return {"action": "browser", "browser_action": "go_back", "params": {}, "name": "go back"}
+    if any(w in lower for w in ["go forward", "aage jao", "forward jao", "browser forward"]):
+        return {"action": "browser", "browser_action": "go_forward", "params": {}, "name": "go forward"}
+    if any(w in lower for w in ["zoom in", "zoom badha", "bada karo"]):
+        return {"action": "browser", "browser_action": "zoom_in", "params": {}, "name": "zoom in"}
+    if any(w in lower for w in ["zoom out", "zoom kam", "chota karo"]):
+        return {"action": "browser", "browser_action": "zoom_out", "params": {}, "name": "zoom out"}
+    if any(w in lower for w in ["fullscreen", "full screen", "poora screen"]):
+        return {"action": "browser", "browser_action": "fullscreen", "params": {}, "name": "fullscreen"}
+    if any(w in lower for w in ["reopen tab", "last tab", "closed tab", "band tab kholo"]):
+        return {"action": "browser", "browser_action": "reopen_tab", "params": {}, "name": "reopen tab"}
+    if any(w in lower for w in ["devtools", "dev tools", "inspect", "developer tools", "f12"]):
+        return {"action": "browser", "browser_action": "devtools", "params": {}, "name": "devtools"}
+
     # No command detected
     return None

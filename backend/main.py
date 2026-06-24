@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, RedirectResponse, JSONResponse
+from fastapi.responses import StreamingResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from datetime import datetime
@@ -44,7 +44,14 @@ from pc_control.image_gen import parse_image_command, handle_image_command
 from human_layer.auto_memory import auto_remember
 
 # Intelligence Layer
-from intelligence.web_browser import deep_search, format_search_for_llm, needs_web_search_v2
+from intelligence.web_browser import deep_search, deep_research, format_search_for_llm, format_research_for_llm, needs_web_search_v2
+from intelligence.knowledge_graph import knowledge_graph
+from intelligence.citations import citation_manager
+from intelligence.constitutional_ai import constitutional_ai
+from intelligence.reflection_engine import reflection_engine
+from intelligence.learning_engine import learning_engine
+from intelligence.vision_engine import vision_engine
+from intelligence.sentinel_engine import sentinel_engine
 from intelligence.knowledge_base import (
     ingest_document, search_knowledge, format_kb_context,
     get_kb_stats, delete_document, needs_kb_search
@@ -75,6 +82,7 @@ from modules.hephaestus.module import HephaestusModule
 from modules.apollo.module import ApolloModule
 from modules.argus.module import ArgusModule
 from modules.hermes.module import HermesModule
+from modules.hermes.messaging_hub import messaging_hub
 from modules.prometheus.module import PrometheusModule
 from modules.sentinel.module import SentinelModule
 from modules.atlas.module import AtlasModule
@@ -97,6 +105,12 @@ from intelligence.groq_provider import is_groq_available, stream_groq_chat, get_
 from plugins.plugin_manager import load_plugins, match_plugin, run_plugin, notify_plugins, parse_plugin_command, handle_plugin_management, get_plugin_list
 from self_healer.error_tracker import log_error, get_recent_errors, get_error_stats, clear_errors
 from self_healer.auto_fixer import attempt_fix, analyze_error
+
+# Agent Framework Core
+from core.message_bus import message_bus
+from core.event_system import event_system
+from core.shared_memory import shared_memory
+from core.task_queue import task_queue
 from self_healer.health_monitor import check_health
 from self_healer.middleware import SelfHealingMiddleware
 from self_healer.alert_system import (
@@ -134,11 +148,15 @@ for _cls in _module_classes:
     except Exception:
         pass  # Module failed to init — skip silently
 
+# Emit startup event
+event_system.emit("system.startup", "zeus", {"modules_loaded": len(zeus.modules)})
+
 # Load MJ system prompt from file
 MJ_PROMPT_FILE = Path(__file__).parent / "human_layer" / "prompts" / "mj_system_prompt.txt"
 MJ_BASE_PROMPT = MJ_PROMPT_FILE.read_text(encoding="utf-8") if MJ_PROMPT_FILE.exists() else ""
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+REACT_DIST_DIR = Path(__file__).parent.parent / "frontend-react" / "dist"
 
 # Load plugins and start background services on boot
 load_plugins()
@@ -394,9 +412,30 @@ async def execute_pc_command(req: CommandRequest):
     """Direct PC command execution endpoint."""
     cmd = parse_command(req.command)
     if cmd:
+        action = cmd.get("action", "")
+        if action == "mouse":
+            from pc_control.mouse_control import execute_mouse_command
+            return execute_mouse_command(cmd)
+        elif action == "browser":
+            from pc_control.browser_control import execute_browser_command
+            return execute_browser_command(cmd)
         result = execute_command(cmd)
         return result
     return {"success": False, "message": "Command samajh nahi aaya."}
+
+
+@app.post("/mouse")
+async def mouse_control_endpoint(req: dict):
+    """Direct mouse control API."""
+    from pc_control.mouse_control import execute_mouse_command
+    return execute_mouse_command(req)
+
+
+@app.post("/browser")
+async def browser_control_endpoint(req: dict):
+    """Direct browser control API."""
+    from pc_control.browser_control import execute_browser_command
+    return execute_browser_command(req)
 
 
 @app.get("/system-stats")
@@ -421,6 +460,59 @@ async def top_processes_stats():
 async def list_reminders():
     """Get active reminders."""
     return {"reminders": get_active_reminders()}
+
+
+# ===== HERMES MESSAGING API =====
+
+@app.get("/hermes/messaging/config")
+async def hermes_msg_config():
+    """Get messaging config (sensitive fields masked)."""
+    return messaging_hub.get_config()
+
+@app.post("/hermes/messaging/config/{platform}")
+async def hermes_msg_update_config(platform: str, settings: dict):
+    """Update messaging config for a platform."""
+    return messaging_hub.update_config(platform, settings)
+
+@app.post("/hermes/messaging/send")
+async def hermes_msg_send(req: ChatRequest):
+    """Send message. Body: {message: "platform: your message"} or detect from text."""
+    text = req.message
+    platform = messaging_hub.detect_platform(text)
+    if not platform:
+        return {"success": False, "error": "No platform detected. Include discord/slack/telegram/whatsapp/sms in your message."}
+    message = messaging_hub.extract_message(text)
+    return await messaging_hub.send(platform, message)
+
+@app.post("/hermes/messaging/send/{platform}")
+async def hermes_msg_send_platform(platform: str, req: ChatRequest):
+    """Send message to specific platform."""
+    return await messaging_hub.send(platform, req.message)
+
+@app.post("/hermes/messaging/broadcast")
+async def hermes_msg_broadcast(req: ChatRequest):
+    """Broadcast message to all enabled platforms."""
+    return await messaging_hub.broadcast(req.message)
+
+@app.get("/hermes/messaging/history")
+async def hermes_msg_history(limit: int = 50, platform: str = None):
+    """Get messaging history."""
+    return {"history": messaging_hub.get_history(limit, platform)}
+
+@app.get("/hermes/messaging/stats")
+async def hermes_msg_stats():
+    """Get messaging statistics."""
+    return messaging_hub.get_stats()
+
+@app.get("/hermes/messaging/platforms")
+async def hermes_msg_platforms():
+    """Get enabled messaging platforms."""
+    return {"platforms": messaging_hub.get_enabled_platforms()}
+
+@app.post("/hermes/messaging/test/{platform}")
+async def hermes_msg_test(platform: str):
+    """Send a test message to a platform."""
+    return await messaging_hub.send(platform, "Test message from MJ Assistant!")
 
 
 @app.get("/health")
@@ -793,6 +885,731 @@ async def zeus_parallel_execute(req: ChatRequest):
         return {"results": [], "message": "No modules matched."}
     results = await zeus.execute_parallel(matches, req.message, {})
     return {"results": results}
+
+
+# ===== ZEUS ADVANCED API =====
+
+@app.get("/zeus/workflows")
+async def zeus_list_workflows():
+    """List all registered workflows."""
+    return {"workflows": zeus.list_workflows()}
+
+@app.get("/zeus/workflows/{name}")
+async def zeus_get_workflow(name: str):
+    """Get workflow details."""
+    wf = zeus.get_workflow(name)
+    if not wf:
+        return {"error": "Workflow not found"}
+    return wf
+
+@app.post("/zeus/workflows")
+async def zeus_create_workflow(name: str = Form(...), description: str = Form(""),
+                                steps: str = Form("[]")):
+    """Create a new workflow."""
+    step_list = json.loads(steps)
+    zeus.register_workflow(name, step_list, description)
+    return {"success": True, "name": name}
+
+@app.put("/zeus/workflows/{name}")
+async def zeus_update_workflow(name: str, description: str = Form(None), steps: str = Form(None)):
+    """Update an existing workflow."""
+    step_list = json.loads(steps) if steps else None
+    ok = zeus.update_workflow(name, step_list, description)
+    return {"success": ok}
+
+@app.delete("/zeus/workflows/{name}")
+async def zeus_delete_workflow(name: str):
+    """Delete a workflow."""
+    ok = zeus.delete_workflow(name)
+    return {"success": ok}
+
+@app.post("/zeus/workflows/{name}/run")
+async def zeus_run_workflow(name: str, req: ChatRequest):
+    """Execute a named workflow."""
+    result = await zeus.run_workflow(name, req.message, {})
+    return result
+
+@app.post("/zeus/plan")
+async def zeus_plan(req: ChatRequest):
+    """Plan and execute a complex task (local rules + LLM fallback)."""
+    result = await zeus.plan_and_execute(req.message, {})
+    return result
+
+@app.post("/zeus/breakdown")
+async def zeus_breakdown(req: ChatRequest):
+    """Break a task into steps without executing (dry run)."""
+    breakdown = zeus.breakdown_task(req.message)
+    return breakdown
+
+@app.post("/zeus/smart-route")
+async def zeus_smart_route(req: ChatRequest):
+    """Full intelligent routing: intent → modules → plan check."""
+    result = await zeus.smart_route(req.message, {})
+    return result
+
+@app.get("/zeus/recovery")
+async def zeus_recovery_stats():
+    """Get error recovery and circuit breaker stats."""
+    return zeus.get_recovery_stats()
+
+
+# ===== AGENT FRAMEWORK API =====
+
+# --- Message Bus ---
+@app.post("/framework/bus/publish")
+async def bus_publish(topic: str = Form(...), sender: str = Form("api"), data: str = Form(None)):
+    """Publish a message to the bus."""
+    payload = json.loads(data) if data else None
+    msg = message_bus.publish(topic, sender, payload)
+    return msg.to_dict()
+
+@app.get("/framework/bus/history")
+async def bus_history(topic: str = None, limit: int = 50):
+    """Get message bus history."""
+    return {"messages": message_bus.get_history(topic, limit)}
+
+@app.get("/framework/bus/stats")
+async def bus_stats():
+    """Get message bus statistics."""
+    return message_bus.get_stats()
+
+# --- Event System ---
+@app.post("/framework/events/emit")
+async def events_emit(name: str = Form(...), source: str = Form("api"), data: str = Form(None)):
+    """Emit a system event."""
+    payload = json.loads(data) if data else None
+    evt = event_system.emit(name, source, payload)
+    return evt.to_dict()
+
+@app.get("/framework/events/history")
+async def events_history(name: str = None, limit: int = 50):
+    """Get event history."""
+    return {"events": event_system.get_history(name, limit)}
+
+@app.get("/framework/events/stats")
+async def events_stats():
+    """Get event system statistics."""
+    return event_system.get_stats()
+
+@app.get("/framework/events/types")
+async def events_types():
+    """List all known event types."""
+    return {"events": event_system.list_events()}
+
+# --- Shared Memory ---
+@app.post("/framework/memory/set")
+async def memory_set(key: str = Form(...), value: str = Form(...),
+                     namespace: str = Form("global"), ttl: int = Form(None)):
+    """Set a shared memory value."""
+    try:
+        val = json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        val = value
+    shared_memory.set(key, val, ttl=ttl if ttl and ttl > 0 else None, namespace=namespace)
+    return {"success": True, "key": key, "namespace": namespace}
+
+@app.get("/framework/memory/get/{key}")
+async def memory_get(key: str, namespace: str = "global"):
+    """Get a shared memory value."""
+    val = shared_memory.get(key, namespace=namespace)
+    return {"key": key, "value": val, "found": val is not None}
+
+@app.get("/framework/memory/all")
+async def memory_all():
+    """Get all shared memory entries."""
+    return {"memory": shared_memory.get_all()}
+
+@app.get("/framework/memory/namespace/{namespace}")
+async def memory_namespace(namespace: str):
+    """Get all keys in a namespace."""
+    return {"namespace": namespace, "data": shared_memory.get_namespace(namespace)}
+
+@app.get("/framework/memory/stats")
+async def memory_stats():
+    """Get shared memory statistics."""
+    return shared_memory.stats()
+
+@app.delete("/framework/memory/{key}")
+async def memory_delete(key: str, namespace: str = "global"):
+    """Delete a shared memory key."""
+    deleted = shared_memory.delete(key, namespace=namespace)
+    return {"success": deleted}
+
+# --- Task Queue ---
+@app.post("/framework/queue/submit")
+async def queue_submit(name: str = Form(...), handler: str = Form(...),
+                       params: str = Form("{}"), priority: int = Form(5),
+                       submitted_by: str = Form("api")):
+    """Submit a task to the queue."""
+    p = json.loads(params)
+    task = task_queue.submit(name, handler, p, priority, submitted_by=submitted_by)
+    return task.to_dict()
+
+@app.post("/framework/queue/process")
+async def queue_process():
+    """Process the next task in the queue."""
+    result = await task_queue.process_next()
+    if not result:
+        return {"message": "Queue is empty."}
+    return result
+
+@app.post("/framework/queue/process-all")
+async def queue_process_all():
+    """Process all tasks in the queue."""
+    results = await task_queue.process_all()
+    return {"processed": len(results), "results": results}
+
+@app.get("/framework/queue")
+async def queue_list():
+    """Get pending tasks in the queue."""
+    return {"queue": task_queue.get_queue()}
+
+@app.get("/framework/queue/stats")
+async def queue_stats():
+    """Get task queue statistics."""
+    return task_queue.get_stats()
+
+@app.get("/framework/queue/history")
+async def queue_history(limit: int = 50):
+    """Get completed task history."""
+    return {"history": task_queue.get_history(limit)}
+
+@app.get("/framework/queue/{task_id}")
+async def queue_task(task_id: str):
+    """Get task details by ID."""
+    task = task_queue.get_task(task_id)
+    if not task:
+        return {"error": "Task not found"}
+    return task
+
+@app.delete("/framework/queue/{task_id}")
+async def queue_cancel(task_id: str):
+    """Cancel a pending task."""
+    cancelled = task_queue.cancel(task_id)
+    return {"success": cancelled}
+
+# --- Framework Overview ---
+@app.get("/framework/status")
+async def framework_status():
+    """Get full agent framework status."""
+    return {
+        "message_bus": message_bus.get_stats(),
+        "event_system": event_system.get_stats(),
+        "shared_memory": shared_memory.stats(),
+        "task_queue": task_queue.get_stats(),
+    }
+
+
+# ===== KNOWLEDGE GRAPH & CITATIONS API =====
+
+@app.get("/knowledge/graph/stats")
+async def kg_stats():
+    """Get knowledge graph statistics."""
+    return knowledge_graph.get_stats()
+
+@app.get("/knowledge/graph")
+async def kg_get_all(limit: int = 200):
+    """Get full graph data for visualization."""
+    return knowledge_graph.get_all(limit)
+
+@app.get("/knowledge/graph/node/{label}")
+async def kg_get_node(label: str):
+    """Get a node and its connections."""
+    node = knowledge_graph.get_node(label)
+    if not node:
+        return {"error": "Node not found"}
+    return node
+
+@app.get("/knowledge/graph/search")
+async def kg_search(q: str, limit: int = 10):
+    """Search nodes in the knowledge graph."""
+    return {"results": knowledge_graph.search_nodes(q, limit)}
+
+@app.get("/knowledge/graph/path")
+async def kg_find_path(from_node: str, to_node: str):
+    """Find shortest path between two nodes."""
+    path = knowledge_graph.find_path(from_node, to_node)
+    if not path:
+        return {"path": None, "message": "No path found"}
+    return {"path": path, "length": len(path)}
+
+@app.post("/knowledge/graph/build")
+async def kg_build():
+    """Build/rebuild knowledge graph from all KB documents."""
+    result = knowledge_graph.build_from_kb()
+    return result
+
+@app.post("/knowledge/graph/add")
+async def kg_add_node(label: str = Form(...), entity_type: str = Form("concept"),
+                      source: str = Form("")):
+    """Manually add a node."""
+    node_id = knowledge_graph.add_node(label, entity_type, source)
+    return {"success": True, "node_id": node_id}
+
+@app.post("/knowledge/graph/connect")
+async def kg_add_edge(from_label: str = Form(...), to_label: str = Form(...),
+                      relation: str = Form("relates_to")):
+    """Add an edge between two nodes."""
+    knowledge_graph.add_edge(from_label, to_label, relation)
+    return {"success": True}
+
+@app.post("/research")
+async def research_endpoint(req: ChatRequest):
+    """Deep multi-source research with citations."""
+    result = await deep_research(req.message, max_sources=5, scrape_top=3)
+    return result
+
+# --- Citations ---
+@app.get("/citations")
+async def citations_list():
+    """Get current session citations."""
+    return {"citations": citation_manager.get_session_citations()}
+
+@app.get("/citations/bibliography")
+async def citations_bibliography(format: str = "apa"):
+    """Get formatted bibliography."""
+    return {"bibliography": citation_manager.get_bibliography(format)}
+
+@app.get("/citations/stats")
+async def citations_stats():
+    """Get citation statistics."""
+    return citation_manager.get_stats()
+
+@app.get("/citations/history")
+async def citations_history(limit: int = 20):
+    """Get citation history."""
+    return {"history": citation_manager.get_history(limit)}
+
+@app.post("/citations/clear")
+async def citations_clear():
+    """Archive and clear current session citations."""
+    citation_manager.clear_session()
+    return {"success": True}
+
+
+# ===== CONSTITUTIONAL AI / SAFETY API =====
+
+@app.post("/safety/check-input")
+async def safety_check_input(req: ChatRequest):
+    """Validate user input for safety."""
+    return constitutional_ai.validate_input(req.message)
+
+@app.post("/safety/check-output")
+async def safety_check_output(req: ChatRequest):
+    """Validate LLM output for safety. Send query in 'message' field."""
+    # Expects {message: "query|||response"} separated by |||
+    parts = req.message.split("|||", 1)
+    query = parts[0].strip()
+    response = parts[1].strip() if len(parts) > 1 else query
+    return constitutional_ai.validate_output(response, query)
+
+@app.post("/safety/critique")
+async def safety_critique(req: ChatRequest):
+    """Self-critique a response. Send as 'query|||response'."""
+    parts = req.message.split("|||", 1)
+    query = parts[0].strip()
+    response = parts[1].strip() if len(parts) > 1 else query
+    return constitutional_ai.critique_response(query, response)
+
+@app.post("/safety/hallucination")
+async def safety_hallucination(req: ChatRequest):
+    """Detect hallucinations in text."""
+    return constitutional_ai.detect_hallucination(req.message)
+
+@app.post("/safety/confidence")
+async def safety_confidence(req: ChatRequest):
+    """Score response confidence. Send as 'query|||response'."""
+    parts = req.message.split("|||", 1)
+    query = parts[0].strip()
+    response = parts[1].strip() if len(parts) > 1 else query
+    return constitutional_ai.score_confidence(query, response)
+
+@app.post("/safety/full-check")
+async def safety_full_check(req: ChatRequest):
+    """Full safety pipeline check. Send as 'query|||response'."""
+    parts = req.message.split("|||", 1)
+    query = parts[0].strip()
+    response = parts[1].strip() if len(parts) > 1 else query
+    return constitutional_ai.check(query, response)
+
+@app.post("/safety/policy")
+async def safety_policy_check(req: ChatRequest):
+    """Check text against content policies."""
+    return constitutional_ai.check_policy(req.message)
+
+@app.get("/safety/config")
+async def safety_get_config():
+    """Get safety configuration."""
+    return constitutional_ai.get_config()
+
+@app.post("/safety/config")
+async def safety_update_config(settings: dict):
+    """Update safety configuration."""
+    return constitutional_ai.update_config(settings)
+
+@app.get("/safety/stats")
+async def safety_stats():
+    """Get safety check statistics."""
+    return constitutional_ai.get_stats()
+
+@app.get("/safety/audit")
+async def safety_audit(limit: int = 50):
+    """Get safety audit log."""
+    return {"audit": constitutional_ai.get_audit_log(limit)}
+
+@app.post("/safety/audit/clear")
+async def safety_audit_clear():
+    """Clear safety audit log."""
+    constitutional_ai.clear_audit()
+    return {"success": True}
+
+
+# ===== REFLECTION ENGINE (V16) API =====
+
+@app.post("/reflection/log-mistake")
+async def reflection_log_mistake(req: ChatRequest):
+    """Log a mistake. message format: module|type|query|response"""
+    parts = req.message.split("|", 3)
+    module = parts[0].strip() if len(parts) > 0 else "unknown"
+    mtype = parts[1].strip() if len(parts) > 1 else "wrong_answer"
+    query = parts[2].strip() if len(parts) > 2 else req.message
+    response = parts[3].strip() if len(parts) > 3 else ""
+    return reflection_engine.log_mistake(query, response, module, mtype)
+
+@app.post("/reflection/log-success")
+async def reflection_log_success(req: ChatRequest):
+    """Log a success for a module."""
+    reflection_engine.log_success(req.message.strip())
+    return {"success": True}
+
+@app.get("/reflection/mistakes")
+async def reflection_mistakes(limit: int = 50, module: str = None):
+    """Get mistake history."""
+    return {"mistakes": reflection_engine.get_mistakes(limit, module)}
+
+@app.post("/reflection/report")
+async def reflection_generate_report(days: int = 7):
+    """Generate a learning report."""
+    return reflection_engine.generate_report(days)
+
+@app.get("/reflection/reports")
+async def reflection_get_reports(limit: int = 10):
+    """Get past reports."""
+    return {"reports": reflection_engine.get_reports(limit)}
+
+@app.get("/reflection/daily")
+async def reflection_daily():
+    """Get today's daily reflection."""
+    return reflection_engine.daily_reflection()
+
+@app.get("/reflection/scores")
+async def reflection_agent_scores():
+    """Get all agent performance scores."""
+    return reflection_engine.get_agent_scores()
+
+@app.get("/reflection/scores/{module}")
+async def reflection_agent_score(module: str):
+    """Get score for a specific agent."""
+    score = reflection_engine.get_agent_score(module)
+    if not score:
+        return {"error": "Module not found"}
+    return score
+
+@app.get("/reflection/suggestions")
+async def reflection_suggestions():
+    """Get improvement suggestions."""
+    return {"suggestions": reflection_engine.get_suggestions()}
+
+@app.get("/reflection/stats")
+async def reflection_stats():
+    """Get reflection engine stats."""
+    return reflection_engine.get_stats()
+
+
+# ===== LEARNING ENGINE (V17) API =====
+
+@app.post("/learning/record")
+async def learning_record_action(req: ChatRequest):
+    """Record a user action. message format: action|module"""
+    parts = req.message.split("|", 1)
+    action = parts[0].strip()
+    module = parts[1].strip() if len(parts) > 1 else ""
+    learning_engine.record_action(action, module)
+    return {"success": True}
+
+@app.post("/learning/learn")
+async def learning_learn_preference(req: ChatRequest):
+    """Learn from a user message."""
+    learning_engine.learn_preference(req.message)
+    return {"success": True}
+
+@app.get("/learning/habits")
+async def learning_get_habits():
+    """Get detected habits."""
+    return {"habits": learning_engine.get_habits()}
+
+@app.post("/learning/habits/detect")
+async def learning_detect_habits():
+    """Run habit detection analysis."""
+    return {"habits": learning_engine.detect_habits()}
+
+@app.get("/learning/preferences")
+async def learning_get_preferences():
+    """Get learned preferences."""
+    return learning_engine.get_preferences()
+
+@app.get("/learning/preference-prompt")
+async def learning_preference_prompt():
+    """Get preference-based prompt addition."""
+    return {"prompt": learning_engine.get_preference_prompt()}
+
+@app.post("/learning/prompt-feedback")
+async def learning_prompt_feedback(req: ChatRequest):
+    """Log prompt feedback. message format: type|positive|notes"""
+    parts = req.message.split("|", 2)
+    ptype = parts[0].strip() if len(parts) > 0 else "general"
+    positive = parts[1].strip().lower() in ("true", "1", "yes") if len(parts) > 1 else True
+    notes = parts[2].strip() if len(parts) > 2 else ""
+    learning_engine.log_prompt_feedback(ptype, req.message, positive, notes)
+    return {"success": True}
+
+@app.get("/learning/prompt-suggestions")
+async def learning_prompt_suggestions():
+    """Get prompt improvement suggestions."""
+    return {"suggestions": learning_engine.get_prompt_suggestions()}
+
+@app.get("/learning/prompt-stats")
+async def learning_prompt_stats():
+    """Get prompt optimization statistics."""
+    return learning_engine.get_prompt_stats()
+
+@app.get("/learning/workflows")
+async def learning_get_workflows():
+    """Get detected workflow patterns."""
+    return {"workflows": learning_engine.get_workflows()}
+
+@app.post("/learning/workflows/detect")
+async def learning_detect_workflows():
+    """Run workflow pattern detection."""
+    return {"workflows": learning_engine.detect_workflows()}
+
+@app.get("/learning/stats")
+async def learning_stats():
+    """Get learning engine stats."""
+    return learning_engine.get_stats()
+
+
+# ===== VISION ENGINE (V12) API =====
+
+@app.post("/vision/screenshot")
+async def vision_screenshot(req: ChatRequest):
+    """Take a screenshot. Optional message: monitor=N or region=x,y,w,h"""
+    region = None
+    monitor = 0
+    msg = req.message or ""
+    import re as _re
+    mon_match = _re.search(r'monitor\s*=?\s*(\d+)', msg)
+    if mon_match:
+        monitor = int(mon_match.group(1))
+    reg_match = _re.search(r'region\s*=?\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)', msg)
+    if reg_match:
+        region = {"x": int(reg_match.group(1)), "y": int(reg_match.group(2)),
+                  "width": int(reg_match.group(3)), "height": int(reg_match.group(4))}
+    return vision_engine.take_screenshot(region=region, monitor=monitor)
+
+@app.get("/vision/monitors")
+async def vision_monitors():
+    """List connected monitors."""
+    return vision_engine.get_monitors()
+
+@app.post("/vision/camera")
+async def vision_camera(req: ChatRequest):
+    """Capture from webcam. Optional message: camera index."""
+    idx = 0
+    if req.message and req.message.strip().isdigit():
+        idx = int(req.message.strip())
+    return vision_engine.capture_camera(camera_index=idx)
+
+@app.get("/vision/cameras")
+async def vision_cameras():
+    """List available cameras."""
+    return vision_engine.list_cameras()
+
+@app.post("/vision/detect")
+async def vision_detect(req: ChatRequest):
+    """Detect objects in an image. message = image path (or empty for screenshot)."""
+    image_path = req.message.strip() if req.message else None
+    if not image_path:
+        ss = vision_engine.take_screenshot()
+        if not ss.get("success"):
+            return {"success": False, "message": "Screenshot failed"}
+        image_path = ss["filepath"]
+    return vision_engine.detect_objects(image_path)
+
+@app.post("/vision/analyze")
+async def vision_analyze(req: ChatRequest):
+    """AI screen analysis. message = image path (or empty for live screen)."""
+    image_path = req.message.strip() if req.message else None
+    return vision_engine.analyze_screen(image_path or None)
+
+@app.post("/vision/compare")
+async def vision_compare(req: ChatRequest):
+    """Compare two screenshots. message format: path1|path2"""
+    parts = (req.message or "").split("|", 1)
+    if len(parts) < 2:
+        return {"success": False, "message": "Provide two paths separated by |"}
+    return vision_engine.compare_screenshots(parts[0].strip(), parts[1].strip())
+
+@app.get("/vision/history")
+async def vision_history(limit: int = 50, type: str = ""):
+    """Get vision operation history."""
+    return {"history": vision_engine.get_history(limit=limit, type_filter=type)}
+
+@app.get("/vision/detections")
+async def vision_detections(limit: int = 20):
+    """Get recent object detections."""
+    return {"detections": vision_engine.get_recent_detections(limit=limit)}
+
+@app.get("/vision/analyses")
+async def vision_analyses(limit: int = 10):
+    """Get recent screen analyses."""
+    return {"analyses": vision_engine.get_recent_analyses(limit=limit)}
+
+@app.get("/vision/stats")
+async def vision_stats():
+    """Get vision engine statistics."""
+    return vision_engine.get_stats()
+
+
+# ===== SENTINEL SECURITY (V15) API =====
+
+@app.post("/sentinel/check-permission")
+async def sentinel_check_permission(req: ChatRequest):
+    """Check permission. message format: user|action|module(optional)"""
+    parts = (req.message or "").split("|", 2)
+    user = parts[0].strip() if parts else "default"
+    action = parts[1].strip() if len(parts) > 1 else "chat"
+    module = parts[2].strip() if len(parts) > 2 else ""
+    return sentinel_engine.check_permission(user, action, module)
+
+@app.get("/sentinel/roles")
+async def sentinel_roles():
+    """List all roles."""
+    return {"roles": sentinel_engine.get_roles()}
+
+@app.post("/sentinel/roles")
+async def sentinel_create_role(req: ChatRequest):
+    """Create a role. message format: name|description|perm1,perm2,..."""
+    parts = (req.message or "").split("|", 2)
+    name = parts[0].strip() if parts else ""
+    desc = parts[1].strip() if len(parts) > 1 else ""
+    perms = [p.strip() for p in parts[2].split(",")] if len(parts) > 2 else ["chat"]
+    if not name:
+        return {"success": False, "message": "Role name required"}
+    return sentinel_engine.create_role(name, desc, perms)
+
+@app.post("/sentinel/assign-role")
+async def sentinel_assign_role(req: ChatRequest):
+    """Assign role to user. message format: user|role"""
+    parts = (req.message or "").split("|", 1)
+    user = parts[0].strip() if parts else ""
+    role = parts[1].strip() if len(parts) > 1 else ""
+    if not user or not role:
+        return {"success": False, "message": "Format: user|role"}
+    return sentinel_engine.assign_role(user, role)
+
+@app.post("/sentinel/vault/store")
+async def sentinel_store_secret(req: ChatRequest):
+    """Store a secret. message format: key|value|category(optional)"""
+    parts = (req.message or "").split("|", 2)
+    key = parts[0].strip() if parts else ""
+    value = parts[1].strip() if len(parts) > 1 else ""
+    category = parts[2].strip() if len(parts) > 2 else "general"
+    if not key or not value:
+        return {"success": False, "message": "Format: key|value"}
+    return sentinel_engine.store_secret(key, value, category)
+
+@app.get("/sentinel/vault/{key}")
+async def sentinel_get_secret(key: str):
+    """Retrieve a secret by key."""
+    return sentinel_engine.get_secret(key)
+
+@app.delete("/sentinel/vault/{key}")
+async def sentinel_delete_secret(key: str):
+    """Delete a secret."""
+    return sentinel_engine.delete_secret(key)
+
+@app.get("/sentinel/vault")
+async def sentinel_list_secrets():
+    """List all secrets (keys only, no values)."""
+    return sentinel_engine.list_secrets()
+
+@app.get("/sentinel/audit")
+async def sentinel_audit(limit: int = 100, event: str = "", user: str = "", status: str = ""):
+    """Query audit logs."""
+    return {"logs": sentinel_engine.get_audit_log(limit=limit, event_type=event, user=user, status=status)}
+
+@app.get("/sentinel/audit/stats")
+async def sentinel_audit_stats():
+    """Get audit log statistics."""
+    return sentinel_engine.get_audit_stats()
+
+@app.post("/sentinel/audit/clean")
+async def sentinel_audit_clean(req: ChatRequest):
+    """Clean old audit logs. message = days (default 30)."""
+    days = 30
+    if req.message and req.message.strip().isdigit():
+        days = int(req.message.strip())
+    return sentinel_engine.clear_old_audit_logs(days)
+
+@app.post("/sentinel/scan")
+async def sentinel_scan(req: ChatRequest):
+    """Scan text for security threats."""
+    return sentinel_engine.scan_input(req.message or "", source="api")
+
+@app.get("/sentinel/threats")
+async def sentinel_threats(limit: int = 50, severity: str = ""):
+    """Get detected threats."""
+    return {"threats": sentinel_engine.get_threats(limit=limit, severity=severity)}
+
+@app.get("/sentinel/threats/stats")
+async def sentinel_threat_stats():
+    """Get threat detection statistics."""
+    return sentinel_engine.get_threat_stats()
+
+@app.post("/sentinel/block")
+async def sentinel_block_action(req: ChatRequest):
+    """Block an action globally."""
+    return sentinel_engine.block_action(req.message or "")
+
+@app.post("/sentinel/unblock")
+async def sentinel_unblock_action(req: ChatRequest):
+    """Unblock an action."""
+    return sentinel_engine.unblock_action(req.message or "")
+
+@app.get("/sentinel/health")
+async def sentinel_health():
+    """Run security health check."""
+    return sentinel_engine.health_check()
+
+@app.get("/sentinel/config")
+async def sentinel_get_config():
+    """Get sentinel configuration."""
+    return sentinel_engine.get_config()
+
+@app.post("/sentinel/config")
+async def sentinel_update_config(req: ChatRequest):
+    """Update sentinel config. message = JSON string."""
+    try:
+        updates = json.loads(req.message)
+    except Exception:
+        return {"success": False, "message": "Invalid JSON"}
+    return sentinel_engine.update_config(updates)
+
+@app.get("/sentinel/stats")
+async def sentinel_all_stats():
+    """Get overall sentinel statistics."""
+    return sentinel_engine.get_stats()
 
 
 def get_file_type(filename: str) -> str:
@@ -1929,6 +2746,37 @@ async def stt_status():
 
 @app.get("/")
 async def root():
+    # Serve React build if available, else fall back to old frontend
+    react_index = REACT_DIST_DIR / "index.html"
+    if react_index.exists():
+        return FileResponse(str(react_index), media_type="text/html")
+    return RedirectResponse("/static/index.html")
+
+
+# SPA catch-all: serve React index.html for client-side routes
+# Only matches paths that don't start with /api, /auth, /chat, /static, /audio, /assets, /docs, /openapi
+@app.get("/{path:path}")
+async def spa_catch_all(path: str):
+    # Skip API/backend paths — let them 404 normally
+    first_segment = path.split("/")[0] if path else ""
+    backend_prefixes = {
+        "auth", "chat", "chats", "history", "select-chat", "new-chat", "delete-chat",
+        "core-memory", "remember", "context-memory", "execute", "system-stats",
+        "top-processes", "processes", "network-stats", "notify", "reminders",
+        "scheduled-tasks", "health", "errors", "alerts", "models", "provider",
+        "plugins", "zeus", "knowledge-base", "intelligence", "diagnostics",
+        "ollama-status", "wake-briefing", "ocr", "git", "suggestions",
+        "gesture", "speak", "voice-settings", "test-voice", "email",
+        "clipboard", "app-usage", "generated-images", "weather",
+        "static", "audio", "assets", "docs", "openapi.json",
+        "favicon.ico", "favicon.svg", "icons.svg",
+    }
+    if first_segment in backend_prefixes:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    react_index = REACT_DIST_DIR / "index.html"
+    if react_index.exists():
+        return FileResponse(str(react_index), media_type="text/html")
     return RedirectResponse("/static/index.html")
 
 
@@ -1943,5 +2791,9 @@ GEN_IMAGES_DIR = Path(__file__).parent / "generated_images"
 GEN_IMAGES_DIR.mkdir(exist_ok=True)
 app.mount("/static/generated", StaticFiles(directory=str(GEN_IMAGES_DIR)), name="generated_images")
 
-# Mount frontend static files (must be AFTER API routes)
+# Mount React build assets (if dist/ exists)
+if REACT_DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(REACT_DIST_DIR / "assets")), name="react_assets")
+
+# Mount old frontend static files as fallback (must be AFTER API routes)
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

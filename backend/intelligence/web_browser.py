@@ -1,15 +1,21 @@
 """
-MJ Intelligence: Advanced Web Browser & Search
+MJ Intelligence: Advanced Web Browser & Search v2
 - DuckDuckGo search (no API key)
 - Web page scraping & content extraction
+- Multi-source deep research with parallel scraping
+- Source quality ranking & citation generation
 - Article summarization
-- Multi-source answer synthesis
 """
 
 import httpx
 import re
+import asyncio
+import time
+import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
+
+logger = logging.getLogger("mj.web_browser")
 
 
 async def deep_search(query: str, max_results: int = 3) -> dict:
@@ -40,6 +46,151 @@ async def deep_search(query: str, max_results: int = 3) -> dict:
         "detailed": detailed,
         "result_count": len(results)
     }
+
+
+async def deep_research(query: str, max_sources: int = 5, scrape_top: int = 3) -> dict:
+    """
+    Multi-source deep research: search → scrape top N pages in parallel →
+    extract key facts → generate citations.
+    Returns structured research with sources and citations.
+    """
+    start = time.time()
+    results = await _ddg_search(query, max_sources)
+
+    if not results:
+        return {
+            "query": query, "timestamp": datetime.now().isoformat(),
+            "sources": [], "findings": [], "citations": [],
+            "duration_ms": round((time.time() - start) * 1000),
+        }
+
+    # Scrape top N pages in parallel
+    scrape_targets = results[:scrape_top]
+    scrape_tasks = [scrape_page(r["url"], max_chars=3000, timeout=6) for r in scrape_targets]
+    scraped = await asyncio.gather(*scrape_tasks, return_exceptions=True)
+
+    sources = []
+    findings = []
+    citations = []
+
+    for i, (result, content) in enumerate(zip(scrape_targets, scraped)):
+        source = {
+            "index": i + 1,
+            "title": result["title"],
+            "url": result["url"],
+            "snippet": result.get("snippet", ""),
+            "scraped": False,
+            "content_length": 0,
+        }
+
+        if isinstance(content, str) and content and len(content) > 50:
+            source["scraped"] = True
+            source["content_length"] = len(content)
+
+            # Extract key sentences (first 5 meaningful sentences)
+            sentences = _extract_key_sentences(content, query, max_sentences=5)
+            for sent in sentences:
+                findings.append({
+                    "text": sent,
+                    "source_index": i + 1,
+                    "source_title": result["title"],
+                    "source_url": result["url"],
+                })
+
+            # Generate citation
+            citations.append({
+                "index": i + 1,
+                "title": result["title"],
+                "url": result["url"],
+                "accessed": datetime.now().strftime("%Y-%m-%d"),
+                "inline": f"[{i + 1}]",
+                "full": f'[{i + 1}] "{result["title"]}." {result["url"]}. Accessed {datetime.now().strftime("%d %b %Y")}.',
+            })
+
+        sources.append(source)
+
+    # Also add non-scraped results as sources
+    for i, result in enumerate(results[scrape_top:], scrape_top + 1):
+        sources.append({
+            "index": i,
+            "title": result["title"],
+            "url": result["url"],
+            "snippet": result.get("snippet", ""),
+            "scraped": False,
+            "content_length": 0,
+        })
+
+    duration = round((time.time() - start) * 1000)
+    return {
+        "query": query,
+        "timestamp": datetime.now().isoformat(),
+        "sources": sources,
+        "findings": findings,
+        "citations": citations,
+        "stats": {
+            "total_results": len(results),
+            "pages_scraped": sum(1 for s in sources if s["scraped"]),
+            "findings_extracted": len(findings),
+            "duration_ms": duration,
+        },
+    }
+
+
+def _extract_key_sentences(text: str, query: str, max_sentences: int = 5) -> List[str]:
+    """Extract the most relevant sentences from scraped content."""
+    # Split into sentences
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 30 and len(s.strip()) < 500]
+
+    if not sentences:
+        return []
+
+    # Score sentences by query term overlap
+    query_terms = set(re.findall(r'\w+', query.lower()))
+    scored = []
+    for sent in sentences:
+        sent_terms = set(re.findall(r'\w+', sent.lower()))
+        overlap = len(query_terms & sent_terms)
+        # Bonus for sentences with numbers/data
+        data_bonus = 0.5 if re.search(r'\d+', sent) else 0
+        scored.append((sent, overlap + data_bonus))
+
+    scored.sort(key=lambda x: -x[1])
+    return [s[0] for s in scored[:max_sentences] if s[1] > 0]
+
+
+def format_research_for_llm(research: dict) -> str:
+    """Format deep research results into LLM context with citations."""
+    if not research or not research.get("findings"):
+        return format_search_for_llm(research) if research else ""
+
+    parts = [f"DEEP RESEARCH RESULTS for '{research['query']}':"]
+    stats = research.get("stats", {})
+    parts.append(f"({stats.get('pages_scraped', 0)} sources scraped, "
+                 f"{stats.get('findings_extracted', 0)} findings)\n")
+
+    # Findings grouped by source
+    by_source = {}
+    for f in research["findings"]:
+        idx = f["source_index"]
+        if idx not in by_source:
+            by_source[idx] = {"title": f["source_title"], "url": f["source_url"], "facts": []}
+        by_source[idx]["facts"].append(f["text"])
+
+    for idx, src in sorted(by_source.items()):
+        parts.append(f"\n[{idx}] {src['title']}")
+        parts.append(f"    Source: {src['url']}")
+        for fact in src["facts"]:
+            parts.append(f"    - {fact}")
+
+    # Citations footer
+    if research.get("citations"):
+        parts.append("\n\nSOURCES:")
+        for c in research["citations"]:
+            parts.append(c["full"])
+
+    parts.append("\nIMPORTANT: Cite sources using [N] notation when using this information.")
+    return "\n".join(parts)
 
 
 async def _ddg_search(query: str, max_results: int = 5) -> list:

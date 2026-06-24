@@ -1,23 +1,23 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 /**
- * useChat — manages chat state, SSE streaming, history CRUD
+ * useChat -- manages chat state, SSE streaming, history CRUD
  *
  * SSE event format from POST /chat:
- *   { model, provider, task_type, stage: "calling_ai", prep_ms }  — first event
- *   { stage: "streaming" }                                         — streaming started
- *   { token: "..." }                                               — incremental text
- *   { emotion: "happy" }                                           — detected emotion
- *   { weather_widget: {...} }                                      — inline widget
- *   { image_url: "..." }                                           — generated image
- *   { model_used, perf_time, timings, auto_memory, issues, ... }   — summary
- *   data: [DONE]                                                   — stream end
+ *   { model, provider, task_type, stage: "calling_ai", prep_ms }  -- first event
+ *   { stage: "streaming" }                                         -- streaming started
+ *   { token: "..." }                                               -- incremental text
+ *   { emotion: "happy" }                                           -- detected emotion
+ *   { weather_widget: {...} }                                      -- inline widget
+ *   { image_url: "..." }                                           -- generated image
+ *   { model_used, perf_time, timings, auto_memory, issues, ... }   -- summary
+ *   data: [DONE]                                                   -- stream end
  */
 
 const TIMEOUT_GROQ = 35000;
 const TIMEOUT_OLLAMA = 60000;
 
-// ─── helpers ───
+// --- helpers ---
 function nowTimestamp() {
   return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
@@ -31,7 +31,7 @@ export function useChat() {
   const [modelInfo, setModelInfo] = useState(null); // { model, provider, task_type }
   const abortRef = useRef(null);
 
-  // ─── Load chat list ───
+  // --- Load chat list ---
   const loadChats = useCallback(async () => {
     try {
       const res = await fetch('/chats');
@@ -44,16 +44,16 @@ export function useChat() {
     }
   }, []);
 
-  // ─── Select a chat and load its messages ───
+  // --- Select a chat and load its messages ---
   const selectChat = useCallback(async (chatId) => {
     try {
-      const res = await fetch(`/select-chat/${chatId}`, { method: 'POST' });
+      const res = await fetch('/select-chat/' + chatId, { method: 'POST' });
       if (!res.ok) return;
       const data = await res.json();
       setActiveChatId(chatId);
       setMessages(
         (data.history || []).map((m, i) => ({
-          id: `hist-${chatId}-${i}`,
+          id: 'hist-' + chatId + '-' + i,
           role: m.role,
           content: m.content,
           timestamp: '',
@@ -64,7 +64,7 @@ export function useChat() {
     }
   }, []);
 
-  // ─── New chat ───
+  // --- New chat ---
   const newChat = useCallback(async () => {
     try {
       const res = await fetch('/new-chat', { method: 'POST' });
@@ -78,10 +78,10 @@ export function useChat() {
     }
   }, [loadChats]);
 
-  // ─── Delete chat ───
+  // --- Delete chat ---
   const deleteChat = useCallback(async (chatId) => {
     try {
-      const res = await fetch(`/delete-chat/${chatId}`, { method: 'DELETE' });
+      const res = await fetch('/delete-chat/' + chatId, { method: 'DELETE' });
       if (!res.ok) return;
       if (chatId === activeChatId) setMessages([]);
       await loadChats();
@@ -90,7 +90,7 @@ export function useChat() {
     }
   }, [activeChatId, loadChats]);
 
-  // ─── Cancel active stream ───
+  // --- Cancel active stream ---
   const cancelStream = useCallback(() => {
     if (abortRef.current) {
       try { abortRef.current.abort(); } catch (_) {}
@@ -100,8 +100,8 @@ export function useChat() {
     setStage(null);
   }, []);
 
-  // ─── Send message ───
-  const sendMessage = useCallback(async (text, file = null) => {
+  // --- Send message ---
+  const sendMessage = useCallback(async (text, file) => {
     if ((!text || !text.trim()) && !file) return;
 
     // Cancel any previous in-flight request
@@ -109,71 +109,77 @@ export function useChat() {
       try { abortRef.current.abort(); } catch (_) {}
     }
 
-    const userMsg = {
-      id: `msg-${Date.now()}-u`,
+    var userFile = null;
+    if (file) {
+      userFile = { name: file.name, size: file.size };
+    }
+
+    var userMsg = {
+      id: 'msg-' + Date.now() + '-u',
       role: 'user',
       content: text.trim(),
       timestamp: nowTimestamp(),
-      file: file ? { name: file.name, size: file.size } : null,
+      file: userFile,
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(function(prev) { return prev.concat([userMsg]); });
     setIsStreaming(true);
     setStage('understanding');
     setModelInfo(null);
 
-    const assistantId = `msg-${Date.now()}-a`;
+    var assistantId = 'msg-' + Date.now() + '-a';
     // Add placeholder assistant message
-    setMessages(prev => [
-      ...prev,
-      { id: assistantId, role: 'assistant', content: '', timestamp: '', streaming: true },
-    ]);
+    setMessages(function(prev) {
+      return prev.concat([{ id: assistantId, role: 'assistant', content: '', timestamp: '', streaming: true }]);
+    });
 
-    const abortCtrl = new AbortController();
+    var abortCtrl = new AbortController();
     abortRef.current = abortCtrl;
 
     // Build FormData
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('message', text.trim());
     if (file) formData.append('file', file);
 
     // Determine timeout based on current provider
-    let responseStarted = false;
-    const TIMEOUT_MS = modelInfo?.provider === 'groq' ? TIMEOUT_GROQ : TIMEOUT_OLLAMA;
+    var responseStarted = false;
+    var TIMEOUT_MS = modelInfo?.provider === 'groq' ? TIMEOUT_GROQ : TIMEOUT_OLLAMA;
 
-    const hardTimeout = setTimeout(() => {
+    var hardTimeout = setTimeout(function() {
       if (!responseStarted) {
-        console.warn('[useChat] Hard timeout — aborting after', TIMEOUT_MS, 'ms');
+        console.warn('[useChat] Hard timeout -- aborting after', TIMEOUT_MS, 'ms');
         abortCtrl.abort();
       }
     }, TIMEOUT_MS);
 
     try {
-      const res = await fetch('/chat', {
+      var res = await fetch('/chat', {
         method: 'POST',
         body: formData,
         signal: abortCtrl.signal,
       });
 
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      if (!res.ok) throw new Error('Server error: ' + res.status);
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let insideThink = false;
-      let detectedModel = null;
-      let detectedProvider = null;
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = '';
+      var insideThink = false;
+      var detectedModel = null;
+      var detectedProvider = null;
 
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        var result = await reader.read();
+        if (result.done) break;
 
-        const chunk = decoder.decode(value);
-        for (const line of chunk.split('\n')) {
+        var chunk = decoder.decode(result.value);
+        var lines = chunk.split('\n');
+        for (var li = 0; li < lines.length; li++) {
+          var line = lines[li];
           if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
 
           try {
-            const data = JSON.parse(line.slice(6));
+            var data = JSON.parse(line.slice(6));
 
             // Stage events
             if (data.stage) {
@@ -195,6 +201,15 @@ export function useChat() {
                 provider: data.provider || 'ollama',
                 task_type: data.task_type || 'chat',
               });
+              // Store provider on the assistant message early
+              setMessages(function(prev) {
+                return prev.map(function(m) {
+                  if (m.id === assistantId) {
+                    return Object.assign({}, m, { provider: data.provider || 'ollama' });
+                  }
+                  return m;
+                });
+              });
               setStage('calling_ai');
               continue;
             }
@@ -208,7 +223,7 @@ export function useChat() {
               buffer += data.token;
 
               // Think-tag filter for deepseek/qwen3 (non-groq)
-              const needsFilter = detectedProvider !== 'groq' &&
+              var needsFilter = detectedProvider !== 'groq' &&
                 /qwen3|deepseek/i.test(detectedModel || '');
               if (needsFilter && buffer.includes('<think>')) insideThink = true;
               if (insideThink) {
@@ -219,12 +234,15 @@ export function useChat() {
               }
 
               if (!insideThink) {
-                const displayBuffer = buffer;
-                setMessages(prev =>
-                  prev.map(m =>
-                    m.id === assistantId ? { ...m, content: displayBuffer } : m
-                  )
-                );
+                var displayBuffer = buffer;
+                setMessages(function(prev) {
+                  return prev.map(function(m) {
+                    if (m.id === assistantId) {
+                      return Object.assign({}, m, { content: displayBuffer });
+                    }
+                    return m;
+                  });
+                });
               }
             }
 
@@ -232,89 +250,110 @@ export function useChat() {
             if (data.image_url) {
               responseStarted = true;
               clearTimeout(hardTimeout);
-              const url = data.image_url;
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantId
-                    ? { ...m, images: [...(m.images || []), url] }
-                    : m
-                )
-              );
+              var url = data.image_url;
+              setMessages(function(prev) {
+                return prev.map(function(m) {
+                  if (m.id === assistantId) {
+                    var imgs = (m.images || []).concat([url]);
+                    return Object.assign({}, m, { images: imgs });
+                  }
+                  return m;
+                });
+              });
             }
 
             // Weather widget
             if (data.weather_widget) {
               responseStarted = true;
               clearTimeout(hardTimeout);
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantId
-                    ? { ...m, weather: data.weather_widget }
-                    : m
-                )
-              );
+              setMessages(function(prev) {
+                return prev.map(function(m) {
+                  if (m.id === assistantId) {
+                    return Object.assign({}, m, { weather: data.weather_widget });
+                  }
+                  return m;
+                });
+              });
             }
 
             // Emotion
             if (data.emotion) {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantId ? { ...m, emotion: data.emotion } : m
-                )
-              );
+              setMessages(function(prev) {
+                return prev.map(function(m) {
+                  if (m.id === assistantId) {
+                    return Object.assign({}, m, { emotion: data.emotion });
+                  }
+                  return m;
+                });
+              });
             }
 
             // Summary / final event
             if (data.model_used) {
-              const finalModel = data.model_used;
-              const finalTask = data.task_type || 'chat';
-              setModelInfo(prev => ({ ...prev, model: finalModel, task_type: finalTask }));
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantId
-                    ? { ...m, modelBadge: finalModel, perfTime: data.perf_time }
-                    : m
-                )
-              );
+              var finalModel = data.model_used;
+              var finalTask = data.task_type || 'chat';
+              setModelInfo(function(prev) {
+                return Object.assign({}, prev, { model: finalModel, task_type: finalTask });
+              });
+              setMessages(function(prev) {
+                return prev.map(function(m) {
+                  if (m.id === assistantId) {
+                    return Object.assign({}, m, {
+                      modelBadge: finalModel,
+                      perfTime: data.perf_time,
+                      provider: detectedProvider || m.provider,
+                    });
+                  }
+                  return m;
+                });
+              });
             }
 
             // Auto-memory
             if (data.auto_memory && data.auto_memory.length > 0) {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantId
-                    ? { ...m, autoMemory: data.auto_memory }
-                    : m
-                )
-              );
+              setMessages(function(prev) {
+                return prev.map(function(m) {
+                  if (m.id === assistantId) {
+                    return Object.assign({}, m, { autoMemory: data.auto_memory });
+                  }
+                  return m;
+                });
+              });
             }
           } catch (_) {}
         }
       }
 
-      // Stream complete — finalize
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === assistantId
-            ? { ...m, streaming: false, timestamp: nowTimestamp() }
-            : m
-        )
-      );
+      // Stream complete -- finalize
+      setMessages(function(prev) {
+        return prev.map(function(m) {
+          if (m.id === assistantId) {
+            return Object.assign({}, m, { streaming: false, timestamp: nowTimestamp() });
+          }
+          return m;
+        });
+      });
       loadChats();
 
     } catch (err) {
       clearTimeout(hardTimeout);
-      const errorText = err.name === 'AbortError'
-        ? '⏳ Request timed out. Please try again.'
-        : `⚠️ Send failed: ${err.message}`;
+      var errorText = err.name === 'AbortError'
+        ? 'Request timed out. Please try again.'
+        : 'Send failed: ' + err.message;
 
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === assistantId
-            ? { ...m, content: errorText, streaming: false, error: true, timestamp: nowTimestamp() }
-            : m
-        )
-      );
+      setMessages(function(prev) {
+        return prev.map(function(m) {
+          if (m.id === assistantId) {
+            return Object.assign({}, m, {
+              content: errorText,
+              streaming: false,
+              error: true,
+              timestamp: nowTimestamp(),
+            });
+          }
+          return m;
+        });
+      });
     } finally {
       abortRef.current = null;
       setIsStreaming(false);
@@ -323,25 +362,27 @@ export function useChat() {
   }, [modelInfo, loadChats]);
 
   // Load chats on mount
-  useEffect(() => {
+  useEffect(function() {
     loadChats();
   }, [loadChats]);
 
   // Load current chat history on mount
-  useEffect(() => {
+  useEffect(function() {
     async function loadCurrent() {
       try {
-        const res = await fetch('/history');
+        var res = await fetch('/history');
         if (!res.ok) return;
-        const data = await res.json();
+        var data = await res.json();
         if (data.history && data.history.length > 0) {
           setMessages(
-            data.history.map((m, i) => ({
-              id: `init-${i}`,
-              role: m.role,
-              content: m.content,
-              timestamp: '',
-            }))
+            data.history.map(function(m, i) {
+              return {
+                id: 'init-' + i,
+                role: m.role,
+                content: m.content,
+                timestamp: '',
+              };
+            })
           );
         }
       } catch (_) {}
@@ -350,17 +391,17 @@ export function useChat() {
   }, []);
 
   return {
-    messages,
-    chats,
-    activeChatId,
-    isStreaming,
-    stage,
-    modelInfo,
-    sendMessage,
-    cancelStream,
-    loadChats,
-    selectChat,
-    newChat,
-    deleteChat,
+    messages: messages,
+    chats: chats,
+    activeChatId: activeChatId,
+    isStreaming: isStreaming,
+    stage: stage,
+    modelInfo: modelInfo,
+    sendMessage: sendMessage,
+    cancelStream: cancelStream,
+    loadChats: loadChats,
+    selectChat: selectChat,
+    newChat: newChat,
+    deleteChat: deleteChat,
   };
 }

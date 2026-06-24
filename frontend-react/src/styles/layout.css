@@ -1,65 +1,9 @@
-/* ═══════════════════════════════════════════════════════════
-   MJ-Assistant Layout CSS — ported from monolithic index.html
-   ═══════════════════════════════════════════════════════════ */
+/* ===========================================================
+   MJ-Assistant Layout CSS
+   :root vars now in theme.css | bg layers now in theme.css
+   =========================================================== */
 
-/* ─── ROOT LAYOUT VARS ─── */
-:root {
-  --sidebar-w: 210px;
-  --bg2: #040810;
-  --primary: #00d4ff;
-  --primary-dim: #0088aa;
-  --accent: #00aaff;
-  --accent2: #0088cc;
-  --glow: rgba(0, 212, 255, 0.35);
-  --glow2: rgba(0, 170, 255, 0.25);
-  --glass: rgba(0, 150, 255, 0.03);
-  --glass2: rgba(0, 150, 255, 0.06);
-  --glass-border: rgba(0, 180, 255, 0.1);
-  --glass-border-hover: rgba(0, 212, 255, 0.25);
-  --panel-bg: rgba(2, 8, 20, 0.8);
-  --panel-border: rgba(0, 180, 255, 0.08);
-  --text-bright: #e0f0ff;
-  --success: #00ff88;
-  --warning: #ffaa00;
-  --error: #ff3344;
-  --blue: #00aaff;
-  --transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --jarvis-cyan: #00d4ff;
-  --jarvis-blue: #0066cc;
-  --jarvis-glow: rgba(0, 212, 255, 0.15);
-}
-
-/* ─── BACKGROUND LAYERS ─── */
-.hex-grid-bg {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(0,120,255,0.05) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 30%, rgba(0,212,255,0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(0,80,200,0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(0,150,255,0.02) 0%, transparent 80%);
-  z-index: 0;
-  pointer-events: none;
-}
-
-.scanline-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 999;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 4px,
-    rgba(0,180,255,0.008) 4px,
-    rgba(0,180,255,0.008) 5px
-  );
-  mix-blend-mode: overlay;
-}
-
-/* ─── MAIN CONTENT WRAPPER ─── */
+/* --- MAIN CONTENT WRAPPER --- */
 .main-content {
   flex: 1;
   display: flex;
@@ -79,7 +23,7 @@
   overflow: hidden;
 }
 
-/* ─── TOP BAR ─── */
+/* --- TOP BAR --- */
 .top-bar {
   display: flex;
   justify-content: space-between;
@@ -158,7 +102,7 @@
   background: var(--glass2);
 }
 
-/* ─── HUD SIDEBAR ─── */
+/* --- HUD SIDEBAR --- */
 .hud-sidebar {
   position: fixed;
   left: 0; top: 0;
@@ -202,7 +146,7 @@
   pointer-events: none;
 }
 
-/* ─── HUD ITEMS ─── */
+/* --- HUD ITEMS --- */
 .hud-item {
   width: 100%;
   display: flex;
@@ -285,7 +229,7 @@
   margin: 4px 0;
 }
 
-/* ─── RESIZE HANDLE ─── */
+/* --- RESIZE HANDLE --- */
 .sidebar-resize-handle {
   position: fixed;
   left: var(--sidebar-w, 210px);
@@ -307,7 +251,7 @@
 }
 .sidebar-resize-handle.resizing { transition: none; }
 
-/* ─── SIDEBAR WIDGETS ─── */
+/* --- SIDEBAR WIDGETS --- */
 .sidebar-widget {
   width: calc(100% - 20px);
   box-sizing: border-box;
@@ -390,7 +334,7 @@
 .focus-timer-mode button.active { color: var(--cyan, #00e5ff); border-color: rgba(0,255,255,0.3); }
 .focus-timer-sessions { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 4px; letter-spacing: 0.5px; }
 
-/* ─── RESPONSIVE ─── */
+/* --- LAYOUT-SPECIFIC RESPONSIVE --- */
 @media (max-width: 1200px) {
   :root { --sidebar-w: 180px; }
   .top-bar-widgets { gap: 16px; }
@@ -412,17 +356,10 @@
   .top-bar-actions button, .top-bar-actions a { padding: 4px 6px; font-size: 8px; }
 }
 
-/* ─── PERFORMANCE ─── */
+/* --- PERFORMANCE --- */
 .hud-sidebar, .top-bar { will-change: transform, opacity; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
 
-/* ─── SKELETON LOADING ─── */
+/* --- SKELETON LOADING --- */
 .card-skeleton {
   background: linear-gradient(90deg,
     rgba(0,180,255,0.03) 25%,
@@ -432,8 +369,4 @@
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
   border-radius: 6px;
   min-height: 20px;
-}
-@keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
 }

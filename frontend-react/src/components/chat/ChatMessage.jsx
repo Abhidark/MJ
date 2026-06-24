@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
+import ProviderBadge from './ProviderBadge';
 
-// ─── Simple markdown-like renderer ───
+// --- Simple markdown-like renderer ---
 // Handles: **bold**, *italic*, `inline code`, ```code blocks```, [links](url), headers, lists
-// No external dependency — keeps bundle small
+// No external dependency -- keeps bundle small
 
 function parseCodeBlocks(text) {
   const parts = [];
@@ -33,7 +34,7 @@ function formatInlineText(text) {
     if (/^## /.test(line)) return <div key={i} className="md-h2">{processInline(line.slice(3))}</div>;
     if (/^# /.test(line)) return <div key={i} className="md-h1">{processInline(line.slice(2))}</div>;
     // Bullet list
-    if (/^[-*] /.test(line)) return <div key={i} className="md-li">• {processInline(line.slice(2))}</div>;
+    if (/^[-*] /.test(line)) return <div key={i} className="md-li">* {processInline(line.slice(2))}</div>;
     // Numbered list
     if (/^\d+\. /.test(line)) return <div key={i} className="md-li">{processInline(line)}</div>;
     // Regular line
@@ -65,7 +66,7 @@ function processInline(text) {
   return parts.length > 0 ? parts : text;
 }
 
-// ─── Code Block with copy ───
+// --- Code Block with copy ---
 function CodeBlock({ lang, content }) {
   const [copied, setCopied] = useState(false);
 
@@ -81,7 +82,7 @@ function CodeBlock({ lang, content }) {
       <div className="msg-code-header">
         <span className="msg-code-lang">{lang || 'code'}</span>
         <button className="msg-code-copy" onClick={handleCopy}>
-          {copied ? '✓ Copied' : '⧉ Copy'}
+          {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
       <pre className="msg-code-pre"><code>{content}</code></pre>
@@ -89,11 +90,9 @@ function CodeBlock({ lang, content }) {
   );
 }
 
-// ═══════════════════════════════════════════════
-// MAIN EXPORT
-// ═══════════════════════════════════════════════
+// --- MAIN EXPORT ---
 export default function ChatMessage({ message }) {
-  const { role, content, timestamp, streaming, error, file, modelBadge, images } = message;
+  const { role, content, timestamp, streaming, error, file, modelBadge, provider, images } = message;
 
   const isUser = role === 'user';
 
@@ -117,7 +116,7 @@ export default function ChatMessage({ message }) {
           {streaming && !content && <span className="typing-dots">Thinking<span className="dots">...</span></span>}
           {rendered}
           {file && (
-            <div className="file-badge">📎 {file.name}</div>
+            <div className="file-badge">Attachment: {file.name}</div>
           )}
         </div>
         {images && images.length > 0 && (
@@ -141,6 +140,7 @@ export default function ChatMessage({ message }) {
               {modelBadge.split(':')[0]}
             </span>
           )}
+          {!isUser && provider && <ProviderBadge provider={provider} />}
         </div>
       </div>
     </div>

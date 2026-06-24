@@ -28,6 +28,7 @@ export default defineConfig({
       '/errors': 'http://localhost:8000',
       '/alerts': 'http://localhost:8000',
       '/models': 'http://localhost:8000',
+      '/provider': 'http://localhost:8000',
       '/plugins': 'http://localhost:8000',
       '/zeus': 'http://localhost:8000',
       '/knowledge-base': 'http://localhost:8000',
@@ -48,6 +49,7 @@ export default defineConfig({
       '/app-usage': 'http://localhost:8000',
       '/generated-images': 'http://localhost:8000',
       '/audio': 'http://localhost:8000',
+      '/weather': 'http://localhost:8000',
     },
   },
   resolve: {

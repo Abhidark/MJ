@@ -1,51 +1,213 @@
 [
   {
-    "content": "live cricket score batan",
-    "time": "09:44 PM",
-    "timestamp": "2026-06-21T21:44:28.139539",
-    "preview": "live cricket score batan"
+    "content": "git add .\ngit commit -m \"Groq provider ready, V12+V15 complete\"\ngit push",
+    "time": "12:51 PM",
+    "timestamp": "2026-06-24T12:51:21.719648",
+    "preview": "git add . git commit -m \"Groq provider ready, V12+V15 complete\" git push"
   },
   {
-    "content": "git add .\ngit commit -m \"Fix: clean HTML in cricket scores + use 8B for all tasks (14B causing timeouts)\"\ngit push",
-    "time": "09:42 PM",
-    "timestamp": "2026-06-21T21:42:42.693541",
-    "preview": "git add . git commit -m \"Fix: clean HTML in cricket scores + use 8B for all task"
+    "content": "pip install httpx groq",
+    "time": "12:51 PM",
+    "timestamp": "2026-06-24T12:51:05.290355",
+    "preview": "pip install httpx groq"
   },
   {
-    "content": "live cricket score batan",
-    "time": "09:39 PM",
-    "timestamp": "2026-06-21T21:39:17.428108",
-    "preview": "live cricket score batan"
+    "content": "cd frontend-react\nnpm run dev",
+    "time": "12:50 PM",
+    "timestamp": "2026-06-24T12:50:49.302459",
+    "preview": "cd frontend-react npm run dev"
   },
   {
-    "content": "git add .\ngit commit -m \"Add orb click to mute: stop MJ speaking instantly\"\ngit push",
-    "time": "09:38 PM",
-    "timestamp": "2026-06-21T21:38:43.924050",
-    "preview": "git add . git commit -m \"Add orb click to mute: stop MJ speaking instantly\" git "
+    "content": "python main.py",
+    "time": "12:49 PM",
+    "timestamp": "2026-06-24T12:49:28.694587",
+    "preview": "python main.py"
   },
   {
-    "content": "live cricket score batan",
-    "time": "09:34 PM",
-    "timestamp": "2026-06-21T21:34:36.262188",
-    "preview": "live cricket score batan"
+    "content": "npm run build",
+    "time": "12:47 PM",
+    "timestamp": "2026-06-24T12:47:33.836926",
+    "preview": "npm run build"
   },
   {
-    "content": "iski ui aasia banwo ki me drage and resize kr shku and jha rakhu oha set ho jaye",
-    "time": "09:27 PM",
-    "timestamp": "2026-06-21T21:27:19.638315",
-    "preview": "iski ui aasia banwo ki me drage and resize kr shku and jha rakhu oha set ho jaye"
+    "content": "cd frontend-react\nnpm run build",
+    "time": "12:46 PM",
+    "timestamp": "2026-06-24T12:46:57.277057",
+    "preview": "cd frontend-react npm run build"
   },
   {
-    "content": "git add .\ngit commit -m \"Fix stuck chat: increase timeout to 180s, add model loading indicator\"\ngit push",
-    "time": "09:23 PM",
-    "timestamp": "2026-06-21T21:23:37.114657",
-    "preview": "git add . git commit -m \"Fix stuck chat: increase timeout to 180s, add model loa"
+    "content": "git add .\ngit commit -m \"Add comprehensive API test suite\"\ngit push",
+    "time": "12:23 PM",
+    "timestamp": "2026-06-24T12:23:12.073186",
+    "preview": "git add . git commit -m \"Add comprehensive API test suite\" git push"
   },
   {
-    "content": "ek python program bana ke dena 10number ka average",
-    "time": "09:17 PM",
-    "timestamp": "2026-06-21T21:17:56.055167",
-    "preview": "ek python program bana ke dena 10number ka average"
+    "content": "```text\nTask: Implement a complete real-time Weather feature in the Jarvis project with a modern interactive weather widget.\n\nObjective:\nWhen the user asks anything related to weather, Jarvis should automatically detect the weather intent, fetch live weather information from a weather API, and display a rich weather widget instead of returning only plain text.\n\nRequirements:\n\n1. Integrate a reliable real-time weather API (OpenWeatherMap, WeatherAPI, Tomorrow.io, or another production-ready provi",
+    "time": "04:16 PM",
+    "timestamp": "2026-06-23T16:16:29.806209",
+    "preview": "```text Task: Implement a complete real-time Weather feature in the Jarvis proje"
+  },
+  {
+    "content": "add wather api for the current and real time weather when ask about the waether it open and show full widget typeÿ",
+    "time": "04:15 PM",
+    "timestamp": "2026-06-23T16:15:52.843405",
+    "preview": "add wather api for the current and real time weather when ask about the waether "
+  },
+  {
+    "content": "git add .\ngit commit -m \"fix: switch Groq to fast 8b model + skip think-filter for cloud responses\"\ngit push",
+    "time": "04:14 PM",
+    "timestamp": "2026-06-23T16:14:07.854327",
+    "preview": "git add . git commit -m \"fix: switch Groq to fast 8b model + skip think-filter f"
+  },
+  {
+    "content": "git add .\ngit commit -m \"Fix: voice pipeline now sends transcript to AI after wake activation\"\ngit push origin main",
+    "time": "01:21 PM",
+    "timestamp": "2026-06-23T13:21:43.374529",
+    "preview": "git add . git commit -m \"Fix: voice pipeline now sends transcript to AI after wa"
+  },
+  {
+    "content": "Copy and paste the prompt below into Claude.\n\n```\nYou are a Senior QA Engineer with 12+ years of experience in Manual Testing, Automation Testing, Performance Testing, Database Testing, UI/UX Review, Accessibility, and Security Testing.\n\nYour task is to perform a COMPLETE END-TO-END QA of the entire application. Do not stop after finding a few bugs. Test every page, every workflow, every button, every form, every API interaction, every filter, every table, every export, every modal, every dashbo",
+    "time": "11:16 AM",
+    "timestamp": "2026-06-23T11:16:35.323716",
+    "preview": "Copy and paste the prompt below into Claude.  ``` You are a Senior QA Engineer w"
+  },
+  {
+    "content": "Here's a professional prompt you can paste directly into **Claude Code**:\n\n---\n\n# Feature Request: Make the Header Fully Responsive to the Dashboard Layout\n\nThe dashboard is working well, but the **top header is not responsive**.\n\nI want the **header to automatically resize and reposition** whenever the dashboard layout changes.\n\n**Important:** Do **NOT** modify or break any backend logic, APIs, state management, or existing functionality. This should be a **UI/layout-only** improvement.\n\n---\n\n#",
+    "time": "11:16 AM",
+    "timestamp": "2026-06-23T11:16:21.300461",
+    "preview": "Here's a professional prompt you can paste directly into **Claude Code**:  ---  "
+  },
+  {
+    "content": "Use this prompt for Claude Code:\n\n---\n\n# Bug Fix: Left Sidebar Content Does Not Expand While Resizing\n\nThere is a bug in the left sidebar resize functionality.\n\n## Current Issue\n\nWhen I drag the resize handle:\n\n* ? The **left sidebar container width increases**.\n* ? The **content inside the sidebar does not expand**.\n* ? Widgets remain at their old width.\n* ? There is only empty space added to the right side.\n\nThe sidebar and all its child components should resize together.\n\n---\n\n## Expected Beh",
+    "time": "09:51 AM",
+    "timestamp": "2026-06-23T09:51:40.797969",
+    "preview": "Use this prompt for Claude Code:  ---  # Bug Fix: Left Sidebar Content Does Not "
+  },
+  {
+    "content": "git add .\ngit commit -m \"Fix backend: psutil stats, async subprocess, duplicate functions, import conflicts\"\ngit push",
+    "time": "11:12 PM",
+    "timestamp": "2026-06-22T23:12:11.246032",
+    "preview": "git add . git commit -m \"Fix backend: psutil stats, async subprocess, duplicate "
+  },
+  {
+    "content": "pip install psutil",
+    "time": "11:10 PM",
+    "timestamp": "2026-06-22T23:10:08.656864",
+    "preview": "pip install psutil"
+  },
+  {
+    "content": "git add .\ngit commit -m \"Update dashboard roadmap with accurate V1-V25 audit percentages\"\ngit push",
+    "time": "10:10 PM",
+    "timestamp": "2026-06-22T22:10:36.794931",
+    "preview": "git add . git commit -m \"Update dashboard roadmap with accurate V1-V25 audit per"
+  },
+  {
+    "content": "git add .\ngit commit -m \"STT engine, KB panel, notes/timer/calendar cards, Zeus v2 upgrade\"\ngit push",
+    "time": "10:10 PM",
+    "timestamp": "2026-06-22T22:10:07.580350",
+    "preview": "git add . git commit -m \"STT engine, KB panel, notes/timer/calendar cards, Zeus "
+  },
+  {
+    "content": "git add .\ngit commit -m \"12-col grid, process sort/kill, voice upgrade, performance polish\"\ngit push",
+    "time": "10:01 PM",
+    "timestamp": "2026-06-22T22:01:40.470410",
+    "preview": "git add . git commit -m \"12-col grid, process sort/kill, voice upgrade, performa"
+  },
+  {
+    "content": "Considering everything we've discussed, **I would not build JARVIS as \"a chatbot with features.\"** I would build it as an **AI Operating System** where every version is a stable milestone.\n\nThe roadmap below is designed so that by **V25**, your project can compete with advanced open-source AI assistants while remaining **100% local-first** and allowing optional cloud APIs later.\n\n---\n\n# ?? JARVIS AI Operating System Roadmap (V1 \u001a V25)\n\n## ?? PHASE 1 - Foundation (V1-V5)\n\n### ? V1 - JARVIS Core\n\n",
+    "time": "08:34 PM",
+    "timestamp": "2026-06-22T20:34:57.220177",
+    "preview": "Considering everything we've discussed, **I would not build JARVIS as \"a chatbot"
+  },
+  {
+    "content": "git add .\ngit commit -m \"12-col grid layout, v4 layout save, process panel sort+kill, bug fixes\"\ngit push",
+    "time": "08:33 PM",
+    "timestamp": "2026-06-22T20:33:33.487604",
+    "preview": "git add . git commit -m \"12-col grid layout, v4 layout save, process panel sort+"
+  },
+  {
+    "content": "git add .\ngit commit -m \"Add styled chat header buttons: New Chat, History with search, Delete with confirmation overlay\"\ngit push",
+    "time": "08:16 PM",
+    "timestamp": "2026-06-22T20:16:47.227129",
+    "preview": "git add . git commit -m \"Add styled chat header buttons: New Chat, History with "
+  },
+  {
+    "content": "git add .\ngit commit -m \"Add grid-auto-flow dense to base grid for consistent layout on save\"\ngit push",
+    "time": "04:04 PM",
+    "timestamp": "2026-06-22T16:04:18.135305",
+    "preview": "git add . git commit -m \"Add grid-auto-flow dense to base grid for consistent la"
+  },
+  {
+    "content": "Here's a detailed **Claude 4 Sonnet prompt** you can paste directly into Claude Code. It explains exactly how you want the dashboard builder to work.\n\n---\n\n# Prompt for Claude Code\n\nI want to redesign my **JARVIS Dashboard Layout Editor** to behave like a professional dashboard builder (similar to Grafana, Retool, Notion, Framer, or Gridstack.js).\n\n## Current Problem\n\nAs shown in the attached image, there is an empty gap (highlighted in red) when panels are resized or moved.\n\nI want every panel ",
+    "time": "04:04 PM",
+    "timestamp": "2026-06-22T16:04:04.465433",
+    "preview": "Here's a detailed **Claude 4 Sonnet prompt** you can paste directly into Claude "
+  },
+  {
+    "content": "when move the side panle it should move automatic and when i hit save it should save and give me each and every grid and card that can i resize to hold bottom of the grid and choose the size",
+    "time": "04:02 PM",
+    "timestamp": "2026-06-22T16:02:38.930768",
+    "preview": "when move the side panle it should move automatic and when i hit save it should "
+  },
+  {
+    "content": "git add .\ngit commit -m \"Fix all: card IDs, v3 save/load, grid reorder, orb-card isolation, flex fix\"\ngit push",
+    "time": "03:58 PM",
+    "timestamp": "2026-06-22T15:58:40.531451",
+    "preview": "git add . git commit -m \"Fix all: card IDs, v3 save/load, grid reorder, orb-card"
+  },
+  {
+    "content": "localStorage.removeItem(\"mj-dash-layout\")\nlocalStorage.removeItem(\"mj-dash-settings\")",
+    "time": "03:56 PM",
+    "timestamp": "2026-06-22T15:56:47.198338",
+    "preview": "localStorage.removeItem(\"mj-dash-layout\") localStorage.removeItem(\"mj-dash-setti"
+  },
+  {
+    "content": "localStorage.removeItem(\"mj-dash-layout\")",
+    "time": "02:48 PM",
+    "timestamp": "2026-06-22T14:48:14.210330",
+    "preview": "localStorage.removeItem(\"mj-dash-layout\")"
+  },
+  {
+    "content": "window._orbCfg.holoMode = true;",
+    "time": "10:31 AM",
+    "timestamp": "2026-06-22T10:31:17.496341",
+    "preview": "window._orbCfg.holoMode = true;"
+  },
+  {
+    "content": "window._orbCfg.holoMode = false;",
+    "time": "10:31 AM",
+    "timestamp": "2026-06-22T10:31:00.880695",
+    "preview": "window._orbCfg.holoMode = false;"
+  },
+  {
+    "content": "window._orbCfg.holoMode = true;",
+    "time": "10:30 AM",
+    "timestamp": "2026-06-22T10:30:42.721809",
+    "preview": "window._orbCfg.holoMode = true;"
+  },
+  {
+    "content": "git add .\ngit commit -m \"Add Holo FX toggle to orb settings panel\"\ngit push",
+    "time": "10:29 AM",
+    "timestamp": "2026-06-22T10:29:59.741522",
+    "preview": "git add . git commit -m \"Add Holo FX toggle to orb settings panel\" git push"
+  },
+  {
+    "content": "allow pasting",
+    "time": "10:28 AM",
+    "timestamp": "2026-06-22T10:28:05.906611",
+    "preview": "allow pasting"
+  },
+  {
+    "content": "window._orbCfg.holoMode = true;",
+    "time": "10:26 AM",
+    "timestamp": "2026-06-22T10:26:46.486295",
+    "preview": "window._orbCfg.holoMode = true;"
+  },
+  {
+    "content": "window._orbCfg.holoMode = false;  // effects OFF\nwindow._orbCfg.holoMode = true;   // effects ON",
+    "time": "10:25 AM",
+    "timestamp": "2026-06-22T10:25:36.418047",
+    "preview": "window._orbCfg.holoMode = false;  // effects OFF window._orbCfg.holoMode = true;"
   },
   {
     "content": "git add .\ngit commit -m \"Fix orb settings overlap + add drag handle bar for reliable card move\"\ngit push",
