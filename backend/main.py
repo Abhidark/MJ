@@ -42,6 +42,11 @@ from pc_control.clipboard_manager import parse_clipboard_command, handle_clipboa
 from pc_control.app_tracker import parse_tracker_command, handle_tracker_command, start_app_tracker, get_usage_report
 from pc_control.image_gen import parse_image_command, handle_image_command
 from human_layer.auto_memory import auto_remember
+from intelligence.memory_store import memory_store
+from intelligence.fact_extractor import extract_and_store
+from intelligence.memory_embeddings import hybrid_search, embed_fact, is_ollama_embed_available
+from intelligence.short_term_memory import short_term
+from intelligence.user_profile import build_user_profile, get_profile_summary
 
 # Intelligence Layer
 from intelligence.web_browser import deep_search, deep_research, format_search_for_llm, format_research_for_llm, needs_web_search_v2
@@ -66,7 +71,7 @@ from intelligence.live_data import (
     get_live_stock_price, get_live_news,
     extract_stock_from_text, extract_news_topic
 )
-from intelligence.error_learner import log_error as el_log_error, log_performance, get_diagnostics, get_live_issues
+# error_learner merged into self_healer.error_tracker (unified)
 from intelligence.ocr_engine import ocr_from_file, ocr_screenshot, detect_ocr_request
 from intelligence.smart_suggestions import get_all_suggestions, detect_suggestion_request
 
@@ -99,11 +104,18 @@ from human_layer.model_manager import (
     get_available_models, load_model_config, save_model_config,
     get_routing_info, set_active_model, toggle_auto_select,
     set_model_for_task, sync_config_with_installed,
-    get_active_provider, auto_detect_provider
+    get_active_provider, auto_detect_provider,
+    get_all_providers_status, smart_route_provider
 )
 from intelligence.groq_provider import is_groq_available, stream_groq_chat, get_groq_model, check_groq_connection
+from intelligence.openai_provider import is_openai_available, stream_openai_chat, check_openai_connection
+from intelligence.anthropic_provider import is_anthropic_available, stream_anthropic_chat, check_anthropic_connection
+from intelligence.gemini_provider import is_gemini_available, stream_gemini_chat, check_gemini_connection
 from plugins.plugin_manager import load_plugins, match_plugin, run_plugin, notify_plugins, parse_plugin_command, handle_plugin_management, get_plugin_list
-from self_healer.error_tracker import log_error, get_recent_errors, get_error_stats, clear_errors
+from self_healer.error_tracker import (
+    log_error, get_recent_errors, get_error_stats, clear_errors,
+    log_performance, get_diagnostics, get_live_issues, learn_fix
+)
 from self_healer.auto_fixer import attempt_fix, analyze_error
 
 # Agent Framework Core
@@ -166,6 +178,26 @@ start_app_tracker()
 
 # Self-Healing Middleware — catches all unhandled errors
 app.add_middleware(SelfHealingMiddleware)
+
+
+# --- Background health polling (every 30s) ---
+async def _health_polling_loop():
+    """Polls system stats every 30s and fires alerts on thresholds."""
+    import asyncio as _aio
+    await _aio.sleep(10)  # wait for startup
+    while True:
+        try:
+            stats = await _aio.to_thread(get_system_stats)
+            check_system_warnings(stats)
+        except Exception:
+            pass
+        await _aio.sleep(30)
+
+
+@app.on_event("startup")
+async def _start_health_polling():
+    import asyncio as _aio
+    _aio.create_task(_health_polling_loop())
 
 app.add_middleware(
     CORSMiddleware,
@@ -364,15 +396,18 @@ async def select_chat(chat_id: str):
 
 @app.get("/core-memory")
 async def get_core_memory():
-    return {"facts": load_core_memory()}
+    facts = memory_store.get_all()
+    return {
+        "facts": [f.content for f in facts],
+        "structured": [f.to_dict() for f in facts],
+        "stats": memory_store.get_stats(),
+    }
 
 
 @app.post("/remember")
 async def remember(req: RememberRequest):
-    facts = load_core_memory()
-    facts.append(req.fact)
-    save_core_memory(facts)
-    return {"status": "ok", "facts": facts}
+    fact = memory_store.add(req.fact, source="user")
+    return {"status": "ok", "facts": memory_store.get_flat_list()}
 
 
 @app.delete("/delete-chat/{chat_id}")
@@ -571,6 +606,31 @@ async def clear_all_errors():
     return {"success": True, "message": "Error logs cleared."}
 
 
+@app.get("/self-heal/status")
+async def self_heal_status():
+    """Unified self-healing dashboard — error rate, fixes, circuit breakers, health, recovery log."""
+    from self_healer.auto_fixer import get_recovery_history
+    from self_healer.alert_system import get_alert_stats, get_active_alerts
+
+    error_stats = get_error_stats()
+    diagnostics = get_diagnostics()
+    alert_stats = get_alert_stats()
+    active_alerts = get_active_alerts()
+    recovery = get_recovery_history(10)
+    circuit_states = zeus.get_circuit_states() if hasattr(zeus, 'get_circuit_states') else {}
+
+    return {
+        "errors": error_stats,
+        "diagnostics_health": diagnostics.get("health", "UNKNOWN"),
+        "success_rate": diagnostics.get("summary", {}).get("success_rate", "N/A"),
+        "avg_response_time": diagnostics.get("summary", {}).get("avg_response_time", "N/A"),
+        "alerts": {"stats": alert_stats, "active": active_alerts[:10]},
+        "circuit_breakers": circuit_states,
+        "recovery_history": recovery,
+        "live_issues": diagnostics.get("active_issues", []),
+    }
+
+
 @app.get("/models")
 async def list_models():
     """List available models (Ollama + Groq)."""
@@ -590,24 +650,51 @@ async def list_models():
 
 @app.get("/provider")
 async def get_provider_status():
-    """Get current AI provider status."""
-    provider = get_active_provider()
-    groq_avail = is_groq_available()
-    groq_status = await check_groq_connection() if groq_avail else {"available": False}
+    """Get all AI providers status."""
     return {
-        "provider": provider,
-        "groq_available": groq_avail,
-        "groq_status": groq_status,
+        "active": get_active_provider(),
+        "providers": get_all_providers_status(),
     }
 
 
 @app.post("/provider/set")
 async def set_provider_endpoint(req: dict):
-    """Switch AI provider: 'ollama' or 'groq'."""
+    """Switch AI provider: ollama, groq, openai, anthropic, gemini."""
     from human_layer.model_manager import set_provider as _set_provider
     provider = req.get("provider", "").lower()
     result = _set_provider(provider)
     return result
+
+
+@app.get("/provider/check/{provider_name}")
+async def check_provider(provider_name: str):
+    """Check a specific provider's connection."""
+    p = provider_name.lower()
+    checkers = {
+        "groq": check_groq_connection,
+        "openai": check_openai_connection,
+        "anthropic": check_anthropic_connection,
+        "gemini": check_gemini_connection,
+    }
+    if p in checkers:
+        return await checkers[p]()
+    elif p == "ollama":
+        models = await get_available_models()
+        return {"available": bool(models), "models": [m["name"] for m in models]}
+    return {"error": f"Unknown provider: {provider_name}"}
+
+
+@app.get("/provider/smart-route/{task_type}")
+async def smart_route_endpoint(task_type: str):
+    """Get smart routing recommendation for a task type."""
+    return smart_route_provider(task_type)
+
+
+@app.get("/provider/smart-route")
+async def smart_route_all():
+    """Get smart routing for all task types."""
+    tasks = ["chat", "coding", "creative", "reasoning", "analysis", "vision", "translation"]
+    return {t: smart_route_provider(t) for t in tasks}
 
 
 @app.post("/models/route")
@@ -2067,9 +2154,10 @@ async def chat(
 
     # Sync pre-LLM work — fast file I/O (~10-20ms total)
     chat_data = load_chat(chat_id)
-    new_facts = auto_remember(message)
+    new_facts = auto_remember(message)  # legacy regex (fast, sync)
+    short_term.add_turn("user", message)  # V2: log to short-term memory
     notify_plugins(message)
-    core_facts = load_core_memory()
+    core_facts = memory_store.get_flat_list()
     context_memory_prompt = get_context_prompt()
 
     # Quick regex checks — instant, no I/O (<1ms total)
@@ -2104,9 +2192,7 @@ async def chat(
     search_context, kb_context = await asyncio.gather(_do_search(), _do_kb())
     _timings["gather"] = round(time.time() - _gather_start, 3)
 
-    memory_context = ""
-    if core_facts:
-        memory_context = "User facts: " + ", ".join(core_facts)
+    memory_context = memory_store.get_context_string(max_facts=30)
 
     # Process through Human Brain (<1ms — pure regex)
     brain_result = mj_brain.process(user_text=message, memory_context=memory_context)
@@ -2116,10 +2202,9 @@ async def chat(
     system_content += f"\n\nCurrent date: {datetime.now().strftime('%A, %d %B %Y')}"
     system_content += f"\nCurrent time: {datetime.now().strftime('%I:%M %p')}"
 
-    if core_facts:
+    if memory_context:
         system_content += "\n\nIMPORTANT - Things you must always remember about the user:\n"
-        for fact in core_facts:
-            system_content += f"- {fact}\n"
+        system_content += memory_context
 
     if file_context:
         system_content += "\n\nWhen a user shares a file, analyze its content thoroughly and provide helpful insights."
@@ -2191,30 +2276,39 @@ async def chat(
         # Send model info + pipeline timings as first SSE event
         yield f"data: {json.dumps({'model': selected_model, 'task_type': routing.get('task_type', 'chat'), 'provider': active_provider, 'stage': 'calling_ai', 'prep_ms': int(_timings.get('prep', 0) * 1000)})}\n\n"
 
-        # ── GROQ CLOUD PROVIDER ──
-        if active_provider == "groq":
+        # ── CLOUD PROVIDER STREAMING (Groq / OpenAI / Anthropic / Gemini) ──
+        if active_provider in ("groq", "openai", "anthropic", "gemini"):
+            # Pick the right streaming function
+            _cloud_streamers = {
+                "groq": stream_groq_chat,
+                "openai": stream_openai_chat,
+                "anthropic": stream_anthropic_chat,
+                "gemini": stream_gemini_chat,
+            }
+            _stream_fn = _cloud_streamers[active_provider]
+
             try:
                 _api_start = time.time()
                 token_count = 0
-                async for token in stream_groq_chat(messages, temperature=0.7, max_tokens=1024):
+                async for token in _stream_fn(messages, temperature=0.7, max_tokens=1024):
                     if _first_token_time is None:
                         _first_token_time = time.time()
                         _timings["first_token"] = round(_first_token_time - _api_start, 3)
                         yield f"data: {json.dumps({'stage': 'streaming'})}\n\n"
                     if token.startswith("[ERROR]"):
-                        _error_occurred = "groq_error"
+                        _error_occurred = f"{active_provider}_error"
                         full_reply.append(token)
-                        log_error("groq_error", token, {"model": selected_model, "user_msg": message[:80]})
+                        log_error(f"{active_provider}_error", token, {"model": selected_model, "user_msg": message[:80]})
                         yield f"data: {json.dumps({'token': token})}\n\n"
                     else:
                         full_reply.append(token)
                         token_count += 1
                         yield f"data: {json.dumps({'token': token})}\n\n"
             except Exception as e:
-                _error_occurred = "groq_exception"
-                error_msg = f"❌ Groq API error: {str(e)[:200]}"
+                _error_occurred = f"{active_provider}_exception"
+                error_msg = f"❌ {active_provider.title()} API error: {str(e)[:200]}"
                 full_reply.append(error_msg)
-                log_error("groq_exception", str(e)[:300], {"model": selected_model})
+                log_error(f"{active_provider}_exception", str(e)[:300], {"model": selected_model})
                 yield f"data: {json.dumps({'token': error_msg})}\n\n"
 
         # ── OLLAMA LOCAL PROVIDER ──
@@ -2285,9 +2379,18 @@ async def chat(
 
         save_chat(chat_id, chat_data)
 
-        # Record interaction (fast — just file append)
+        # Record interaction (fast -- just file append)
         try:
             record_interaction(message, reply_text, brain_result.get("emotion", "neutral"))
+            short_term.add_turn("assistant", reply_text[:500])  # V2: log assistant turn
+        except Exception:
+            pass
+
+        # LLM-based fact extraction (async, non-blocking)
+        try:
+            llm_facts = await extract_and_store(message, reply_text)
+            if llm_facts:
+                new_facts.extend([f.content for f in llm_facts])
         except Exception:
             pass
 
@@ -2403,6 +2506,86 @@ async def context_memory_stats():
     return get_memory_stats()
 
 
+# ===== SHORT-TERM MEMORY =====
+
+@app.get("/short-term-memory")
+async def short_term_stats():
+    """Get short-term memory stats."""
+    return short_term.get_stats()
+
+@app.get("/short-term-memory/turns")
+async def short_term_turns(n: int = 10):
+    """Get recent conversation turns."""
+    return {"turns": short_term.get_recent_turns(n)}
+
+@app.post("/short-term-memory/set")
+async def short_term_set(req: dict):
+    """Set a scratchpad value."""
+    key = req.get("key", "")
+    value = req.get("value", "")
+    ttl = req.get("ttl", 3600)
+    if not key:
+        return {"error": "key required"}
+    short_term.set(key, value, ttl=ttl)
+    return {"status": "ok", "key": key}
+
+@app.get("/short-term-memory/slots")
+async def short_term_slots():
+    """Get all active scratchpad slots."""
+    return {"slots": short_term.get_all_slots()}
+
+@app.get("/short-term-memory/entities")
+async def short_term_entities():
+    """Get tracked entities from current session."""
+    return {"entities": short_term.get_entities(min_count=1)}
+
+@app.delete("/short-term-memory")
+async def short_term_clear():
+    """Clear short-term memory."""
+    short_term.clear()
+    return {"status": "cleared"}
+
+
+# ===== USER PROFILE =====
+
+@app.get("/user-profile")
+async def user_profile_full():
+    """Get full aggregated user profile."""
+    return build_user_profile()
+
+@app.get("/user-profile/summary")
+async def user_profile_summary():
+    """Get compact user profile summary."""
+    return get_profile_summary()
+
+
+# ===== MEMORY SEARCH (HYBRID) =====
+
+@app.get("/memory-search")
+async def memory_search(q: str, top_k: int = 5):
+    """Hybrid search: semantic + keyword."""
+    results = await hybrid_search(q, top_k=top_k)
+    return {
+        "query": q,
+        "results": [
+            {"content": f.content, "category": f.category, "score": round(s, 3),
+             "source": f.source, "confidence": f.confidence}
+            for f, s in results
+        ],
+        "count": len(results),
+    }
+
+@app.post("/memory-embed-all")
+async def memory_embed_all():
+    """Generate embeddings for all facts (requires Ollama with nomic-embed-text)."""
+    from intelligence.memory_embeddings import embed_all_facts
+    available = await is_ollama_embed_available()
+    if not available:
+        return {"error": "Ollama nomic-embed-text not available", "status": "unavailable"}
+    count = await embed_all_facts()
+    return {"status": "ok", "embedded": count}
+
+
 # ===== INTELLIGENCE STATUS =====
 
 @app.get("/intelligence")
@@ -2423,6 +2606,8 @@ async def intelligence_status():
             "preferred_language": mem["preferred_language"],
             "top_topics": mem["top_topics"]
         },
+        "short_term_memory": short_term.get_stats(),
+        "user_profile": get_profile_summary(),
         "multi_model_reasoning": "active"
     }
 
@@ -2753,11 +2938,74 @@ async def root():
     return RedirectResponse("/static/index.html")
 
 
+# ── Static file routes (MUST be before catch-all) ──────────
+
+@app.get("/assets/{file_path:path}")
+async def serve_react_assets(file_path: str):
+    """Serve React build assets (JS, CSS, etc.)."""
+    asset_file = REACT_DIST_DIR / "assets" / file_path
+    if asset_file.exists() and asset_file.is_file():
+        return FileResponse(str(asset_file))
+    return JSONResponse({"error": "Not found"}, status_code=404)
+
+
+@app.get("/favicon.svg")
+async def serve_favicon_svg():
+    for d in [REACT_DIST_DIR, FRONTEND_DIR]:
+        f = d / "favicon.svg"
+        if f.exists():
+            return FileResponse(str(f), media_type="image/svg+xml")
+    return JSONResponse({"error": "Not found"}, status_code=404)
+
+
+@app.get("/icons.svg")
+async def serve_icons_svg():
+    f = REACT_DIST_DIR / "icons.svg"
+    if f.exists():
+        return FileResponse(str(f), media_type="image/svg+xml")
+    return JSONResponse({"error": "Not found"}, status_code=404)
+
+
+@app.get("/static/{file_path:path}")
+async def serve_old_frontend(file_path: str):
+    """Serve old frontend files."""
+    target = FRONTEND_DIR / file_path
+    if target.exists() and target.is_file():
+        return FileResponse(str(target))
+    # Default to index.html for old frontend
+    index = FRONTEND_DIR / "index.html"
+    if index.exists():
+        return FileResponse(str(index), media_type="text/html")
+    return JSONResponse({"error": "Not found"}, status_code=404)
+
+
+# Audio files
+AUDIO_DIR = Path(__file__).parent / "audio_cache"
+AUDIO_DIR.mkdir(exist_ok=True)
+
+@app.get("/audio/{file_path:path}")
+async def serve_audio(file_path: str):
+    f = AUDIO_DIR / file_path
+    if f.exists() and f.is_file():
+        return FileResponse(str(f))
+    return JSONResponse({"error": "Not found"}, status_code=404)
+
+
+# Generated images
+GEN_IMAGES_DIR = Path(__file__).parent / "generated_images"
+GEN_IMAGES_DIR.mkdir(exist_ok=True)
+
+@app.get("/static/generated/{file_path:path}")
+async def serve_generated_images(file_path: str):
+    f = GEN_IMAGES_DIR / file_path
+    if f.exists() and f.is_file():
+        return FileResponse(str(f))
+    return JSONResponse({"error": "Not found"}, status_code=404)
+
+
 # SPA catch-all: serve React index.html for client-side routes
-# Only matches paths that don't start with /api, /auth, /chat, /static, /audio, /assets, /docs, /openapi
 @app.get("/{path:path}")
 async def spa_catch_all(path: str):
-    # Skip API/backend paths — let them 404 normally
     first_segment = path.split("/")[0] if path else ""
     backend_prefixes = {
         "auth", "chat", "chats", "history", "select-chat", "new-chat", "delete-chat",
@@ -2768,8 +3016,10 @@ async def spa_catch_all(path: str):
         "ollama-status", "wake-briefing", "ocr", "git", "suggestions",
         "gesture", "speak", "voice-settings", "test-voice", "email",
         "clipboard", "app-usage", "generated-images", "weather",
-        "static", "audio", "assets", "docs", "openapi.json",
-        "favicon.ico", "favicon.svg", "icons.svg",
+        "docs", "openapi.json",
+        "vision", "sentinel", "safety", "reflection", "learning",
+        "messaging", "message-bus", "events", "shared-memory", "task-queue",
+        "mouse", "browser-control", "calendar",
     }
     if first_segment in backend_prefixes:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -2780,20 +3030,7 @@ async def spa_catch_all(path: str):
     return RedirectResponse("/static/index.html")
 
 
-# Mount audio files
-AUDIO_DIR = Path(__file__).parent / "audio_cache"
-AUDIO_DIR.mkdir(exist_ok=True)
-app.mount("/audio", StaticFiles(directory=str(AUDIO_DIR)), name="audio")
-
-# Serve generated images
-# Serve generated images
-GEN_IMAGES_DIR = Path(__file__).parent / "generated_images"
-GEN_IMAGES_DIR.mkdir(exist_ok=True)
-app.mount("/static/generated", StaticFiles(directory=str(GEN_IMAGES_DIR)), name="generated_images")
-
-# Mount React build assets (if dist/ exists)
-if REACT_DIST_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=str(REACT_DIST_DIR / "assets")), name="react_assets")
-
-# Mount old frontend static files as fallback (must be AFTER API routes)
-app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+# ── Start Server ────────────────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

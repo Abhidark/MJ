@@ -18,7 +18,8 @@ from typing import Optional
 OLLAMA_API = "http://localhost:11434"
 MODEL_CONFIG_FILE = Path(__file__).parent.parent / "model_config.json"
 
-# Provider: "ollama" (local) or "groq" (cloud)
+# Provider: "ollama" | "groq" | "openai" | "anthropic" | "gemini"
+ALL_PROVIDERS = ["ollama", "groq", "openai", "anthropic", "gemini"]
 _active_provider: str = "ollama"
 
 # ── Preferred models by role (ordered by preference — first available wins) ──
@@ -404,19 +405,16 @@ def get_active_provider() -> str:
 
 
 def set_provider(provider: str) -> dict:
-    """Switch between 'ollama' and 'groq'."""
+    """Switch between providers: ollama, groq, openai, anthropic, gemini."""
     global _active_provider
     provider = provider.lower().strip()
-    if provider not in ("ollama", "groq"):
-        return {"success": False, "message": f"Unknown provider: {provider}. Use 'ollama' or 'groq'."}
+    if provider not in ALL_PROVIDERS:
+        return {"success": False, "message": f"Unknown provider: {provider}. Use: {', '.join(ALL_PROVIDERS)}"}
 
-    if provider == "groq":
-        try:
-            from intelligence.groq_provider import is_groq_available
-            if not is_groq_available():
-                return {"success": False, "message": "Groq API key not set. Create backend/.env with GROQ_API_KEY=gsk_..."}
-        except ImportError:
-            return {"success": False, "message": "Groq provider module not found."}
+    # Check availability for cloud providers
+    avail_check = _check_provider_available(provider)
+    if not avail_check["available"]:
+        return {"success": False, "message": avail_check["reason"]}
 
     _active_provider = provider
     config = load_model_config()
@@ -425,34 +423,183 @@ def set_provider(provider: str) -> dict:
     return {"success": True, "message": f"Provider switched to: {provider.upper()}"}
 
 
+def _check_provider_available(provider: str) -> dict:
+    """Check if a provider is available (has API key or is running)."""
+    if provider == "ollama":
+        installed = _refresh_installed_models()
+        return {"available": bool(installed), "reason": "Ollama not running" if not installed else ""}
+    elif provider == "groq":
+        try:
+            from intelligence.groq_provider import is_groq_available
+            ok = is_groq_available()
+            return {"available": ok, "reason": "" if ok else "No GROQ_API_KEY in .env"}
+        except ImportError:
+            return {"available": False, "reason": "groq_provider module missing"}
+    elif provider == "openai":
+        try:
+            from intelligence.openai_provider import is_openai_available
+            ok = is_openai_available()
+            return {"available": ok, "reason": "" if ok else "No OPENAI_API_KEY in .env"}
+        except ImportError:
+            return {"available": False, "reason": "openai_provider module missing"}
+    elif provider == "anthropic":
+        try:
+            from intelligence.anthropic_provider import is_anthropic_available
+            ok = is_anthropic_available()
+            return {"available": ok, "reason": "" if ok else "No ANTHROPIC_API_KEY in .env"}
+        except ImportError:
+            return {"available": False, "reason": "anthropic_provider module missing"}
+    elif provider == "gemini":
+        try:
+            from intelligence.gemini_provider import is_gemini_available
+            ok = is_gemini_available()
+            return {"available": ok, "reason": "" if ok else "No GEMINI_API_KEY in .env"}
+        except ImportError:
+            return {"available": False, "reason": "gemini_provider module missing"}
+    return {"available": False, "reason": "Unknown provider"}
+
+
+def get_all_providers_status() -> dict:
+    """Check availability of all providers."""
+    status = {}
+    for p in ALL_PROVIDERS:
+        check = _check_provider_available(p)
+        status[p] = {
+            "available": check["available"],
+            "active": p == get_active_provider(),
+        }
+        if not check["available"]:
+            status[p]["reason"] = check["reason"]
+    return status
+
+
 def auto_detect_provider() -> str:
     """
-    Auto-detect best provider:
-    - If Groq API key exists → ALWAYS use Groq (user set it up for a reason)
-    - Only fall back to Ollama if no Groq key
-    - On PC: user won't have .env with Groq key → auto-picks Ollama
-    - On Laptop: user has .env with Groq key → auto-picks Groq
+    Auto-detect best provider with priority chain:
+    1. If any cloud API key exists → use the fastest available cloud provider
+       Priority: Groq (fastest) > Gemini (free tier) > OpenAI > Anthropic
+    2. If no cloud keys → fall back to Ollama local
+
+    On PC:  user won't have cloud keys → auto-picks Ollama
+    On Laptop: user has .env with cloud keys → auto-picks best cloud
     """
     global _active_provider
 
-    groq_available = False
-    try:
-        from intelligence.groq_provider import is_groq_available
-        groq_available = is_groq_available()
-    except ImportError:
-        pass
+    # Check cloud providers in priority order (speed + cost)
+    cloud_priority = ["groq", "gemini", "openai", "anthropic"]
+    for provider in cloud_priority:
+        check = _check_provider_available(provider)
+        if check["available"]:
+            _active_provider = provider
+            config = load_model_config()
+            config["provider"] = _active_provider
+            save_model_config(config)
+            return _active_provider
 
-    if groq_available:
-        _active_provider = "groq"
-    else:
-        _active_provider = "ollama"
-
-    # Save to config
+    # No cloud provider available → use Ollama
+    _active_provider = "ollama"
     config = load_model_config()
     config["provider"] = _active_provider
     save_model_config(config)
-
     return _active_provider
+
+
+def smart_route_provider(task_type: str) -> dict:
+    """
+    Smart Auto-Router: pick the best provider+model for a specific task.
+    Returns {"provider": str, "model": str, "reason": str}
+
+    Routing logic:
+    - coding    → OpenAI GPT-4o or Anthropic Claude (best at code)
+    - reasoning → Ollama local (deep thinking, no rate limits) or OpenAI o3
+    - creative  → Anthropic Claude (strong creative) or Gemini
+    - chat      → Groq (fastest) or Gemini (free tier)
+    - vision    → OpenAI GPT-4o or Gemini (both support vision)
+    - analysis  → Anthropic or OpenAI (detailed analysis)
+
+    Falls back to active provider if preferred isn't available.
+    """
+    # Build available provider list
+    available = {}
+    for p in ALL_PROVIDERS:
+        check = _check_provider_available(p)
+        if check["available"]:
+            available[p] = True
+
+    if not available:
+        return {"provider": "ollama", "model": "qwen3:8b", "reason": "No providers available"}
+
+    # Task-specific routing preferences
+    task_routes = {
+        "coding":      ["openai", "anthropic", "groq", "ollama", "gemini"],
+        "reasoning":   ["ollama", "openai", "anthropic", "gemini", "groq"],
+        "creative":    ["anthropic", "gemini", "openai", "groq", "ollama"],
+        "chat":        ["groq", "gemini", "openai", "anthropic", "ollama"],
+        "vision":      ["openai", "gemini", "ollama", "anthropic", "groq"],
+        "analysis":    ["anthropic", "openai", "gemini", "groq", "ollama"],
+        "translation": ["groq", "gemini", "openai", "anthropic", "ollama"],
+    }
+
+    preferred_order = task_routes.get(task_type, task_routes["chat"])
+
+    # Pick first available from preferred order
+    chosen_provider = None
+    for p in preferred_order:
+        if p in available:
+            chosen_provider = p
+            break
+
+    if not chosen_provider:
+        chosen_provider = list(available.keys())[0]
+
+    # Get the right model for the task from chosen provider
+    model = _get_model_for_provider(chosen_provider, task_type)
+
+    reasons = {
+        "groq": "Fastest cloud inference",
+        "openai": "Strong at " + task_type,
+        "anthropic": "Best for " + task_type,
+        "gemini": "Free tier + good quality",
+        "ollama": "Local model, no rate limits",
+    }
+
+    return {
+        "provider": chosen_provider,
+        "model": model,
+        "reason": reasons.get(chosen_provider, "Auto-selected"),
+        "task_type": task_type,
+    }
+
+
+def _get_model_for_provider(provider: str, task_type: str) -> str:
+    """Get the best model from a specific provider for a task type."""
+    if provider == "ollama":
+        return get_model_for_task("", False)  # uses existing Ollama routing
+    elif provider == "groq":
+        try:
+            from intelligence.groq_provider import get_groq_model
+            return get_groq_model()
+        except ImportError:
+            return "llama-3.1-8b-instant"
+    elif provider == "openai":
+        try:
+            from intelligence.openai_provider import get_openai_model
+            return get_openai_model(task_type)
+        except ImportError:
+            return "gpt-4o-mini"
+    elif provider == "anthropic":
+        try:
+            from intelligence.anthropic_provider import get_anthropic_model
+            return get_anthropic_model(task_type)
+        except ImportError:
+            return "claude-sonnet-4-20250514"
+    elif provider == "gemini":
+        try:
+            from intelligence.gemini_provider import get_gemini_model
+            return get_gemini_model(task_type)
+        except ImportError:
+            return "gemini-2.0-flash"
+    return "qwen3:8b"
 
 
 # ── Command Handlers ─────────────────────────────────────────
@@ -511,13 +658,23 @@ def parse_model_command(text: str) -> dict | None:
     if m:
         return {"action": "set_task", "model": m.group(1).strip(), "task": m.group(2).strip()}
 
-    # Provider switching
-    if any(w in lower for w in ["use groq", "switch to groq", "groq use karo", "groq chalao", "cloud mode"]):
+    # Provider switching — all 5 providers
+    if any(w in lower for w in ["use groq", "switch to groq", "groq use karo", "groq chalao"]):
         return {"action": "set_provider", "provider": "groq"}
     if any(w in lower for w in ["use ollama", "switch to ollama", "ollama use karo", "local mode", "offline mode"]):
         return {"action": "set_provider", "provider": "ollama"}
-    if any(w in lower for w in ["which provider", "provider kya", "groq ya ollama", "cloud or local"]):
+    if any(w in lower for w in ["use openai", "switch to openai", "openai use karo", "use gpt", "gpt use karo"]):
+        return {"action": "set_provider", "provider": "openai"}
+    if any(w in lower for w in ["use anthropic", "switch to anthropic", "use claude", "claude use karo"]):
+        return {"action": "set_provider", "provider": "anthropic"}
+    if any(w in lower for w in ["use gemini", "switch to gemini", "gemini use karo", "use google"]):
+        return {"action": "set_provider", "provider": "gemini"}
+    if any(w in lower for w in ["cloud mode"]):
+        return {"action": "auto_cloud"}
+    if any(w in lower for w in ["which provider", "provider kya", "all providers", "providers dikhao", "cloud or local", "provider status"]):
         return {"action": "provider_status"}
+    if any(w in lower for w in ["smart route", "auto route", "best model", "smart routing"]):
+        return {"action": "smart_route"}
 
     return None
 
@@ -614,23 +771,33 @@ async def handle_model_command(cmd: dict) -> dict:
 
     elif action == "set_provider":
         return set_provider(cmd["provider"])
+    elif action == "auto_cloud":
+        # Auto-pick the best available cloud provider
+        provider = auto_detect_provider()
+        return {"success": True, "message": f"Auto-selected best provider: {provider.upper()}"}
+    elif action == "smart_route":
+        # Show smart routing recommendation for common task types
+        lines = ["⚡ Smart Auto-Routing Recommendations:"]
+        icons = {"chat": "💬", "coding": "💻", "creative": "🎨", "analysis": "📊", "reasoning": "🧩", "vision": "👁", "translation": "🌐"}
+        for task in ["chat", "coding", "creative", "reasoning", "analysis", "vision", "translation"]:
+            route = smart_route_provider(task)
+            icon = icons.get(task, "•")
+            lines.append(f"  {icon} {task:12s} → {route['provider'].upper()} ({route['model']}) — {route['reason']}")
+        return {"success": True, "message": "\n".join(lines)}
     elif action == "provider_status":
-        provider = get_active_provider()
-        groq_avail = False
-        try:
-            from intelligence.groq_provider import is_groq_available
-            groq_avail = is_groq_available()
-        except ImportError:
-            pass
-        return {
-            "success": True,
-            "message": (
-                f"🔌 Active Provider: {provider.upper()}\n"
-                f"  Ollama: {'Connected' if _refresh_installed_models() else 'Not running'}\n"
-                f"  Groq:   {'API key set ✓' if groq_avail else 'Not configured ✗'}\n"
-                f"\nSwitch: say 'use groq' or 'use ollama'"
-            ),
-        }
+        status = get_all_providers_status()
+        active = get_active_provider()
+        lines = [f"🔌 AI Providers Status (Active: {active.upper()})\n"]
+        icons = {"ollama": "🦙", "groq": "⚡", "openai": "🟢", "anthropic": "🟠", "gemini": "💎"}
+        for p in ALL_PROVIDERS:
+            s = status[p]
+            icon = icons.get(p, "•")
+            avail = "✓ Ready" if s["available"] else f"✗ {s.get('reason', 'N/A')}"
+            marker = " ← ACTIVE" if s["active"] else ""
+            lines.append(f"  {icon} {p.upper():12s} {avail}{marker}")
+        lines.append(f"\nSwitch: say 'use groq/openai/anthropic/gemini/ollama'")
+        lines.append(f"Smart: say 'smart route' to see auto-routing table")
+        return {"success": True, "message": "\n".join(lines)}
 
     return {"success": False, "message": "Unknown model command."}
 

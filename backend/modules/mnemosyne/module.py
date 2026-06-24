@@ -1,30 +1,29 @@
 """
-Mnemosyne Module — Memory system for MJ Assistant.
+Mnemosyne Module -- Memory system for MJ Assistant.
 Saves and recalls user facts, preferences, and personal details.
+Uses the unified MemoryStore for all operations.
 """
 
 import re
 import sys
-import json
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from modules.base_module import BaseModule
-
-CORE_MEMORY_FILE = Path(__file__).parent.parent.parent / "core_memory.json"
+from intelligence.memory_store import memory_store
+from intelligence.short_term_memory import short_term
 
 
 class MnemosyneModule(BaseModule):
     name = "mnemosyne"
     display_name = "Mnemosyne"
-    icon = "🧠"
-    description = "Memory — remembers facts, preferences, and personal details"
-    version = "1.0"
+    icon = "brain"
+    description = "Memory -- remembers facts, preferences, and personal details"
+    version = "2.0"
     category = "core"
     enabled = True
 
-    # Auto-remember: silently extract facts from every message
     _auto_remember_enabled = True
 
     REMEMBER_KEYWORDS = re.compile(
@@ -46,7 +45,7 @@ class MnemosyneModule(BaseModule):
         re.IGNORECASE,
     )
 
-    def can_handle(self, text: str, intent: str, context: dict) -> float:
+    def can_handle(self, text, intent, context):
         if self.REMEMBER_KEYWORDS.search(text):
             return 0.92
         if self.RECALL_KEYWORDS.search(text):
@@ -55,73 +54,57 @@ class MnemosyneModule(BaseModule):
             return 0.90
         if intent in ("remember", "recall", "memory"):
             return 0.85
-        # Auto-remember runs at low priority on every message
         if self._auto_remember_enabled:
             return 0.1
         return 0.0
 
-    def execute(self, text: str, context: dict) -> dict:
-        # Determine operation type
+    def execute(self, text, context):
+        # Log user turn to short-term memory
+        try:
+            short_term.add_turn("user", text)
+        except Exception:
+            pass
+
         if self.FORGET_KEYWORDS.search(text):
             return self._forget(text)
         if self.RECALL_KEYWORDS.search(text):
             return self._recall(text)
         if self.REMEMBER_KEYWORDS.search(text):
             return self._remember_explicit(text)
-
-        # Auto-remember: silently extract and save facts
         return self._auto_remember(text)
 
-    def _load_memory(self) -> list:
-        if CORE_MEMORY_FILE.exists():
-            try:
-                return json.loads(CORE_MEMORY_FILE.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                return []
-        return []
-
-    def _save_memory(self, facts: list):
-        CORE_MEMORY_FILE.write_text(
-            json.dumps(facts, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
-
-    def _remember_explicit(self, text: str) -> dict:
+    def _remember_explicit(self, text):
         """Explicitly asked to remember something."""
-        # Strip trigger words to get the fact
-        fact = self.REMEMBER_KEYWORDS.sub("", text).strip()
-        fact = re.sub(r"^(that|ki|ke)\s+", "", fact, flags=re.IGNORECASE).strip()
+        fact_text = self.REMEMBER_KEYWORDS.sub("", text).strip()
+        fact_text = re.sub(r"^(that|ki|ke)\s+", "", fact_text, flags=re.IGNORECASE).strip()
 
-        if not fact or len(fact) < 3:
+        if not fact_text or len(fact_text) < 3:
             return {
                 "response": "What should I remember? Tell me the fact!",
                 "data": None,
                 "action": "memory_prompt",
             }
 
-        facts = self._load_memory()
-        # Check duplicate
-        lower_fact = fact.lower()
-        for existing in facts:
-            if lower_fact in existing.lower() or existing.lower() in lower_fact:
-                return {
-                    "response": f"I already know that: '{existing}'",
-                    "data": {"existing_fact": existing},
-                    "action": "memory_duplicate",
-                }
+        fact = memory_store.add(fact_text, source="user")
+        if fact is None:
+            # Duplicate
+            return {
+                "response": "I already know that!",
+                "data": {"duplicate": True},
+                "action": "memory_duplicate",
+            }
 
-        facts.append(fact)
-        self._save_memory(facts)
-
+        stats = memory_store.get_stats()
         return {
-            "response": f"Got it! I'll remember: '{fact}'",
-            "data": {"saved_fact": fact, "total_facts": len(facts)},
+            "response": "Got it! I'll remember: '" + fact.content + "'",
+            "data": {"saved_fact": fact.content, "total_facts": stats["total_facts"]},
             "action": "memory_save",
         }
 
-    def _recall(self, text: str) -> dict:
-        """Recall stored facts."""
-        facts = self._load_memory()
-        if not facts:
+    def _recall(self, text):
+        """Recall stored facts. Uses hybrid search (semantic + keyword) when available."""
+        all_facts = memory_store.get_all()
+        if not all_facts:
             return {
                 "response": "I don't have any saved memories about you yet. Tell me about yourself!",
                 "data": {"facts": []},
@@ -131,48 +114,78 @@ class MnemosyneModule(BaseModule):
         # Check if asking about something specific
         query = self.RECALL_KEYWORDS.sub("", text).strip().lower()
         if query and len(query) > 2:
-            matching = [f for f in facts if query in f.lower()]
-            if matching:
-                facts_str = "\n".join(f"  - {f}" for f in matching)
+            # Try hybrid search (semantic + keyword) first
+            results = None
+            search_mode = "keyword"
+            try:
+                import asyncio
+                from intelligence.memory_embeddings import hybrid_search, is_ollama_embed_available
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # We're inside an async context — create a task
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as pool:
+                        results = pool.submit(
+                            lambda: asyncio.run(hybrid_search(query, top_k=10))
+                        ).result(timeout=5)
+                else:
+                    results = asyncio.run(hybrid_search(query, top_k=10))
+                if results:
+                    search_mode = "hybrid"
+            except Exception:
+                pass
+
+            # Fallback to keyword search
+            if not results:
+                results = memory_store.search(query, top_k=10)
+
+            if results:
+                matching = [f.content for f, _ in results]
+                facts_str = "\n".join("  - " + f for f in matching)
                 return {
-                    "response": f"Here's what I know about '{query}':\n{facts_str}",
-                    "data": {"facts": matching, "query": query},
+                    "response": "Here's what I know about '" + query + "':\n" + facts_str,
+                    "data": {"facts": matching, "query": query, "search_mode": search_mode},
                     "action": "memory_recall",
                 }
 
-        # Return all facts
-        facts_str = "\n".join(f"  - {f}" for f in facts)
+        # Return all facts grouped by category
+        by_cat = {}
+        for f in all_facts:
+            by_cat.setdefault(f.category, []).append(f.content)
+
+        lines = []
+        for cat, facts in by_cat.items():
+            lines.append("[" + cat + "]")
+            for fc in facts:
+                lines.append("  - " + fc)
+
         return {
-            "response": f"Here's everything I remember about you ({len(facts)} facts):\n{facts_str}",
-            "data": {"facts": facts, "total": len(facts)},
+            "response": "Here's everything I remember about you (" + str(len(all_facts)) + " facts):\n" + "\n".join(lines),
+            "data": {"facts": [f.content for f in all_facts], "total": len(all_facts)},
             "action": "memory_recall",
         }
 
-    def _forget(self, text: str) -> dict:
+    def _forget(self, text):
         """Clear memory."""
         if "everything" in text.lower() or "sab" in text.lower():
-            self._save_memory([])
+            memory_store.clear()
             return {
                 "response": "Done, I've cleared all memories. Starting fresh!",
                 "data": {"cleared": True},
                 "action": "memory_clear",
             }
 
-        # Remove specific fact
         query = self.FORGET_KEYWORDS.sub("", text).strip().lower()
         if query and len(query) > 2:
-            facts = self._load_memory()
-            remaining = [f for f in facts if query not in f.lower()]
-            removed = len(facts) - len(remaining)
+            removed = memory_store.forget(query)
             if removed > 0:
-                self._save_memory(remaining)
                 return {
-                    "response": f"Forgotten {removed} fact(s) about '{query}'.",
+                    "response": "Forgotten " + str(removed) + " fact(s) about '" + query + "'.",
                     "data": {"removed": removed},
                     "action": "memory_forget",
                 }
             return {
-                "response": f"I don't have anything about '{query}' to forget.",
+                "response": "I don't have anything about '" + query + "' to forget.",
                 "data": None,
                 "action": "memory_forget",
             }
@@ -183,11 +196,10 @@ class MnemosyneModule(BaseModule):
             "action": "memory_prompt",
         }
 
-    def _auto_remember(self, text: str) -> dict:
+    def _auto_remember(self, text):
         """Silently extract facts using auto_remember."""
         try:
             from human_layer.auto_memory import auto_remember
-
             new_facts = auto_remember(text)
             if new_facts:
                 return {
@@ -197,37 +209,58 @@ class MnemosyneModule(BaseModule):
                 }
         except ImportError:
             pass
-
         return {"response": "", "data": None, "action": "none"}
 
-    def get_context_for_llm(self, text: str, context: dict) -> str:
-        """Inject memory context into LLM prompt."""
-        facts = self._load_memory()
-        if not facts:
-            return ""
-        facts_str = "; ".join(facts[:20])  # Limit to 20 facts for context size
-        return f"[User Memory] Known facts about the user: {facts_str}"
+    def get_context_for_llm(self, text, context):
+        """Inject memory context + user profile + short-term context into LLM prompt."""
+        parts = []
 
-    def get_system_prompt_addition(self) -> str:
+        # Long-term facts
+        ctx = memory_store.get_context_string(max_facts=20)
+        if ctx:
+            parts.append("[User Memory] Known facts:\n" + ctx)
+
+        # User profile prompt
+        try:
+            from intelligence.user_profile import get_profile_prompt
+            profile_prompt = get_profile_prompt(max_lines=10)
+            if profile_prompt:
+                parts.append(profile_prompt)
+        except Exception:
+            pass
+
+        # Short-term conversation context
+        try:
+            stm_ctx = short_term.get_context_window(max_chars=800)
+            if stm_ctx:
+                parts.append("[Recent Conversation]\n" + stm_ctx)
+        except Exception:
+            pass
+
+        return "\n\n".join(parts) if parts else ""
+
+    def get_system_prompt_addition(self):
         return (
             "You have memory capabilities. You remember facts about the user across sessions. "
             "Use stored facts to personalize responses. If the user shares personal info, "
             "acknowledge it and use it naturally in conversation."
         )
 
-    def get_settings(self) -> dict:
+    def get_settings(self):
+        stats = memory_store.get_stats()
         return {
             "enabled": self.enabled,
             "auto_remember": self._auto_remember_enabled,
-            "facts_count": len(self._load_memory()),
+            "facts_count": stats["total_facts"],
+            "categories": stats["categories"],
         }
 
-    def update_settings(self, settings: dict):
+    def update_settings(self, settings):
         super().update_settings(settings)
         if "auto_remember" in settings:
             self._auto_remember_enabled = bool(settings["auto_remember"])
 
-    def get_settings_schema(self) -> list:
+    def get_settings_schema(self):
         return [
             {"key": "enabled", "label": "Enabled", "type": "toggle", "value": self.enabled},
             {"key": "auto_remember", "label": "Auto-Remember Facts", "type": "toggle", "value": self._auto_remember_enabled},

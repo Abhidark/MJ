@@ -9,6 +9,8 @@ const initialState = {
   theme: 'dark',
   ollamaOnline: false,
   systemStats: null,
+  chatPanelOpen: false,
+  pendingVoiceMessage: null,
 };
 
 function appReducer(state, action) {
@@ -23,6 +25,12 @@ function appReducer(state, action) {
       return { ...state, ollamaOnline: action.payload };
     case 'SET_SYSTEM_STATS':
       return { ...state, systemStats: action.payload };
+    case 'OPEN_CHAT_PANEL':
+      return { ...state, chatPanelOpen: true, pendingVoiceMessage: action.payload || null };
+    case 'CLOSE_CHAT_PANEL':
+      return { ...state, chatPanelOpen: false, pendingVoiceMessage: null };
+    case 'CLEAR_VOICE_MESSAGE':
+      return { ...state, pendingVoiceMessage: null };
     default:
       return state;
   }

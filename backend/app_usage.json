@@ -1,16 +1,29 @@
 {
   "date": "2026-06-24",
   "apps": {
-    "Claude": 524.7274899999999,
-    "Google Chrome": 314.891099,
+    "Claude": 1245.5829680000002,
+    "Google Chrome": 2889.139890000001,
     "uvicorn  main:app --host 0.0.0": 57.046192,
-    "Snipping Tool Overlay": 13.536259999999999,
-    "Command Prompt": 50.010075,
-    "Unknown": 30.403977999999995,
-    "File Explorer": 13.315249999999999,
-    "VS Code": 178.806061,
+    "Snipping Tool Overlay": 81.100927,
+    "Command Prompt": 137.76583900000003,
+    "Unknown": 49.858233999999996,
+    "File Explorer": 118.40942899999999,
+    "VS Code": 365.33607399999994,
     "Windows Default Lock Screen": 1065.860321,
-    "Stopping": 6.873094
+    "Stopping": 20.306372,
+    "python  -m uvicorn main:app --": 21.968437,
+    "This file wants to": 17.639767,
+    "Task Switching": 4.445202,
+    "MJ-React": 7.309122,
+    "Snipping Tool": 13.706,
+    "Microsoft Teams": 53.804983,
+    "Uploading image": 13.213999000000001,
+    "Open": 79.530972,
+    "Save As": 13.563571,
+    "studio_lichtfang-mountain-1032": 27.182542,
+    "Notepad": 12.821716,
+    "Google AI Studio": 419.09892,
+    "ChatGPT Image Jun 8, 2026, 12_": 6.704191
   },
-  "session_start": "2026-06-24T12:43:23.889383"
+  "session_start": "2026-06-24T17:00:00.100476"
 }

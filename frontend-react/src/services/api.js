@@ -57,6 +57,17 @@ export const memoryAPI = {
   getCoreMemory: () => api.get('/core-memory'),
   remember: (fact) => api.post('/remember', { fact }),
   getContextMemory: () => api.get('/context-memory'),
+  // V2 Memory Engine
+  getShortTermMemory: () => api.get('/short-term-memory'),
+  getShortTermTurns: (n = 10) => api.get(`/short-term-memory/turns?n=${n}`),
+  getShortTermSlots: () => api.get('/short-term-memory/slots'),
+  getShortTermEntities: () => api.get('/short-term-memory/entities'),
+  setShortTermSlot: (key, value, ttl) => api.post('/short-term-memory/set', { key, value, ttl }),
+  clearShortTermMemory: () => api.delete('/short-term-memory'),
+  getUserProfile: () => api.get('/user-profile'),
+  getUserProfileSummary: () => api.get('/user-profile/summary'),
+  memorySearch: (q, topK = 5) => api.get(`/memory-search?q=${encodeURIComponent(q)}&top_k=${topK}`),
+  embedAllFacts: () => api.post('/memory-embed-all'),
 };
 
 // --- SYSTEM ---
@@ -93,6 +104,10 @@ export const modelAPI = {
   routePreview: (message) => api.post('/models/route', { message }),
   getProvider: () => api.get('/provider'),
   setProvider: (provider) => api.post('/provider/set', { provider }),
+  // V22 Hybrid AI — multi-provider
+  checkProvider: (name) => api.get(`/provider/check/${name}`),
+  smartRoute: (taskType) => api.get(`/provider/smart-route/${taskType}`),
+  smartRouteAll: () => api.get('/provider/smart-route'),
 };
 
 // --- ZEUS MODULES ---

@@ -1,55 +1,65 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 /**
- * useDashboard — manages card layout positions, drag-to-reorder, edit mode
+ * useDashboard — manages card layout positions, edit mode, save/load/reset.
  *
- * Saves/loads layout from localStorage (v4 format matching original).
+ * v7 format: { layout: { cardId: { col, row, w, h, bg?, minH? } }, v: 7 }
  * 12-column CSS grid with explicit col/row/w/h per card.
  */
 
-const STORAGE_KEY = 'mj-dash-layout-v5';
+const STORAGE_KEY = 'mj-dash-layout-v7';
 
 const DEFAULT_LAYOUT = {
-  'orb':           { col: 1,  row: 1,  w: 5,  h: 6 },
-  'sys-monitor':   { col: 6,  row: 1,  w: 4,  h: 6 },
-  'model-selector':{ col: 10, row: 1,  w: 3,  h: 6 },
-  'quick-actions': { col: 1,  row: 7,  w: 12, h: 3 },
-  'memory-graph':  { col: 1,  row: 10, w: 4,  h: 6 },
-  'timeline':      { col: 5,  row: 10, w: 4,  h: 6 },
-  'agent-network': { col: 9,  row: 10, w: 4,  h: 6 },
+  'ai-core':       { col: 1,  row: 1,  w: 4,  h: 5 },
+  'live-intel':    { col: 5,  row: 1,  w: 4,  h: 5 },
+  'quick-cmd':     { col: 9,  row: 1,  w: 4,  h: 5 },
+  'sys-monitor':   { col: 1,  row: 6,  w: 3,  h: 7 },
+  'orb':           { col: 4,  row: 6,  w: 5,  h: 7 },
+  'sys-stats':     { col: 9,  row: 6,  w: 4,  h: 4 },
+  'smart-suggest': { col: 9,  row: 10, w: 4,  h: 3 },
+  'model-selector':{ col: 1,  row: 13, w: 5,  h: 4 },
+  'quick-actions': { col: 6,  row: 13, w: 7,  h: 4 },
+  'memory-graph':  { col: 1,  row: 17, w: 4,  h: 5 },
+  'timeline':      { col: 5,  row: 17, w: 4,  h: 5 },
+  'agent-network': { col: 9,  row: 17, w: 4,  h: 5 },
+  'gesture-ctrl':  { col: 1,  row: 22, w: 3,  h: 4 },
+  'voice-lang':    { col: 4,  row: 22, w: 3,  h: 4 },
 };
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
 
 function loadLayout() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_LAYOUT };
+    if (!raw) return deepClone(DEFAULT_LAYOUT);
     const parsed = JSON.parse(raw);
-    if (parsed.v === 5 && parsed.layout) return parsed.layout;
-    return { ...DEFAULT_LAYOUT };
+    if (parsed.v === 7 && parsed.layout) return parsed.layout;
+    return deepClone(DEFAULT_LAYOUT);
   } catch {
-    return { ...DEFAULT_LAYOUT };
+    return deepClone(DEFAULT_LAYOUT);
   }
 }
 
 function saveLayout(layout) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout, v: 4 }));
-  } catch {}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout, v: 7 }));
+  } catch { /* silent */ }
 }
 
 export function useDashboard() {
   const [layout, setLayout] = useState(loadLayout);
   const [editing, setEditing] = useState(false);
-  const [dragId, setDragId] = useState(null);
   const preEditRef = useRef(null);
 
-  // Save whenever layout changes (outside edit mode)
+  // Persist layout when not editing
   useEffect(() => {
     if (!editing) saveLayout(layout);
   }, [layout, editing]);
 
   const enterEdit = useCallback(() => {
-    preEditRef.current = { ...layout };
+    preEditRef.current = deepClone(layout);
     setEditing(true);
   }, [layout]);
 
@@ -66,57 +76,48 @@ export function useDashboard() {
   }, []);
 
   const resetLayout = useCallback(() => {
-    setLayout({ ...DEFAULT_LAYOUT });
-    saveLayout(DEFAULT_LAYOUT);
+    const def = deepClone(DEFAULT_LAYOUT);
+    setLayout(def);
+    saveLayout(def);
     setEditing(false);
     preEditRef.current = null;
   }, []);
 
-  // ─── Drag handlers ───
-  const onDragStart = useCallback((cardId) => {
-    if (!editing) return;
-    setDragId(cardId);
-  }, [editing]);
-
-  const onDragOver = useCallback((targetId) => {
-    if (!editing || !dragId || dragId === targetId) return;
-    // Swap positions
-    setLayout(prev => {
-      const next = { ...prev };
-      const dragPos = { ...next[dragId] };
-      const targetPos = { ...next[targetId] };
-      next[dragId] = targetPos;
-      next[targetId] = dragPos;
-      return next;
-    });
-    setDragId(targetId); // follow the dragged card
-  }, [editing, dragId]);
-
-  const onDragEnd = useCallback(() => {
-    setDragId(null);
+  /** Update a single card's position/style */
+  const updateCardPos = useCallback((cardId, changes) => {
+    setLayout(prev => ({
+      ...prev,
+      [cardId]: { ...prev[cardId], ...changes },
+    }));
   }, []);
 
-  // Card style from layout
+  /** Get default position for a card (for per-card reset) */
+  const getDefaultPos = useCallback((cardId) => {
+    return DEFAULT_LAYOUT[cardId] || null;
+  }, []);
+
+  /** Build inline style for a card from its layout entry */
   const getCardStyle = useCallback((cardId) => {
     const pos = layout[cardId];
     if (!pos) return {};
-    return {
+    const style = {
       gridColumn: `${pos.col} / span ${pos.w}`,
       gridRow: `${pos.row} / span ${pos.h}`,
     };
+    if (pos.bg) style.background = pos.bg;
+    if (pos.minH) style.minHeight = pos.minH;
+    return style;
   }, [layout]);
 
   return {
     layout,
     editing,
-    dragId,
     enterEdit,
     saveEdit,
     cancelEdit,
     resetLayout,
-    onDragStart,
-    onDragOver,
-    onDragEnd,
+    updateCardPos,
+    getDefaultPos,
     getCardStyle,
   };
 }

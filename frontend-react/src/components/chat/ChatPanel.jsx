@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { useApp } from '@/context/AppContext';
 import { useChat } from '@/hooks/useChat';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -12,7 +13,8 @@ function stageText(stage) {
   return '';
 }
 
-export default function ChatPanel() {
+export default function ChatPanel({ sideMode = false }) {
+  const { state, dispatch } = useApp();
   const {
     messages,
     chats,
@@ -28,7 +30,9 @@ export default function ChatPanel() {
   } = useChat();
 
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const scrollRef = useRef(null);
+  const voiceSentRef = useRef(null);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -38,59 +42,83 @@ export default function ChatPanel() {
     }
   }, [messages]);
 
+  // Auto-send pending voice message from context
+  useEffect(() => {
+    const msg = state.pendingVoiceMessage;
+    if (msg && msg !== voiceSentRef.current && !isStreaming) {
+      voiceSentRef.current = msg;
+      sendMessage(msg);
+      dispatch({ type: 'CLEAR_VOICE_MESSAGE' });
+    }
+  }, [state.pendingVoiceMessage, isStreaming, sendMessage, dispatch]);
+
   const handleSend = (text, file) => {
     sendMessage(text, file);
   };
 
   return (
-    <div className="chat-panel">
-      <ChatHistory
-        chats={chats}
-        activeChatId={activeChatId}
-        onSelect={selectChat}
-        onDelete={deleteChat}
-        onNewChat={newChat}
-        isOpen={historyOpen}
-        onToggle={() => setHistoryOpen(h => !h)}
-      />
-
-      {/* Messages area */}
-      <div className="chat-container" ref={scrollRef}>
-        {messages.length === 0 && (
-          <div className="chat-empty-state">
-            <div className="chat-empty-orb" />
-            <div className="chat-empty-title">MJ ASSISTANT</div>
-            <div className="chat-empty-sub">Ask me anything — I'm ready.</div>
-          </div>
-        )}
-
-        {messages.map(msg => (
-          <ChatMessage key={msg.id} message={msg} />
-        ))}
-
-        {/* Stage indicator (while streaming, before tokens arrive) */}
-        {isStreaming && stage && stage !== 'streaming' && (
-          <div className="chat-stage-indicator">
-            <div className="stage-dot" />
-            <span>{stageText(stage)}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Model info bar */}
-      {modelInfo && (
-        <div className="chat-model-bar">
-          <span className="cmb-dot" />
-          <span className="cmb-model">{modelInfo.model?.split(':')[0]}</span>
-          <span className="cmb-provider">{modelInfo.provider?.toUpperCase()}</span>
-          {modelInfo.task_type && modelInfo.task_type !== 'chat' && (
-            <span className="cmb-task">{modelInfo.task_type}</span>
-          )}
-        </div>
+    <div className={`chat-panel-wrap${collapsed ? ' collapsed' : ''}${sideMode ? ' side-mode-wrap' : ''}`}>
+      {/* Collapse / Expand toggle arrow (full-page chat only, not side mode) */}
+      {!sideMode && (
+        <button
+          className={`chat-collapse-btn${collapsed ? ' collapsed' : ''}`}
+          onClick={() => setCollapsed(c => !c)}
+          title={collapsed ? 'Show chat' : 'Hide chat'}
+        >
+          <span className="chat-collapse-arrow">{collapsed ? '▶' : '◀'}</span>
+        </button>
       )}
 
-      {/* Input */}
-      <ChatInput onSend={handleSend} disabled={isStreaming} />
+      {/* Main chat panel — hidden when collapsed */}
+      <div className={`chat-panel${sideMode ? ' side-mode' : ''}${collapsed ? ' chat-hidden' : ''}`}>
+        <ChatHistory
+          chats={chats}
+          activeChatId={activeChatId}
+          onSelect={selectChat}
+          onDelete={deleteChat}
+          onNewChat={newChat}
+          isOpen={historyOpen}
+          onToggle={() => setHistoryOpen(h => !h)}
+        />
+
+        {/* Messages area */}
+        <div className="chat-container" ref={scrollRef}>
+          {messages.length === 0 && (
+            <div className="chat-empty-state">
+              <div className="chat-empty-orb" />
+              <div className="chat-empty-title">MJ ASSISTANT</div>
+              <div className="chat-empty-sub">Ask me anything — I'm ready.</div>
+            </div>
+          )}
+
+          {messages.map(msg => (
+            <ChatMessage key={msg.id} message={msg} />
+          ))}
+
+          {/* Stage indicator (while streaming, before tokens arrive) */}
+          {isStreaming && stage && stage !== 'streaming' && (
+            <div className="chat-stage-indicator">
+              <div className="stage-dot" />
+              <span>{stageText(stage)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Model info bar */}
+        {modelInfo && (
+          <div className="chat-model-bar">
+            <span className="cmb-dot" />
+            <span className="cmb-model">{modelInfo.model?.split(':')[0]}</span>
+            <span className="cmb-provider">{modelInfo.provider?.toUpperCase()}</span>
+            {modelInfo.task_type && modelInfo.task_type !== 'chat' && (
+              <span className="cmb-task">{modelInfo.task_type}</span>
+            )}
+          </div>
+        )}
+
+        {/* Input */}
+        <ChatInput onSend={handleSend} disabled={isStreaming} />
+      </div>
     </div>
   );
 }

@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "updated_at": "2026-06-24T14:59:09.155626",
+  "count": 3,
+  "facts": [
+    {
+      "id": "491a4df9",
+      "content": "User name is Abhishek",
+      "category": "personal",
+      "source": "user",
+      "confidence": 1.0,
+      "created_at": "2026-06-24T14:58:30.432256",
+      "updated_at": "2026-06-24T14:59:09.110993",
+      "access_count": 1
+    },
+    {
+      "id": "1bfa9a99",
+      "content": "User likes coding in Python",
+      "category": "preference",
+      "source": "user",
+      "confidence": 1.0,
+      "created_at": "2026-06-24T14:58:30.440670",
+      "updated_at": "2026-06-24T14:58:30.440670",
+      "access_count": 0
+    },
+    {
+      "id": "0b608b15",
+      "content": "User's age is 24 years",
+      "category": "personal",
+      "source": "auto",
+      "confidence": 0.7,
+      "created_at": "2026-06-24T14:59:09.105791",
+      "updated_at": "2026-06-24T14:59:09.105791",
+      "access_count": 0
+    }
+  ]
+}

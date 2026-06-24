@@ -10,6 +10,7 @@ import './styles/orb.css';
 import './styles/dashboard.css';
 import './styles/cards.css';
 import './styles/panels.css';
+import './styles/migration-cards.css';
 import './styles/responsive.css';
 import App from './App.jsx';
 

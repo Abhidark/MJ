@@ -1,5 +1,179 @@
 [
   {
+    "content": "Yes. For a desktop JARVIS, don't use a video or GIF. Create it with **Three.js + React Three Fiber** so it's fully interactive and responds to speech in real time.\n\nBelow is a prompt you can give to Claude Opus 4.6 to generate the component.\n\n---\n\n## Prompt for Claude\n\nBuild a production-ready React component named `JarvisHologram.tsx` using **React Three Fiber**, **Three.js**, **@react-three/drei**, **Framer Motion**, and the **Web Audio API**.\n\nCreate a futuristic Iron Man/JARVIS-inspired holo",
+    "time": "03:37 PM",
+    "timestamp": "2026-06-24T15:37:29.353611",
+    "preview": "Yes. For a desktop JARVIS, don't use a video or GIF. Create it with **Three.js +"
+  },
+  {
+    "content": "https://prnt.sc/Nf3mUzmV6oqQ",
+    "time": "03:32 PM",
+    "timestamp": "2026-06-24T15:32:01.192961",
+    "preview": "https://prnt.sc/Nf3mUzmV6oqQ"
+  },
+  {
+    "content": ": Start Your Journey Button",
+    "time": "03:31 PM",
+    "timestamp": "2026-06-24T15:31:26.742076",
+    "preview": ": Start Your Journey Button"
+  },
+  {
+    "content": "Landing Page",
+    "time": "03:31 PM",
+    "timestamp": "2026-06-24T15:31:17.307104",
+    "preview": "Landing Page"
+  },
+  {
+    "content": "1?? Open the application on an iPad or in an iPad responsive view.\n2?? Navigate to the page containing the Start Your Journey button.\n3?? Observe the button layout and appearance.",
+    "time": "03:31 PM",
+    "timestamp": "2026-06-24T15:31:07.743390",
+    "preview": "1?? Open the application on an iPad or in an iPad responsive view. 2?? Navigate "
+  },
+  {
+    "content": "The Start Your Journey button should be properly aligned, fully visible, and responsive on iPad devices.",
+    "time": "03:31 PM",
+    "timestamp": "2026-06-24T15:31:01.261456",
+    "preview": "The Start Your Journey button should be properly aligned, fully visible, and res"
+  },
+  {
+    "content": "The UI of the Start Your Journey button is broken on iPad devices, affecting its appearance and layout.",
+    "time": "03:30 PM",
+    "timestamp": "2026-06-24T15:30:54.762509",
+    "preview": "The UI of the Start Your Journey button is broken on iPad devices, affecting its"
+  },
+  {
+    "content": "https://prnt.sc/nn6hK66Jx73T",
+    "time": "03:28 PM",
+    "timestamp": "2026-06-24T15:28:16.526427",
+    "preview": "https://prnt.sc/nn6hK66Jx73T"
+  },
+  {
+    "content": "P2",
+    "time": "03:28 PM",
+    "timestamp": "2026-06-24T15:28:00.706278",
+    "preview": "P2"
+  },
+  {
+    "content": "UI/Responsive Issue",
+    "time": "03:27 PM",
+    "timestamp": "2026-06-24T15:27:50.689827",
+    "preview": "UI/Responsive Issue"
+  },
+  {
+    "content": "Featured Work",
+    "time": "03:27 PM",
+    "timestamp": "2026-06-24T15:27:44.110625",
+    "preview": "Featured Work"
+  },
+  {
+    "content": "1?? Open the application.\n2?? Navigate to the Explore page.\n3?? Scroll to the Featured Work section.\n4?? Observe the layout between the upper grid and the Featured Work section.",
+    "time": "03:27 PM",
+    "timestamp": "2026-06-24T15:27:31.144427",
+    "preview": "1?? Open the application. 2?? Navigate to the Explore page. 3?? Scroll to the Fe"
+  },
+  {
+    "content": "The Featured Work section should be displayed below the upper grid with proper spacing and without overlapping any UI elements.",
+    "time": "03:27 PM",
+    "timestamp": "2026-06-24T15:27:18.153693",
+    "preview": "The Featured Work section should be displayed below the upper grid with proper s"
+  },
+  {
+    "content": "The Featured Work section overlaps with the upper grid, causing a broken UI layout.",
+    "time": "03:26 PM",
+    "timestamp": "2026-06-24T15:26:46.421418",
+    "preview": "The Featured Work section overlaps with the upper grid, causing a broken UI layo"
+  },
+  {
+    "content": "Use this prompt for Claude Code:\n\n---\n\n# Critical Regression Audit: Compare Old UI vs New UI and Restore Edit Layout Functionality\n\nAfter the recent UI/layout changes, several features that previously worked are now broken.\n\nI want you to perform a **complete regression audit** by comparing the current implementation with the previous working UI.\n\n**Do not guess the fixes. Compare the old implementation with the new implementation and identify exactly what changed.**\n\n---\n\n## Primary Issue\n\nThe ",
+    "time": "02:56 PM",
+    "timestamp": "2026-06-24T14:56:42.216130",
+    "preview": "Use this prompt for Claude Code:  ---  # Critical Regression Audit: Compare Old "
+  },
+  {
+    "content": "please rechech all the old ui and compare with new one now the editi funcatioalty is nnot workingÿ\n\nplease checkÿ",
+    "time": "02:54 PM",
+    "timestamp": "2026-06-24T14:54:48.163195",
+    "preview": "please rechech all the old ui and compare with new one now the editi funcatioalt"
+  },
+  {
+    "content": "git add .\ngit commit -m \"fix: dashboard scroll + independent right sidebar - add overflow-y:auto to dashboard-wrapper\"\ngit push",
+    "time": "02:53 PM",
+    "timestamp": "2026-06-24T14:53:22.124243",
+    "preview": "git add . git commit -m \"fix: dashboard scroll + independent right sidebar - add"
+  },
+  {
+    "content": "Share Post (Mobile)",
+    "time": "02:51 PM",
+    "timestamp": "2026-06-24T14:51:19.351878",
+    "preview": "Share Post (Mobile)"
+  },
+  {
+    "content": "P3",
+    "time": "02:51 PM",
+    "timestamp": "2026-06-24T14:51:12.718288",
+    "preview": "P3"
+  },
+  {
+    "content": "https://prnt.sc/Gy3wXgyIA1pS",
+    "time": "02:51 PM",
+    "timestamp": "2026-06-24T14:51:06.319005",
+    "preview": "https://prnt.sc/Gy3wXgyIA1pS"
+  },
+  {
+    "content": "1?? Open the application on a mobile device or in a mobile responsive view.\n2?? Log in with a valid account.\n3?? Navigate to any post on the Feed page.\n4?? Tap the Share button.\n5?? Observe the loading indicator.",
+    "time": "02:50 PM",
+    "timestamp": "2026-06-24T14:50:43.308407",
+    "preview": "1?? Open the application on a mobile device or in a mobile responsive view. 2?? "
+  },
+  {
+    "content": "The loading indicator should appear centered and properly aligned while the share action is in progress.",
+    "time": "02:50 PM",
+    "timestamp": "2026-06-24T14:50:33.595660",
+    "preview": "The loading indicator should appear centered and properly aligned while the shar"
+  },
+  {
+    "content": "The loading indicator shifts to the right side of the screen, causing a UI alignment issue on mobile devices.",
+    "time": "02:50 PM",
+    "timestamp": "2026-06-24T14:50:20.560016",
+    "preview": "The loading indicator shifts to the right side of the screen, causing a UI align"
+  },
+  {
+    "content": "With the blessings of our families, we joyfully celebrate the union of two souls in love, promising a lifetime of happiness, respect, and togetherness.",
+    "time": "02:44 PM",
+    "timestamp": "2026-06-24T14:44:43.618921",
+    "preview": "With the blessings of our families, we joyfully celebrate the union of two souls"
+  },
+  {
+    "content": "Here's a detailed prompt you can paste directly into **Claude Code**:\n\n---\n\n# Critical Layout Bug: Dashboard Not Scrolling & Right Sidebar Height Broken\n\nThere is a major layout issue in the dashboard (see attached screenshot).\n\n## Current Issues\n\n### 1. Unable to Scroll\n\nThe dashboard is **not scrollable**.\n\nI cannot reach the widgets/cards below the visible area.\n\nThe lower dashboard content exists, but it is inaccessible because scrolling is broken.\n\nWhen I change the browser zoom to **60%**,",
+    "time": "02:42 PM",
+    "timestamp": "2026-06-24T14:42:51.466477",
+    "preview": "Here's a detailed prompt you can paste directly into **Claude Code**:  ---  # Cr"
+  },
+  {
+    "content": "which is in yellow rectangel that is missing and unable to scroll niche ke card and grid show nahi kr pa raha hu beacuse scoll nahi kr pa raha hu jaab display ka size 60% kiya taab dikhaÿ",
+    "time": "02:40 PM",
+    "timestamp": "2026-06-24T14:40:56.821842",
+    "preview": "which is in yellow rectangel that is missing and unable to scroll niche ke card "
+  },
+  {
+    "content": "git add .\ngit commit -m \"fix: update dashboard grid layout to match old UI - AI Core/Live Intel/Quick Commands top row, Orb center, System Stats right\"\ngit push",
+    "time": "02:38 PM",
+    "timestamp": "2026-06-24T14:38:48.174464",
+    "preview": "git add . git commit -m \"fix: update dashboard grid layout to match old UI - AI "
+  },
+  {
+    "content": "git add .\ngit commit -m \"Fix voice chat: side panel instead of fullscreen overlay\"\ngit push",
+    "time": "01:06 PM",
+    "timestamp": "2026-06-24T13:06:38.039666",
+    "preview": "git add . git commit -m \"Fix voice chat: side panel instead of fullscreen overla"
+  },
+  {
+    "content": "http://localhost:3000/",
+    "time": "12:52 PM",
+    "timestamp": "2026-06-24T12:52:38.678230",
+    "preview": "http://localhost:3000/"
+  },
+  {
     "content": "git add .\ngit commit -m \"Groq provider ready, V12+V15 complete\"\ngit push",
     "time": "12:51 PM",
     "timestamp": "2026-06-24T12:51:21.719648",
@@ -124,119 +298,5 @@
     "time": "08:33 PM",
     "timestamp": "2026-06-22T20:33:33.487604",
     "preview": "git add . git commit -m \"12-col grid layout, v4 layout save, process panel sort+"
-  },
-  {
-    "content": "git add .\ngit commit -m \"Add styled chat header buttons: New Chat, History with search, Delete with confirmation overlay\"\ngit push",
-    "time": "08:16 PM",
-    "timestamp": "2026-06-22T20:16:47.227129",
-    "preview": "git add . git commit -m \"Add styled chat header buttons: New Chat, History with "
-  },
-  {
-    "content": "git add .\ngit commit -m \"Add grid-auto-flow dense to base grid for consistent layout on save\"\ngit push",
-    "time": "04:04 PM",
-    "timestamp": "2026-06-22T16:04:18.135305",
-    "preview": "git add . git commit -m \"Add grid-auto-flow dense to base grid for consistent la"
-  },
-  {
-    "content": "Here's a detailed **Claude 4 Sonnet prompt** you can paste directly into Claude Code. It explains exactly how you want the dashboard builder to work.\n\n---\n\n# Prompt for Claude Code\n\nI want to redesign my **JARVIS Dashboard Layout Editor** to behave like a professional dashboard builder (similar to Grafana, Retool, Notion, Framer, or Gridstack.js).\n\n## Current Problem\n\nAs shown in the attached image, there is an empty gap (highlighted in red) when panels are resized or moved.\n\nI want every panel ",
-    "time": "04:04 PM",
-    "timestamp": "2026-06-22T16:04:04.465433",
-    "preview": "Here's a detailed **Claude 4 Sonnet prompt** you can paste directly into Claude "
-  },
-  {
-    "content": "when move the side panle it should move automatic and when i hit save it should save and give me each and every grid and card that can i resize to hold bottom of the grid and choose the size",
-    "time": "04:02 PM",
-    "timestamp": "2026-06-22T16:02:38.930768",
-    "preview": "when move the side panle it should move automatic and when i hit save it should "
-  },
-  {
-    "content": "git add .\ngit commit -m \"Fix all: card IDs, v3 save/load, grid reorder, orb-card isolation, flex fix\"\ngit push",
-    "time": "03:58 PM",
-    "timestamp": "2026-06-22T15:58:40.531451",
-    "preview": "git add . git commit -m \"Fix all: card IDs, v3 save/load, grid reorder, orb-card"
-  },
-  {
-    "content": "localStorage.removeItem(\"mj-dash-layout\")\nlocalStorage.removeItem(\"mj-dash-settings\")",
-    "time": "03:56 PM",
-    "timestamp": "2026-06-22T15:56:47.198338",
-    "preview": "localStorage.removeItem(\"mj-dash-layout\") localStorage.removeItem(\"mj-dash-setti"
-  },
-  {
-    "content": "localStorage.removeItem(\"mj-dash-layout\")",
-    "time": "02:48 PM",
-    "timestamp": "2026-06-22T14:48:14.210330",
-    "preview": "localStorage.removeItem(\"mj-dash-layout\")"
-  },
-  {
-    "content": "window._orbCfg.holoMode = true;",
-    "time": "10:31 AM",
-    "timestamp": "2026-06-22T10:31:17.496341",
-    "preview": "window._orbCfg.holoMode = true;"
-  },
-  {
-    "content": "window._orbCfg.holoMode = false;",
-    "time": "10:31 AM",
-    "timestamp": "2026-06-22T10:31:00.880695",
-    "preview": "window._orbCfg.holoMode = false;"
-  },
-  {
-    "content": "window._orbCfg.holoMode = true;",
-    "time": "10:30 AM",
-    "timestamp": "2026-06-22T10:30:42.721809",
-    "preview": "window._orbCfg.holoMode = true;"
-  },
-  {
-    "content": "git add .\ngit commit -m \"Add Holo FX toggle to orb settings panel\"\ngit push",
-    "time": "10:29 AM",
-    "timestamp": "2026-06-22T10:29:59.741522",
-    "preview": "git add . git commit -m \"Add Holo FX toggle to orb settings panel\" git push"
-  },
-  {
-    "content": "allow pasting",
-    "time": "10:28 AM",
-    "timestamp": "2026-06-22T10:28:05.906611",
-    "preview": "allow pasting"
-  },
-  {
-    "content": "window._orbCfg.holoMode = true;",
-    "time": "10:26 AM",
-    "timestamp": "2026-06-22T10:26:46.486295",
-    "preview": "window._orbCfg.holoMode = true;"
-  },
-  {
-    "content": "window._orbCfg.holoMode = false;  // effects OFF\nwindow._orbCfg.holoMode = true;   // effects ON",
-    "time": "10:25 AM",
-    "timestamp": "2026-06-22T10:25:36.418047",
-    "preview": "window._orbCfg.holoMode = false;  // effects OFF window._orbCfg.holoMode = true;"
-  },
-  {
-    "content": "git add .\ngit commit -m \"Fix orb settings overlap + add drag handle bar for reliable card move\"\ngit push",
-    "time": "08:24 PM",
-    "timestamp": "2026-06-21T20:24:22.385486",
-    "preview": "git add . git commit -m \"Fix orb settings overlap + add drag handle bar for reli"
-  },
-  {
-    "content": "git add .\ngit commit -m \"Fix card drag with pointer-events + add AI flow panel resize\"\ngit push",
-    "time": "08:15 PM",
-    "timestamp": "2026-06-21T20:15:33.411457",
-    "preview": "git add . git commit -m \"Fix card drag with pointer-events + add AI flow panel r"
-  },
-  {
-    "content": "git add .\ngit commit -m \"Shrink left panel, expand AI flow, move orb settings to HUD\"\ngit push",
-    "time": "07:53 PM",
-    "timestamp": "2026-06-21T19:53:43.578841",
-    "preview": "git add . git commit -m \"Shrink left panel, expand AI flow, move orb settings to"
-  },
-  {
-    "content": "git add .\ngit commit -m \"Add GPU gauge to System Monitor card\"\ngit push",
-    "time": "07:43 PM",
-    "timestamp": "2026-06-21T19:43:34.442752",
-    "preview": "git add . git commit -m \"Add GPU gauge to System Monitor card\" git push"
-  },
-  {
-    "content": "git add .\ngit commit -m \"Move Live Intelligence below AI Core Overview\"\ngit push",
-    "time": "07:39 PM",
-    "timestamp": "2026-06-21T19:39:03.893977",
-    "preview": "git add . git commit -m \"Move Live Intelligence below AI Core Overview\" git push"
   }
 ]

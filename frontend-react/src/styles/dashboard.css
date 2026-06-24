@@ -9,6 +9,8 @@
   flex-direction: column;
   min-height: 0;
   position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ── Edit Toolbar ── */
@@ -58,11 +60,115 @@
   min-width: 0;
 }
 
+/* ── Edit Mode ── */
 .dash-grid.editing {
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 39px,
-    rgba(0,180,255,0.03) 39px, rgba(0,180,255,0.03) 40px
-  );
+  position: relative;
+  gap: 14px;
+  user-select: none;
+}
+/* 12-col + row grid overlay */
+.dash-grid.editing::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(90deg,
+      rgba(0,212,255,0.04) 0px, rgba(0,212,255,0.04) 1px,
+      transparent 1px, transparent calc(100% / 12)),
+    repeating-linear-gradient(0deg,
+      rgba(0,212,255,0.02) 0px, rgba(0,212,255,0.02) 1px,
+      transparent 1px, transparent 40px);
+}
+/* Cards: dashed outline + z-index above overlay */
+.dash-grid.editing > .dash-card {
+  outline: 2px dashed rgba(0,212,255,0.3);
+  cursor: default;
+  z-index: 1;
+  transition: outline 0.2s, box-shadow 0.2s, transform 0.25s ease, opacity 0.2s;
+}
+.dash-grid.editing > .dash-card:hover {
+  outline-color: rgba(0,212,255,0.6);
+  box-shadow: 0 0 20px rgba(0,212,255,0.15);
+}
+
+/* ── Drag placeholder ── */
+.drag-placeholder {
+  background: rgba(0,212,255,0.08);
+  border: 2px dashed rgba(0,212,255,0.3);
+  border-radius: 12px;
+  min-height: 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Card edit toolbar ── */
+.card-edit-toolbar {
+  display: flex;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  gap: 4px;
+  z-index: 50;
+  align-items: center;
+}
+.card-edit-toolbar button {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,180,255,0.2);
+  background: rgba(0,10,30,0.9);
+  color: #00d4ff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.card-edit-toolbar button:hover {
+  background: rgba(0,180,255,0.15);
+  border-color: rgba(0,180,255,0.4);
+}
+.card-edit-toolbar input[type="color"] {
+  width: 26px; height: 26px;
+  border: 1px solid rgba(0,180,255,0.2);
+  border-radius: 6px;
+  background: rgba(0,10,30,0.9);
+  cursor: pointer;
+  padding: 2px;
+}
+
+/* ── Corner resize handle ── */
+.card-resize-handle {
+  position: absolute;
+  bottom: 2px; right: 2px;
+  width: 16px; height: 16px;
+  cursor: nwse-resize;
+  color: rgba(0,212,255,0.4);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  z-index: 50;
+}
+.card-resize-handle:hover {
+  color: rgba(0,212,255,0.8);
+}
+
+/* ── Grid position badge ── */
+.grid-pos-badge {
+  position: absolute;
+  bottom: 4px; left: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: rgba(0,212,255,0.5);
+  background: rgba(0,10,30,0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,212,255,0.15);
+  z-index: 55;
+  pointer-events: none;
+  letter-spacing: 1px;
 }
 
 /* ── Dashboard Card ── */

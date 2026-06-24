@@ -512,16 +512,18 @@ Keep it minimal — 2-4 steps max. Use null for module if the main LLM should ha
             # Check if cooldown has passed
             if time.time() - state["last_failure"] > state["cooldown"]:
                 state["state"] = "half-open"
+                logger.info(f"Circuit HALF-OPEN for {module_name} — testing recovery")
                 return True
             return False
         return True
 
     def _record_circuit(self, module_name: str, success: bool):
-        """Update circuit breaker after execution."""
+        """Update circuit breaker after execution. Fires alerts on trip/recovery."""
         if module_name not in self._circuit_breakers:
             self._circuit_breakers[module_name] = {
                 "failures": 0, "successes": 0, "state": "closed",
-                "last_failure": 0, "cooldown": 30, "threshold": 3,
+                "last_failure": 0, "cooldown": 300, "threshold": 3,
+                "total_trips": 0, "last_error": "",
             }
         state = self._circuit_breakers[module_name]
         if success:
@@ -529,12 +531,53 @@ Keep it minimal — 2-4 steps max. Use null for module if the main LLM should ha
             if state["state"] == "half-open":
                 state["state"] = "closed"
                 state["failures"] = 0
+                logger.info(f"Circuit CLOSED for {module_name} — module recovered")
+                self._circuit_alert(module_name, recovered=True)
         else:
             state["failures"] += 1
             state["last_failure"] = time.time()
-            if state["failures"] >= state["threshold"]:
+            if state["failures"] >= state["threshold"] and state["state"] != "open":
                 state["state"] = "open"
+                state["total_trips"] = state.get("total_trips", 0) + 1
                 logger.warning(f"Circuit OPEN for module {module_name} after {state['failures']} failures")
+                self._circuit_alert(module_name, recovered=False)
+
+    def _circuit_alert(self, module_name: str, recovered: bool):
+        """Fire alert on circuit breaker state change."""
+        try:
+            from self_healer.alert_system import create_alert, SEVERITY_WARNING, SEVERITY_INFO
+            if recovered:
+                create_alert(
+                    title=f"Module Recovered: {module_name}",
+                    message=f"Module '{module_name}' is working again after circuit breaker cooldown.",
+                    severity=SEVERITY_INFO,
+                    category="module",
+                    source="circuit_breaker",
+                    auto_resolve_seconds=60,
+                )
+            else:
+                create_alert(
+                    title=f"Circuit Breaker: {module_name}",
+                    message=f"Module '{module_name}' disabled after 3 consecutive failures. Will retry in 5 minutes.",
+                    severity=SEVERITY_WARNING,
+                    category="module",
+                    source="circuit_breaker",
+                    auto_resolve_seconds=300,
+                )
+        except Exception:
+            pass
+
+    def get_circuit_states(self) -> Dict:
+        """Get all circuit breaker states for dashboard."""
+        result = {}
+        for name, state in self._circuit_breakers.items():
+            result[name] = {
+                "state": state["state"],
+                "failures": state["failures"],
+                "total_trips": state.get("total_trips", 0),
+                "cooldown_remaining": max(0, round(state["cooldown"] - (time.time() - state["last_failure"]))) if state["state"] == "open" else 0,
+            }
+        return result
 
     @staticmethod
     def _categorize_error(error: Exception) -> Dict:

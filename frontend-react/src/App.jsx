@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider } from '@/context/AppContext';
+import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useSidebarResize } from '@/hooks/useSidebarResize';
 import Sidebar from '@/components/layout/Sidebar';
@@ -16,6 +16,9 @@ import DashboardGrid from '@/components/dashboard/DashboardGrid';
 import ParticlesCanvas from '@/components/effects/ParticlesCanvas';
 import HexGrid from '@/components/effects/HexGrid';
 import Scanline from '@/components/effects/Scanline';
+import ToastContainer from '@/components/ui/ToastContainer';
+import ProcessPanel from '@/components/panels/ProcessPanel';
+import ErrorPanel from '@/components/panels/ErrorPanel';
 
 function ModulesView() {
   return (
@@ -30,12 +33,15 @@ function ModulesView() {
 
 function AppLayout() {
   const { needsLogin, checking } = useAuth();
+  const { state, dispatch } = useApp();
   const { width, isResizing, iconsOnly, onMouseDown } = useSidebarResize(210);
 
   const [securityOpen, setSecurityOpen] = useState(false);
   const [roadmapOpen, setRoadmapOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiFlowOpen, setAiFlowOpen] = useState(false);
+  const [processOpen, setProcessOpen] = useState(false);
+  const [errorPanelOpen, setErrorPanelOpen] = useState(false);
 
   if (checking) {
     return (
@@ -71,12 +77,24 @@ function AppLayout() {
           aiFlowOpen={aiFlowOpen}
         />
         <ContentRow>
-          <Routes>
-            <Route path="/" element={<DashboardGrid />} />
-            <Route path="/chat" element={<ChatPanel />} />
-            <Route path="/modules" element={<ModulesView />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <div className={`content-main${state.chatPanelOpen ? ' with-side-chat' : ''}`}>
+            <Routes>
+              <Route path="/" element={<DashboardGrid />} />
+              <Route path="/chat" element={<ChatPanel />} />
+              <Route path="/modules" element={<ModulesView />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+          {state.chatPanelOpen && (
+            <div className="chat-side-panel">
+              <button
+                className="chat-side-close"
+                onClick={() => dispatch({ type: 'CLOSE_CHAT_PANEL' })}
+                title="Close chat panel"
+              >✕</button>
+              <ChatPanel sideMode />
+            </div>
+          )}
           {aiFlowOpen && (
             <AIFlowPanel
               onClose={() => setAiFlowOpen(false)}
@@ -90,6 +108,9 @@ function AppLayout() {
       {securityOpen && <SecurityPanel onClose={() => setSecurityOpen(false)} />}
       {roadmapOpen && <RoadmapPanel onClose={() => setRoadmapOpen(false)} />}
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+      {processOpen && <ProcessPanel onClose={() => setProcessOpen(false)} />}
+      {errorPanelOpen && <ErrorPanel onClose={() => setErrorPanelOpen(false)} />}
+      <ToastContainer />
     </>
   );
 }

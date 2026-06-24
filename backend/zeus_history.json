@@ -32,11 +32,20 @@
     "timestamp": 1782213472.0578344
   },
   {
+<<<<<<< Updated upstream
     "module": "echo",
     "confidence": 0.9,
     "duration_ms": 1304.0,
     "success": true,
     "text_preview": "meri wife ka naam kuhsi hai usko namste bolo",
     "timestamp": 1782233165.0182765
+=======
+    "module": "sherlock",
+    "confidence": 0.85,
+    "duration_ms": 1483.8,
+    "success": true,
+    "text_preview": "Kitna sunega bhai response De",
+    "timestamp": 1782286726.3935728
+>>>>>>> Stashed changes
   }
 ]

@@ -23,6 +23,60 @@
   overflow: hidden;
 }
 
+/* Main content area — shrinks when side chat opens */
+.content-main {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: flex 0.3s ease;
+}
+
+/* Side Chat Panel container */
+.chat-side-panel {
+  position: relative;
+  width: 400px;
+  max-width: 40vw;
+  min-width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(0, 180, 255, 0.12);
+  background: rgba(2, 8, 20, 0.92);
+  animation: sidePanelSlideIn 0.3s ease;
+  overflow: hidden;
+}
+
+@keyframes sidePanelSlideIn {
+  from { width: 0; opacity: 0; }
+  to { width: 400px; opacity: 1; }
+}
+
+.chat-side-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 60, 60, 0.2);
+  background: rgba(255, 60, 60, 0.06);
+  color: rgba(255, 80, 80, 0.6);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.chat-side-close:hover {
+  background: rgba(255, 60, 60, 0.15);
+  color: #ff4444;
+  border-color: rgba(255, 60, 60, 0.4);
+}
+
 /* --- TOP BAR --- */
 .top-bar {
   display: flex;
