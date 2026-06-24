@@ -182,6 +182,35 @@ export const miscAPI = {
   getEmailConfig: () => api.get('/email/config'),
 };
 
+// --- CALENDAR (localStorage-based, no backend needed) ---
+export const calendarAPI = {
+  _key: 'mj-calendar-events',
+  getEvents: () => {
+    try {
+      return JSON.parse(localStorage.getItem('mj-calendar-events') || '[]');
+    } catch { return []; }
+  },
+  addEvent: (event) => {
+    const events = calendarAPI.getEvents();
+    const newEvent = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      ...event,
+      createdAt: new Date().toISOString(),
+    };
+    events.push(newEvent);
+    localStorage.setItem('mj-calendar-events', JSON.stringify(events));
+    return newEvent;
+  },
+  deleteEvent: (id) => {
+    const events = calendarAPI.getEvents().filter(e => e.id !== id);
+    localStorage.setItem('mj-calendar-events', JSON.stringify(events));
+    return events;
+  },
+  getEventsForDate: (dateStr) => {
+    return calendarAPI.getEvents().filter(e => e.date === dateStr);
+  },
+};
+
 // --- WEATHER ---
 export const weatherAPI = {
   get: (city = 'Gurgaon', days = 3) => api.get(`/weather?city=${encodeURIComponent(city)}&days=${days}`),

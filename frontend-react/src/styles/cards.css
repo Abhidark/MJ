@@ -205,7 +205,6 @@
 }
 
 /* ─── CALENDAR ─── */
-.cal-header { margin-bottom: 8px; }
 .cal-title { font: bold 11px var(--font-mono); color: var(--cyan); letter-spacing: 1.5px; }
 .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .cal-nav-btn {
@@ -231,3 +230,104 @@
 .cal-day.today {
   background: var(--cyan); color: #000; font-weight: 700; border-radius: 50%;
 }
+.cal-day.selected {
+  background: rgba(0,212,255,0.2); border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0,212,255,0.4);
+}
+.cal-day.today.selected {
+  box-shadow: 0 0 0 2px rgba(0,212,255,0.6);
+}
+.cal-day { position: relative; cursor: pointer; }
+.cal-dot {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+.cal-event-count {
+  font-size: 9px; color: var(--text-dim); background: var(--cyan-dim);
+  padding: 1px 6px; border-radius: 8px;
+}
+.cal-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+
+/* ─── Calendar Events Panel ─── */
+.cal-selected-panel {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.cal-selected-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+}
+.cal-selected-date {
+  font: bold 11px var(--font-mono); color: var(--cyan); letter-spacing: 0.5px;
+}
+.cal-add-btn {
+  padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(0,212,255,0.3);
+  background: var(--cyan-dim); color: var(--cyan); font-size: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.cal-add-btn:hover { border-color: var(--cyan); background: rgba(0,212,255,0.15); }
+
+/* Event form */
+.cal-event-form {
+  display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;
+  padding: 8px; background: rgba(0,20,40,0.4); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.cal-event-input {
+  padding: 6px 10px; background: rgba(0,10,20,0.6);
+  border: 1px solid var(--border); border-radius: 6px; color: #fff;
+  font-size: 12px; outline: none; width: 100%; box-sizing: border-box;
+}
+.cal-event-input:focus { border-color: var(--cyan); }
+.cal-event-time {
+  padding: 4px 8px; background: rgba(0,10,20,0.6);
+  border: 1px solid var(--border); border-radius: 6px; color: #fff;
+  font-size: 11px; outline: none; width: 100%; box-sizing: border-box;
+}
+.cal-event-time:focus { border-color: var(--cyan); }
+.cal-color-picks { display: flex; gap: 6px; }
+.cal-color-dot {
+  width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.cal-color-dot:hover { border-color: rgba(255,255,255,0.4); }
+.cal-color-dot.active { border-color: #fff; }
+.cal-event-actions { display: flex; gap: 6px; }
+.cal-event-save {
+  flex: 1; padding: 5px; background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.3);
+  border-radius: 6px; color: var(--cyan); font-size: 11px; cursor: pointer;
+  font-weight: 600;
+}
+.cal-event-save:hover { background: rgba(0,212,255,0.15); }
+.cal-event-cancel {
+  padding: 5px 10px; background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-dim); font-size: 11px; cursor: pointer;
+}
+.cal-event-cancel:hover { border-color: var(--red); color: var(--red); }
+
+/* Event list */
+.cal-events-list { display: flex; flex-direction: column; gap: 3px; }
+.cal-no-events { font-size: 10px; color: var(--text-muted); text-align: center; padding: 6px; }
+.cal-event-item {
+  display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+  border-radius: 4px; transition: background 0.15s;
+}
+.cal-event-item:hover { background: rgba(0,212,255,0.04); }
+.cal-event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.cal-event-time-label {
+  font: 10px var(--font-mono); color: var(--text-dim); min-width: 36px;
+}
+.cal-event-title { flex: 1; font-size: 11px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-event-del {
+  background: none; border: none; color: var(--text-muted); font-size: 10px;
+  cursor: pointer; opacity: 0; transition: opacity 0.2s; padding: 2px 4px;
+}
+.cal-event-item:hover .cal-event-del { opacity: 1; }
+.cal-event-del:hover { color: var(--red); }

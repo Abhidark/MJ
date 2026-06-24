@@ -4,7 +4,7 @@ const ROADMAP = [
   { phase: 'Phase 1 — Foundation', items: [
     { v:'V1', name:'JARVIS Core', desc:'Chat, Voice, FastAPI, Ollama, Logging, Settings, Auth, React', pct:100, features:'Chat UI ✅ | Voice In ✅ | Voice Out ✅ | FastAPI ✅ | Ollama ✅ | Local LLM ✅ | Logging ✅ | Settings ✅ | Auth ✅ | Login Screen ✅ | Change Password ✅ | React ✅' },
     { v:'V2', name:'Memory Engine', desc:'Short/long-term memory, profile, search', pct:45, features:'Long-Term Memory ✅ | Chat History ✅ | Short-Term ⚠️ | User Profile ⚠️ | Memory Search ⚠️ | Timeline ❌ | Qdrant ❌ | PostgreSQL ❌' },
-    { v:'V3', name:'Tool Engine', desc:'Calculator, files, weather, search, email', pct:75, features:'Calculator ✅ | Notes/Todos ✅ | File Manager ✅ | Weather ✅ | Web Search ✅ | Email ✅ | Clipboard ✅ | Calendar ❌' },
+    { v:'V3', name:'Tool Engine', desc:'Calculator, files, weather, search, email, calendar', pct:100, features:'Calculator ✅ | Notes/Todos ✅ | File Manager ✅ | Weather ✅ | Web Search ✅ | Email ✅ | Clipboard ✅ | Calendar ✅' },
     { v:'V4', name:'Agent Framework', desc:'Registry, lifecycle, message bus, events', pct:65, features:'Agent Registry ✅ | Agent Lifecycle ✅ | Message Bus ⚠️ | Event System ⚠️ | Shared Memory ⚠️ | Task Queue ❌' },
     { v:'V5', name:'Constitutional AI', desc:'Safety, validation, hallucination detection', pct:10, features:'Self Critique ❌ | Policy Engine ❌ | Hallucination ❌ | Safety ⚠️ | Confidence ❌ | Validation ❌' },
   ]},
