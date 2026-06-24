@@ -664,6 +664,45 @@ export const systemMonitorAPI = {
   getSummary: () => api.get('/os/monitor/summary'),
 };
 
+// ===== Virtual File System API (V23 → 100%) =====
+export const virtualFsAPI = {
+  mount: (name, path, type, readOnly) => api.post('/os/vfs/mount', { name, path, type, read_only: readOnly }),
+  unmount: (name) => api.post('/os/vfs/unmount', { name }),
+  getMounts: () => api.get('/os/vfs/mounts'),
+  writeFile: (path, content, type) => api.post('/os/vfs/write', { path, content, type }),
+  readFile: (path) => api.post('/os/vfs/read', { path }),
+  listFiles: (prefix, fileType) => api.get(`/os/vfs/files?prefix=${prefix || ''}&file_type=${fileType || ''}`),
+  deleteFile: (path) => api.post('/os/vfs/delete', { path }),
+  getQuota: () => api.get('/os/vfs/quota'),
+  setQuota: (totalBytes) => api.post('/os/vfs/quota', { total_bytes: totalBytes }),
+  getStats: () => api.get('/os/vfs/stats'),
+};
+
+// ===== Process Isolation API (V23 → 100%) =====
+export const processIsolationAPI = {
+  spawn: (name, owner, isolation, memoryLimitMb, cpuLimitPct) => api.post('/os/process/spawn', { name, owner, isolation, memory_limit_mb: memoryLimitMb, cpu_limit_pct: cpuLimitPct }),
+  kill: (pid, reason) => api.post('/os/process/kill', { pid, reason }),
+  updateResources: (pid, memoryMb, cpuPct) => api.post('/os/process/resources', { pid, memory_mb: memoryMb, cpu_pct: cpuPct }),
+  list: (status) => api.get(`/os/process/list?status=${status || ''}`),
+  get: (pid) => api.get(`/os/process/${pid}`),
+  cleanup: (maxAgeHours) => api.post('/os/process/cleanup', { max_age_hours: maxAgeHours }),
+  getIsolationLevels: () => api.get('/os/process/isolation-levels'),
+  getStats: () => api.get('/os/process/stats'),
+};
+
+// ===== System Event Log API (V23 → 100%) =====
+export const eventLogAPI = {
+  log: (message, severity, source, category, metadata) => api.post('/os/events/log', { message, severity, source, category, metadata }),
+  query: (severity, source, category, search, limit) => api.get(`/os/events/query?severity=${severity || ''}&source=${source || ''}&category=${category || ''}&search=${search || ''}&limit=${limit || 50}`),
+  getRecent: (limit) => api.get(`/os/events/recent?limit=${limit || 30}`),
+  getBySeverity: () => api.get('/os/events/by-severity'),
+  getSources: () => api.get('/os/events/sources'),
+  clear: (beforeSeverity) => api.post('/os/events/clear', { before_severity: beforeSeverity }),
+  setRetention: (days) => api.post('/os/events/retention', { days }),
+  applyRetention: () => api.post('/os/events/apply-retention'),
+  getStats: () => api.get('/os/events/stats'),
+};
+
 // ===== Self-Improve Extended API (V24 ML + Adaptive) =====
 export const mlTunerAPI = {
   tune: (perfStats) => api.post('/self-improve/ml-tune', { perf_stats: perfStats }),

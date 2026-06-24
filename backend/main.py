@@ -70,6 +70,7 @@ from intelligence.ai_os import (
     api_gateway, bg_task_runner, get_os_status,
     service_manager, app_registry, cross_device_sync,
     cloud_sync, backup_manager, notification_rules, system_monitor,
+    virtual_fs, process_isolation, event_log,
 )
 from self_healer.self_improver import ml_tuner, adaptive_router
 from modules.apollo.module import render_queue, asset_manager
@@ -4395,6 +4396,139 @@ async def os_metric_names():
 @app.get("/os/monitor/summary")
 async def os_monitor_summary():
     return system_monitor.get_summary()
+
+# ------- V23 EXTENDED: Virtual FS, Process Isolation, Event Log -------
+
+@app.post("/os/vfs/mount")
+async def os_vfs_mount(req: Request):
+    body = await req.json()
+    return virtual_fs.mount(body.get("name", ""), body.get("path", ""),
+                            body.get("type", "local"), body.get("read_only", False))
+
+@app.post("/os/vfs/unmount")
+async def os_vfs_unmount(req: Request):
+    body = await req.json()
+    return virtual_fs.unmount(body.get("name", ""))
+
+@app.get("/os/vfs/mounts")
+async def os_vfs_mounts():
+    return virtual_fs.get_mounts()
+
+@app.post("/os/vfs/write")
+async def os_vfs_write(req: Request):
+    body = await req.json()
+    return virtual_fs.write_file(body.get("path", ""), body.get("content", ""),
+                                  body.get("type", "text"))
+
+@app.post("/os/vfs/read")
+async def os_vfs_read(req: Request):
+    body = await req.json()
+    return virtual_fs.read_file(body.get("path", ""))
+
+@app.get("/os/vfs/files")
+async def os_vfs_files(prefix: str = "", file_type: str = ""):
+    return virtual_fs.list_files(prefix, file_type)
+
+@app.post("/os/vfs/delete")
+async def os_vfs_delete(req: Request):
+    body = await req.json()
+    return virtual_fs.delete_file(body.get("path", ""))
+
+@app.get("/os/vfs/quota")
+async def os_vfs_quota():
+    return virtual_fs.get_quota()
+
+@app.post("/os/vfs/quota")
+async def os_vfs_set_quota(req: Request):
+    body = await req.json()
+    return virtual_fs.set_quota(body.get("total_bytes", 1073741824))
+
+@app.get("/os/vfs/stats")
+async def os_vfs_stats():
+    return virtual_fs.get_stats()
+
+@app.post("/os/process/spawn")
+async def os_process_spawn(req: Request):
+    body = await req.json()
+    return process_isolation.spawn(body.get("name", ""), body.get("owner", "system"),
+                                    body.get("isolation", "basic"),
+                                    body.get("memory_limit_mb", 256),
+                                    body.get("cpu_limit_pct", 50))
+
+@app.post("/os/process/kill")
+async def os_process_kill(req: Request):
+    body = await req.json()
+    return process_isolation.kill(body.get("pid", ""), body.get("reason", "user_request"))
+
+@app.post("/os/process/resources")
+async def os_process_resources(req: Request):
+    body = await req.json()
+    return process_isolation.update_resources(body.get("pid", ""),
+                                               body.get("memory_mb", 0),
+                                               body.get("cpu_pct", 0))
+
+@app.get("/os/process/list")
+async def os_process_list(status: str = ""):
+    return process_isolation.list_processes(status)
+
+@app.get("/os/process/{pid}")
+async def os_process_get(pid: str):
+    return process_isolation.get_process(pid)
+
+@app.post("/os/process/cleanup")
+async def os_process_cleanup(req: Request):
+    body = await req.json()
+    return process_isolation.cleanup_stopped(body.get("max_age_hours", 24))
+
+@app.get("/os/process/isolation-levels")
+async def os_process_isolation_levels():
+    return process_isolation.get_isolation_levels()
+
+@app.get("/os/process/stats")
+async def os_process_stats():
+    return process_isolation.get_stats()
+
+@app.post("/os/events/log")
+async def os_events_log(req: Request):
+    body = await req.json()
+    return event_log.log(body.get("message", ""), body.get("severity", "info"),
+                          body.get("source", "system"), body.get("category", "general"),
+                          body.get("metadata"))
+
+@app.get("/os/events/query")
+async def os_events_query(severity: str = "", source: str = "",
+                            category: str = "", search: str = "", limit: int = 50):
+    return event_log.query(severity, source, category, search, limit)
+
+@app.get("/os/events/recent")
+async def os_events_recent(limit: int = 30):
+    return event_log.get_recent(limit)
+
+@app.get("/os/events/by-severity")
+async def os_events_by_severity():
+    return event_log.get_by_severity()
+
+@app.get("/os/events/sources")
+async def os_events_sources():
+    return event_log.get_sources()
+
+@app.post("/os/events/clear")
+async def os_events_clear(req: Request):
+    body = await req.json()
+    return event_log.clear(body.get("before_severity", ""))
+
+@app.post("/os/events/retention")
+async def os_events_retention(req: Request):
+    body = await req.json()
+    return event_log.set_retention(body.get("days", 30))
+
+@app.post("/os/events/apply-retention")
+async def os_events_apply_retention():
+    return event_log.apply_retention()
+
+@app.get("/os/events/stats")
+async def os_events_stats():
+    return event_log.get_stats()
 
 # ------- V25 EXTENDED: SW, Command Palette, Themes, Launcher, Voice Hub -------
 
