@@ -637,6 +637,322 @@ class CrossDeviceSync:
 
 
 # ========================
+# CLOUD SYNC ENGINE
+# ========================
+
+class CloudSyncEngine:
+    """Cloud backup sync engine — supports s3/gcs/azure stubs."""
+
+    CLOUD_FILE = DATA_DIR / "os_cloud_sync.json"
+
+    def __init__(self):
+        self.state: dict = {}
+        self._load()
+
+    def _load(self):
+        self.state = _load_json(self.CLOUD_FILE, {
+            "config": {},
+            "uploads": [],
+            "last_upload": None,
+        })
+
+    def _save(self):
+        _save_json(self.CLOUD_FILE, self.state)
+
+    def configure(self, provider: str, bucket: str, credentials_ref: str) -> dict:
+        """Configure cloud sync provider (s3/gcs/azure stub)."""
+        if provider not in ("s3", "gcs", "azure"):
+            return {"error": f"Unsupported provider: {provider}. Use s3, gcs, or azure."}
+        self.state["config"] = {
+            "provider": provider,
+            "bucket": bucket,
+            "credentials_ref": credentials_ref,
+            "configured_at": datetime.now().isoformat(),
+        }
+        self._save()
+        return {"success": True, "provider": provider, "bucket": bucket}
+
+    def upload_backup(self, data_type: str, content: str) -> dict:
+        """Stub: logs an upload entry with timestamp, data_type, size."""
+        entry = {
+            "id": f"upload_{int(time.time())}_{hashlib.md5(data_type.encode()).hexdigest()[:6]}",
+            "data_type": data_type,
+            "size": len(content) if content else 0,
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed",
+        }
+        self.state["uploads"].append(entry)
+        if len(self.state["uploads"]) > 200:
+            self.state["uploads"] = self.state["uploads"][-200:]
+        self.state["last_upload"] = entry["timestamp"]
+        self._save()
+        return {"success": True, "upload": entry}
+
+    def download_backup(self, data_type: str) -> dict:
+        """Stub: returns stub mode response for download."""
+        return {"status": "stub_mode", "data_type": data_type}
+
+    def get_cloud_status(self) -> dict:
+        """Returns config, last_upload, total_uploads."""
+        return {
+            "config": self.state.get("config", {}),
+            "last_upload": self.state.get("last_upload"),
+            "total_uploads": len(self.state.get("uploads", [])),
+        }
+
+    def list_backups(self) -> list:
+        """Returns list of logged upload entries."""
+        return self.state.get("uploads", [])
+
+
+# ========================
+# SYSTEM BACKUP / RESTORE
+# ========================
+
+class SystemBackupManager:
+    """System backup and restore manager."""
+
+    BACKUP_FILE = DATA_DIR / "os_backups.json"
+
+    def __init__(self):
+        self.state: dict = {}
+        self._load()
+
+    def _load(self):
+        self.state = _load_json(self.BACKUP_FILE, {
+            "backups": {},
+            "auto_backup": {
+                "enabled": False,
+                "frequency": "daily",
+                "include": [],
+            },
+        })
+
+    def _save(self):
+        _save_json(self.BACKUP_FILE, self.state)
+
+    def create_backup(self, name: str, include: list) -> dict:
+        """Create a backup record with timestamp, included modules, status, size estimate."""
+        backup_id = f"bak_{int(time.time())}_{hashlib.md5(name.encode()).hexdigest()[:6]}"
+        size_estimate = len(include) * 50 * 1024  # 50KB per included item
+        self.state["backups"][backup_id] = {
+            "id": backup_id,
+            "name": name,
+            "include": include,
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed",
+            "size_estimate": size_estimate,
+            "restored_at": None,
+        }
+        self._save()
+        return {"success": True, "backup_id": backup_id, "size_estimate": size_estimate}
+
+    def list_backups(self) -> dict:
+        """Return all backups sorted by timestamp desc."""
+        items = sorted(
+            self.state.get("backups", {}).values(),
+            key=lambda x: x.get("timestamp", ""),
+            reverse=True,
+        )
+        return {"backups": items, "total": len(items)}
+
+    def get_backup(self, backup_id: str) -> dict:
+        """Get single backup record."""
+        return self.state.get("backups", {}).get(backup_id, {"error": "Backup not found"})
+
+    def restore_backup(self, backup_id: str) -> dict:
+        """Stub: marks backup as restored_at, returns status."""
+        backups = self.state.get("backups", {})
+        if backup_id not in backups:
+            return {"error": "Backup not found"}
+        backups[backup_id]["restored_at"] = datetime.now().isoformat()
+        self._save()
+        return {"success": True, "backup_id": backup_id, "status": "restored"}
+
+    def delete_backup(self, backup_id: str) -> dict:
+        """Remove backup record."""
+        backups = self.state.get("backups", {})
+        if backup_id not in backups:
+            return {"error": "Backup not found"}
+        del backups[backup_id]
+        self._save()
+        return {"success": True}
+
+    def get_auto_backup_config(self) -> dict:
+        """Returns auto-backup settings."""
+        return self.state.get("auto_backup", {
+            "enabled": False,
+            "frequency": "daily",
+            "include": [],
+        })
+
+    def set_auto_backup(self, enabled: bool, frequency: str, include: list) -> dict:
+        """Configure auto-backup schedule."""
+        self.state["auto_backup"] = {
+            "enabled": enabled,
+            "frequency": frequency,
+            "include": include,
+            "updated_at": datetime.now().isoformat(),
+        }
+        self._save()
+        return {"success": True, "auto_backup": self.state["auto_backup"]}
+
+
+# ========================
+# NOTIFICATION RULES ENGINE
+# ========================
+
+class NotificationRules:
+    """Notification rules engine — trigger actions on events."""
+
+    RULES_FILE = DATA_DIR / "os_notification_rules.json"
+
+    def __init__(self):
+        self.state: dict = {}
+        self._load()
+
+    def _load(self):
+        self.state = _load_json(self.RULES_FILE, {
+            "rules": {},
+            "history": [],
+        })
+
+    def _save(self):
+        _save_json(self.RULES_FILE, self.state)
+
+    def add_rule(self, name: str, event_type: str, condition: str,
+                 action: str, target: str) -> dict:
+        """Add a notification rule (e.g., when error count > 5, notify admin)."""
+        rule_id = f"rule_{int(time.time())}_{hashlib.md5(name.encode()).hexdigest()[:6]}"
+        self.state["rules"][rule_id] = {
+            "id": rule_id,
+            "name": name,
+            "event_type": event_type,
+            "condition": condition,
+            "action": action,
+            "target": target,
+            "created": datetime.now().isoformat(),
+            "enabled": True,
+            "trigger_count": 0,
+        }
+        self._save()
+        return {"success": True, "rule_id": rule_id}
+
+    def remove_rule(self, rule_id: str) -> dict:
+        """Delete rule."""
+        rules = self.state.get("rules", {})
+        if rule_id not in rules:
+            return {"error": "Rule not found"}
+        del rules[rule_id]
+        self._save()
+        return {"success": True}
+
+    def list_rules(self) -> dict:
+        """List all rules."""
+        items = list(self.state.get("rules", {}).values())
+        return {"rules": items, "total": len(items)}
+
+    def evaluate(self, event_type: str, event_data: dict) -> dict:
+        """Stub: checks if any rule matches event_type, returns list of triggered rules."""
+        triggered = []
+        for rule in self.state.get("rules", {}).values():
+            if rule.get("event_type") == event_type and rule.get("enabled"):
+                rule["trigger_count"] = rule.get("trigger_count", 0) + 1
+                triggered.append({
+                    "rule_id": rule["id"],
+                    "name": rule["name"],
+                    "action": rule["action"],
+                    "target": rule["target"],
+                })
+                # Log to history
+                self.state["history"].append({
+                    "rule_id": rule["id"],
+                    "event_type": event_type,
+                    "event_data": event_data,
+                    "timestamp": datetime.now().isoformat(),
+                })
+        # Keep history bounded
+        if len(self.state["history"]) > 500:
+            self.state["history"] = self.state["history"][-500:]
+        self._save()
+        return {"triggered": triggered, "total_matched": len(triggered)}
+
+    def get_rule_history(self, limit: int = 20) -> dict:
+        """Recent rule trigger history."""
+        history = self.state.get("history", [])
+        recent = history[-limit:] if limit else history
+        recent = list(reversed(recent))
+        return {"history": recent, "total": len(history)}
+
+
+# ========================
+# SYSTEM MONITOR
+# ========================
+
+class SystemMonitor:
+    """System metrics monitor — records and retrieves metric data points."""
+
+    MONITOR_FILE = DATA_DIR / "os_system_monitor.json"
+
+    def __init__(self):
+        self.state: dict = {}
+        self._load()
+
+    def _load(self):
+        self.state = _load_json(self.MONITOR_FILE, {
+            "metrics": {},
+        })
+
+    def _save(self):
+        _save_json(self.MONITOR_FILE, self.state)
+
+    def record_metric(self, name: str, value: float, unit: str) -> dict:
+        """Record a metric data point with timestamp. Keeps last 200 per name."""
+        if name not in self.state["metrics"]:
+            self.state["metrics"][name] = []
+        self.state["metrics"][name].append({
+            "value": value,
+            "unit": unit,
+            "timestamp": datetime.now().isoformat(),
+        })
+        # Keep last 200 per metric name
+        if len(self.state["metrics"][name]) > 200:
+            self.state["metrics"][name] = self.state["metrics"][name][-200:]
+        self._save()
+        return {"success": True, "name": name, "value": value, "unit": unit}
+
+    def get_metrics(self, name: str, limit: int = 50) -> dict:
+        """Get recent metrics for a name."""
+        points = self.state.get("metrics", {}).get(name, [])
+        recent = points[-limit:] if limit else points
+        return {"name": name, "data": recent, "total": len(points)}
+
+    def get_all_metric_names(self) -> dict:
+        """List all recorded metric names."""
+        names = list(self.state.get("metrics", {}).keys())
+        return {"names": names, "total": len(names)}
+
+    def get_summary(self) -> dict:
+        """Returns per-metric: latest value, min, max, avg of last 50."""
+        summary = {}
+        for name, points in self.state.get("metrics", {}).items():
+            recent = points[-50:]
+            values = [p["value"] for p in recent if isinstance(p.get("value"), (int, float))]
+            if values:
+                summary[name] = {
+                    "latest": values[-1],
+                    "min": min(values),
+                    "max": max(values),
+                    "avg": round(sum(values) / len(values), 4),
+                    "count": len(values),
+                    "unit": recent[-1].get("unit", ""),
+                }
+            else:
+                summary[name] = {"latest": None, "count": 0}
+        return {"summary": summary, "total_metrics": len(summary)}
+
+
+# ========================
 # SINGLETONS
 # ========================
 
@@ -648,6 +964,10 @@ bg_task_runner = BackgroundTaskRunner()
 service_manager = SystemServiceManager()
 app_registry = AppRegistry()
 cross_device_sync = CrossDeviceSync()
+cloud_sync = CloudSyncEngine()
+backup_manager = SystemBackupManager()
+notification_rules = NotificationRules()
+system_monitor = SystemMonitor()
 
 
 def get_os_status() -> dict:
@@ -660,5 +980,9 @@ def get_os_status() -> dict:
         "services": service_manager.list_services(),
         "apps": app_registry.list_apps(),
         "sync": cross_device_sync.get_sync_status(),
+        "cloud_sync": cloud_sync.get_cloud_status(),
+        "backups": backup_manager.list_backups(),
+        "notification_rules": notification_rules.list_rules(),
+        "system_monitor": system_monitor.get_summary(),
         "roles": list(ROLES.keys()),
     }

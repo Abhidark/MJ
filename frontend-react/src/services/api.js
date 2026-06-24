@@ -630,6 +630,40 @@ export const aiOsAPI = {
   triggerSync: () => api.post('/os/sync/trigger'),
 };
 
+// ===== AI OS Extended API (V23 cloud sync, backup, notif rules, monitor) =====
+export const cloudSyncAPI = {
+  configure: (provider, bucket, credentialsRef) => api.post('/os/cloud/configure', { provider, bucket, credentials_ref: credentialsRef }),
+  upload: (dataType, content) => api.post('/os/cloud/upload', { data_type: dataType, content }),
+  download: (dataType) => api.get(`/os/cloud/download/${dataType}`),
+  getStatus: () => api.get('/os/cloud/status'),
+  listBackups: () => api.get('/os/cloud/backups'),
+};
+
+export const backupAPI = {
+  create: (name, include) => api.post('/os/backup', { name, include }),
+  list: () => api.get('/os/backups'),
+  get: (bid) => api.get(`/os/backup/${bid}`),
+  restore: (bid) => api.post(`/os/backup/${bid}/restore`),
+  delete: (bid) => api.delete(`/os/backup/${bid}`),
+  getAutoConfig: () => api.get('/os/backup/auto-config'),
+  setAutoConfig: (enabled, frequency, include) => api.post('/os/backup/auto-config', { enabled, frequency, include }),
+};
+
+export const notificationRulesAPI = {
+  add: (name, eventType, condition, action, target) => api.post('/os/notification-rules', { name, event_type: eventType, condition, action, target }),
+  remove: (rid) => api.delete(`/os/notification-rules/${rid}`),
+  list: () => api.get('/os/notification-rules'),
+  evaluate: (eventType, eventData) => api.post('/os/notification-rules/evaluate', { event_type: eventType, event_data: eventData }),
+  getHistory: (limit) => api.get(`/os/notification-rules/history?limit=${limit || 20}`),
+};
+
+export const systemMonitorAPI = {
+  record: (name, value, unit) => api.post('/os/monitor/record', { name, value, unit }),
+  getMetrics: (name, limit) => api.get(`/os/monitor/metrics/${name}?limit=${limit || 50}`),
+  getNames: () => api.get('/os/monitor/names'),
+  getSummary: () => api.get('/os/monitor/summary'),
+};
+
 // ===== Self-Improve Extended API (V24 ML + Adaptive) =====
 export const mlTunerAPI = {
   tune: (perfStats) => api.post('/self-improve/ml-tune', { perf_stats: perfStats }),
@@ -668,7 +702,7 @@ export const orchestrationAPI = {
   assignTask: (taskType, requiredCaps) => api.post('/agents/assign-task', { task_type: taskType, required_caps: requiredCaps }),
 };
 
-// ===== Plugin Store Extended API (V21 registry + auto-update) =====
+// ===== Plugin Store Extended API (V21 registry + auto-update + webhooks) =====
 export const pluginStoreExtendedAPI = {
   remoteSearch: (q) => api.get(`/store/remote-search?q=${q}`),
   publish: (pluginId) => api.post(`/store/publish/${pluginId}`),
@@ -676,6 +710,14 @@ export const pluginStoreExtendedAPI = {
   runAutoUpdates: () => api.post('/store/run-auto-updates'),
   getAutoUpdateConfig: () => api.get('/store/auto-update-config'),
   healthCheck: () => api.get('/store/health'),
+  registerWebhook: (pluginId, event, url) => api.post('/store/webhooks', { plugin_id: pluginId, event, url }),
+  unregisterWebhook: (pluginId, event) => api.delete('/store/webhooks', { data: { plugin_id: pluginId, event } }),
+  getWebhooks: () => api.get('/store/webhooks'),
+  getWebhookLog: (limit) => api.get(`/store/webhook-log?limit=${limit || 20}`),
+  connectRegistry: () => api.post('/store/registry/connect'),
+  disconnectRegistry: () => api.post('/store/registry/disconnect'),
+  getRegistryStatus: () => api.get('/store/registry/status'),
+  syncRegistry: () => api.post('/store/registry/sync'),
 };
 
 // ===== JARVIS OS Ultimate API (V25) =====
@@ -702,6 +744,39 @@ export const jarvisAPI = {
   getUnread: () => api.get('/jarvis/notifications/unread'),
   markRead: (nid) => api.post(`/jarvis/notifications/${nid}/read`),
   markAllRead: () => api.post('/jarvis/notifications/read-all'),
+};
+
+// ===== JARVIS Extended API (V25 SW, commands, themes, launcher, voice) =====
+export const jarvisExtendedAPI = {
+  swRegister: () => api.post('/jarvis/sw/register'),
+  swUnregister: () => api.post('/jarvis/sw/unregister'),
+  swAddCachedRoute: (route, strategy) => api.post('/jarvis/sw/cache-route', { route, strategy }),
+  swGetConfig: () => api.get('/jarvis/sw/config'),
+  swClearCache: () => api.post('/jarvis/sw/clear-cache'),
+  swOfflineStatus: () => api.get('/jarvis/sw/offline-status'),
+  getCommands: () => api.get('/jarvis/commands'),
+  searchCommands: (q) => api.get(`/jarvis/commands/search?q=${q}`),
+  getCommandsByCategory: (cat) => api.get(`/jarvis/commands/category/${cat}`),
+  registerCommand: (data) => api.post('/jarvis/commands', data),
+  removeCommand: (cmdId) => api.delete(`/jarvis/commands/${cmdId}`),
+  getTheme: () => api.get('/jarvis/theme'),
+  setTheme: (theme) => api.post('/jarvis/theme', { theme }),
+  getAllThemes: () => api.get('/jarvis/themes'),
+  createCustomTheme: (name, colors) => api.post('/jarvis/themes/custom', { name, colors }),
+  deleteTheme: (name) => api.delete(`/jarvis/themes/${name}`),
+  exportTheme: (name) => api.get(`/jarvis/themes/${name}/export`),
+  launchApp: (appId, appName) => api.post('/jarvis/launcher/launch', { app_id: appId, app_name: appName }),
+  pinApp: (appId, appName) => api.post('/jarvis/launcher/pin', { app_id: appId, app_name: appName }),
+  unpinApp: (appId) => api.delete(`/jarvis/launcher/pin/${appId}`),
+  favoriteApp: (appId, appName) => api.post('/jarvis/launcher/favorite', { app_id: appId, app_name: appName }),
+  unfavoriteApp: (appId) => api.delete(`/jarvis/launcher/favorite/${appId}`),
+  getLauncherData: () => api.get('/jarvis/launcher'),
+  clearRecent: () => api.post('/jarvis/launcher/clear-recent'),
+  getVoiceConfig: () => api.get('/jarvis/voice/config'),
+  updateVoiceConfig: (data) => api.put('/jarvis/voice/config', data),
+  setWakeWord: (word) => api.post('/jarvis/voice/wake-word', { word }),
+  getVoiceStatus: () => api.get('/jarvis/voice/status'),
+  getAvailableVoices: () => api.get('/jarvis/voice/voices'),
 };
 
 export default api;

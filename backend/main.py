@@ -69,12 +69,14 @@ from intelligence.ai_os import (
     user_manager, session_manager, permission_engine,
     api_gateway, bg_task_runner, get_os_status,
     service_manager, app_registry, cross_device_sync,
+    cloud_sync, backup_manager, notification_rules, system_monitor,
 )
 from self_healer.self_improver import ml_tuner, adaptive_router
 from modules.apollo.module import render_queue, asset_manager
 from intelligence.jarvis_ultimate import (
     unified_controller, pwa_manager, smart_home_hub,
     notification_center, get_jarvis_status,
+    sw_manager, command_palette, theme_engine, app_launcher, voice_hub,
 )
 
 # Intelligence Layer
@@ -4263,6 +4265,266 @@ async def jarvis_mark_read(nid: str):
 async def jarvis_read_all():
     return notification_center.mark_all_read()
 
+# ------- V21 EXTENDED: Webhooks, Hooks, Live Registry -------
+
+@app.post("/store/webhooks")
+async def store_register_webhook(req: Request):
+    body = await req.json()
+    return plugin_store.register_webhook(body.get("plugin_id", ""), body.get("event", ""), body.get("url", ""))
+
+@app.delete("/store/webhooks")
+async def store_unregister_webhook(req: Request):
+    body = await req.json()
+    return plugin_store.unregister_webhook(body.get("plugin_id", ""), body.get("event", ""))
+
+@app.get("/store/webhooks")
+async def store_get_webhooks():
+    return plugin_store.get_webhooks()
+
+@app.get("/store/webhook-log")
+async def store_webhook_log(limit: int = 20):
+    return plugin_store.get_webhook_log(limit)
+
+@app.post("/store/registry/connect")
+async def store_connect_registry():
+    return plugin_store.connect_registry()
+
+@app.post("/store/registry/disconnect")
+async def store_disconnect_registry():
+    return plugin_store.disconnect_registry()
+
+@app.get("/store/registry/status")
+async def store_registry_status():
+    return plugin_store.get_registry_status()
+
+@app.post("/store/registry/sync")
+async def store_registry_sync():
+    return plugin_store.sync_with_registry()
+
+# ------- V23 EXTENDED: Cloud Sync, Backup, Notification Rules, System Monitor -------
+
+@app.post("/os/cloud/configure")
+async def os_cloud_configure(req: Request):
+    body = await req.json()
+    return cloud_sync.configure(body.get("provider", ""), body.get("bucket", ""), body.get("credentials_ref", ""))
+
+@app.post("/os/cloud/upload")
+async def os_cloud_upload(req: Request):
+    body = await req.json()
+    return cloud_sync.upload_backup(body.get("data_type", ""), body.get("content", ""))
+
+@app.get("/os/cloud/download/{data_type}")
+async def os_cloud_download(data_type: str):
+    return cloud_sync.download_backup(data_type)
+
+@app.get("/os/cloud/status")
+async def os_cloud_status():
+    return cloud_sync.get_cloud_status()
+
+@app.get("/os/cloud/backups")
+async def os_cloud_list_backups():
+    return cloud_sync.list_backups()
+
+@app.post("/os/backup")
+async def os_create_backup(req: Request):
+    body = await req.json()
+    return backup_manager.create_backup(body.get("name", ""), body.get("include", []))
+
+@app.get("/os/backups")
+async def os_list_backups():
+    return backup_manager.list_backups()
+
+@app.get("/os/backup/{bid}")
+async def os_get_backup(bid: str):
+    return backup_manager.get_backup(bid)
+
+@app.post("/os/backup/{bid}/restore")
+async def os_restore_backup(bid: str):
+    return backup_manager.restore_backup(bid)
+
+@app.delete("/os/backup/{bid}")
+async def os_delete_backup(bid: str):
+    return backup_manager.delete_backup(bid)
+
+@app.get("/os/backup/auto-config")
+async def os_auto_backup_config():
+    return backup_manager.get_auto_backup_config()
+
+@app.post("/os/backup/auto-config")
+async def os_set_auto_backup(req: Request):
+    body = await req.json()
+    return backup_manager.set_auto_backup(body.get("enabled", False), body.get("frequency", "daily"), body.get("include", []))
+
+@app.post("/os/notification-rules")
+async def os_add_notif_rule(req: Request):
+    body = await req.json()
+    return notification_rules.add_rule(
+        body.get("name", ""), body.get("event_type", ""),
+        body.get("condition", ""), body.get("action", ""), body.get("target", ""))
+
+@app.delete("/os/notification-rules/{rid}")
+async def os_remove_notif_rule(rid: str):
+    return notification_rules.remove_rule(rid)
+
+@app.get("/os/notification-rules")
+async def os_list_notif_rules():
+    return notification_rules.list_rules()
+
+@app.post("/os/notification-rules/evaluate")
+async def os_evaluate_rules(req: Request):
+    body = await req.json()
+    return notification_rules.evaluate(body.get("event_type", ""), body.get("event_data", {}))
+
+@app.get("/os/notification-rules/history")
+async def os_notif_rule_history(limit: int = 20):
+    return notification_rules.get_rule_history(limit)
+
+@app.post("/os/monitor/record")
+async def os_record_metric(req: Request):
+    body = await req.json()
+    return system_monitor.record_metric(body.get("name", ""), body.get("value", 0), body.get("unit", ""))
+
+@app.get("/os/monitor/metrics/{name}")
+async def os_get_metrics(name: str, limit: int = 50):
+    return system_monitor.get_metrics(name, limit)
+
+@app.get("/os/monitor/names")
+async def os_metric_names():
+    return system_monitor.get_all_metric_names()
+
+@app.get("/os/monitor/summary")
+async def os_monitor_summary():
+    return system_monitor.get_summary()
+
+# ------- V25 EXTENDED: SW, Command Palette, Themes, Launcher, Voice Hub -------
+
+@app.post("/jarvis/sw/register")
+async def jarvis_sw_register():
+    return sw_manager.register()
+
+@app.post("/jarvis/sw/unregister")
+async def jarvis_sw_unregister():
+    return sw_manager.unregister()
+
+@app.post("/jarvis/sw/cache-route")
+async def jarvis_sw_cache_route(req: Request):
+    body = await req.json()
+    return sw_manager.add_cached_route(body.get("route", ""), body.get("strategy", "network-first"))
+
+@app.get("/jarvis/sw/config")
+async def jarvis_sw_config():
+    return sw_manager.get_config()
+
+@app.post("/jarvis/sw/clear-cache")
+async def jarvis_sw_clear_cache():
+    return sw_manager.clear_cache()
+
+@app.get("/jarvis/sw/offline-status")
+async def jarvis_sw_offline_status():
+    return sw_manager.get_offline_status()
+
+@app.get("/jarvis/commands")
+async def jarvis_all_commands():
+    return command_palette.get_all()
+
+@app.get("/jarvis/commands/search")
+async def jarvis_search_commands(q: str = ""):
+    return command_palette.search(q)
+
+@app.get("/jarvis/commands/category/{category}")
+async def jarvis_commands_by_cat(category: str):
+    return command_palette.get_by_category(category)
+
+@app.post("/jarvis/commands")
+async def jarvis_register_command(req: Request):
+    body = await req.json()
+    return command_palette.register_command(
+        body.get("id", ""), body.get("label", ""),
+        body.get("shortcut", ""), body.get("category", "action"), body.get("action", ""))
+
+@app.delete("/jarvis/commands/{cmd_id}")
+async def jarvis_remove_command(cmd_id: str):
+    return command_palette.remove_command(cmd_id)
+
+@app.get("/jarvis/theme")
+async def jarvis_get_theme():
+    return theme_engine.get_theme()
+
+@app.post("/jarvis/theme")
+async def jarvis_set_theme(req: Request):
+    body = await req.json()
+    return theme_engine.set_theme(body.get("theme", "dark"))
+
+@app.get("/jarvis/themes")
+async def jarvis_all_themes():
+    return theme_engine.get_all_themes()
+
+@app.post("/jarvis/themes/custom")
+async def jarvis_create_custom_theme(req: Request):
+    body = await req.json()
+    return theme_engine.create_custom_theme(body.get("name", ""), body.get("colors", {}))
+
+@app.delete("/jarvis/themes/{name}")
+async def jarvis_delete_theme(name: str):
+    return theme_engine.delete_custom_theme(name)
+
+@app.get("/jarvis/themes/{name}/export")
+async def jarvis_export_theme(name: str):
+    return theme_engine.export_theme(name)
+
+@app.post("/jarvis/launcher/launch")
+async def jarvis_launch_app(req: Request):
+    body = await req.json()
+    return app_launcher.launch(body.get("app_id", ""), body.get("app_name", ""))
+
+@app.post("/jarvis/launcher/pin")
+async def jarvis_pin_app(req: Request):
+    body = await req.json()
+    return app_launcher.pin(body.get("app_id", ""), body.get("app_name", ""))
+
+@app.delete("/jarvis/launcher/pin/{app_id}")
+async def jarvis_unpin_app(app_id: str):
+    return app_launcher.unpin(app_id)
+
+@app.post("/jarvis/launcher/favorite")
+async def jarvis_fav_app(req: Request):
+    body = await req.json()
+    return app_launcher.add_favorite(body.get("app_id", ""), body.get("app_name", ""))
+
+@app.delete("/jarvis/launcher/favorite/{app_id}")
+async def jarvis_unfav_app(app_id: str):
+    return app_launcher.remove_favorite(app_id)
+
+@app.get("/jarvis/launcher")
+async def jarvis_launcher_data():
+    return app_launcher.get_launcher_data()
+
+@app.post("/jarvis/launcher/clear-recent")
+async def jarvis_clear_recent():
+    return app_launcher.clear_recent()
+
+@app.get("/jarvis/voice/config")
+async def jarvis_voice_config():
+    return voice_hub.get_config()
+
+@app.put("/jarvis/voice/config")
+async def jarvis_voice_update(req: Request):
+    body = await req.json()
+    return voice_hub.update_config(body)
+
+@app.post("/jarvis/voice/wake-word")
+async def jarvis_set_wake_word(req: Request):
+    body = await req.json()
+    return voice_hub.set_wake_word(body.get("word", ""))
+
+@app.get("/jarvis/voice/status")
+async def jarvis_voice_status():
+    return voice_hub.get_voice_status()
+
+@app.get("/jarvis/voice/voices")
+async def jarvis_available_voices():
+    return voice_hub.get_available_voices()
+
 
 # SPA catch-all: serve React index.html for client-side routes
 @app.get("/{path:path}")
@@ -4283,7 +4545,7 @@ async def spa_catch_all(path: str):
         "mouse", "browser-control", "calendar", "pipelines", "agent-groups",
         "agent-mail", "agent-mail-stats", "planner", "productivity", "db",
         "smart-home", "workflows", "dev",
-        "store", "agents", "self-improve", "memory", "os", "creative", "jarvis",
+        "store", "agents", "self-improve", "memory", "os", "creative", "jarvis", "launcher",
     }
     if first_segment in backend_prefixes:
         return JSONResponse({"error": "Not found"}, status_code=404)
