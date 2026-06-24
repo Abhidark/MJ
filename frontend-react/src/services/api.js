@@ -183,6 +183,22 @@ export const hermesAPI = {
   test: (platform) => api.post(`/hermes/messaging/test/${platform}`),
 };
 
+// --- CONSTITUTIONAL AI / SAFETY ---
+export const safetyAPI = {
+  checkInput: (message) => api.post('/safety/check-input', { message }),
+  checkOutput: (query, response) => api.post('/safety/check-output', { message: `${query}|||${response}` }),
+  critique: (query, response) => api.post('/safety/critique', { message: `${query}|||${response}` }),
+  hallucination: (message) => api.post('/safety/hallucination', { message }),
+  confidence: (query, response) => api.post('/safety/confidence', { message: `${query}|||${response}` }),
+  fullCheck: (query, response) => api.post('/safety/full-check', { message: `${query}|||${response}` }),
+  policyCheck: (message) => api.post('/safety/policy', { message }),
+  getConfig: () => api.get('/safety/config'),
+  updateConfig: (settings) => api.post('/safety/config', settings),
+  getStats: () => api.get('/safety/stats'),
+  getAudit: (limit = 50) => api.get(`/safety/audit?limit=${limit}`),
+  clearAudit: () => api.post('/safety/audit/clear'),
+};
+
 // --- PLUGINS ---
 export const pluginAPI = {
   getPlugins: () => api.get('/plugins'),
