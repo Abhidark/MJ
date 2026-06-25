@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import NeuralNetwork from '@/components/effects/NeuralNetwork';
+import SignalWave from '@/components/effects/SignalWave';
 import AudioSpectrum from '@/components/effects/AudioSpectrum';
 
 // ─── AI Processing Flow Visualization ───
@@ -101,10 +103,11 @@ export default function AIFlowPanel({ onClose, modelInfo, chatStage }) {
         )}
       </div>
 
-      {/* Signal Analysis — real-time voice spectrum (reacts to MJ TTS) */}
-      <div className="aiflow-signal">
-        <div className="aiflow-section-label">SIGNAL ANALYSIS</div>
-        <AudioSpectrum bars={36} height={96} />
+      {/* Live visualizers — restored from old UI, now driven by REAL audio */}
+      <div className="aiflow-viz">
+        <NeuralNetwork height={130} />
+        <SignalWave height={70} />
+        <AudioSpectrum bars={36} height={64} />
       </div>
 
       {/* Flow pipeline */}
