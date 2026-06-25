@@ -1,0 +1,192 @@
+{
+  "research_and_report": {
+    "name": "Research & Report",
+    "icon": "📝",
+    "description": "Search the web, analyze results, generate a structured report",
+    "stages": [
+      {
+        "id": "search",
+        "agent": "sherlock",
+        "action": "deep_search",
+        "parallel": false,
+        "description": "Search multiple sources for the topic"
+      },
+      {
+        "id": "analyze",
+        "agent": "athena",
+        "action": "analyze",
+        "parallel": false,
+        "depends_on": [
+          "search"
+        ],
+        "description": "Analyze and cross-reference findings"
+      },
+      {
+        "id": "write",
+        "agent": "apollo",
+        "action": "write_report",
+        "parallel": false,
+        "depends_on": [
+          "analyze"
+        ],
+        "description": "Write a structured report"
+      }
+    ],
+    "run_count": 0,
+    "last_run": null
+  },
+  "morning_intel": {
+    "name": "Morning Intelligence",
+    "icon": "☀️",
+    "description": "Parallel fetch of weather, news, emails, tasks — then summarize",
+    "stages": [
+      {
+        "id": "weather",
+        "agent": "atlas",
+        "action": "weather",
+        "parallel": true,
+        "description": "Get weather forecast"
+      },
+      {
+        "id": "news",
+        "agent": "sherlock",
+        "action": "news",
+        "parallel": true,
+        "description": "Fetch top headlines"
+      },
+      {
+        "id": "emails",
+        "agent": "hermes",
+        "action": "unread_count",
+        "parallel": true,
+        "description": "Check unread emails"
+      },
+      {
+        "id": "tasks",
+        "agent": "chronos",
+        "action": "pending_tasks",
+        "parallel": true,
+        "description": "Get pending tasks"
+      },
+      {
+        "id": "summarize",
+        "agent": "zeus",
+        "action": "summarize",
+        "parallel": false,
+        "depends_on": [
+          "weather",
+          "news",
+          "emails",
+          "tasks"
+        ],
+        "description": "Summarize all intel into a morning briefing"
+      }
+    ],
+    "run_count": 0,
+    "last_run": null
+  },
+  "code_review_pipeline": {
+    "name": "Code Review Pipeline",
+    "icon": "🔍",
+    "description": "Git diff → analyze → test → security check → report",
+    "stages": [
+      {
+        "id": "diff",
+        "agent": "hephaestus",
+        "action": "git_diff",
+        "parallel": false,
+        "description": "Get recent git changes"
+      },
+      {
+        "id": "analyze",
+        "agent": "hephaestus",
+        "action": "analyze_code",
+        "parallel": true,
+        "depends_on": [
+          "diff"
+        ],
+        "description": "Analyze code quality"
+      },
+      {
+        "id": "test",
+        "agent": "hephaestus",
+        "action": "run_tests",
+        "parallel": true,
+        "depends_on": [
+          "diff"
+        ],
+        "description": "Run test suite"
+      },
+      {
+        "id": "security",
+        "agent": "sentinel",
+        "action": "scan",
+        "parallel": true,
+        "depends_on": [
+          "diff"
+        ],
+        "description": "Security vulnerability scan"
+      },
+      {
+        "id": "report",
+        "agent": "apollo",
+        "action": "write_report",
+        "parallel": false,
+        "depends_on": [
+          "analyze",
+          "test",
+          "security"
+        ],
+        "description": "Generate code review report"
+      }
+    ],
+    "run_count": 0,
+    "last_run": null
+  },
+  "content_creation": {
+    "name": "Content Creation",
+    "icon": "🎨",
+    "description": "Research topic → write → generate image → format",
+    "stages": [
+      {
+        "id": "research",
+        "agent": "sherlock",
+        "action": "search",
+        "parallel": false,
+        "description": "Research the topic"
+      },
+      {
+        "id": "write",
+        "agent": "apollo",
+        "action": "creative_write",
+        "parallel": false,
+        "depends_on": [
+          "research"
+        ],
+        "description": "Write the content"
+      },
+      {
+        "id": "image",
+        "agent": "apollo",
+        "action": "generate_image",
+        "parallel": true,
+        "depends_on": [
+          "write"
+        ],
+        "description": "Generate supporting image"
+      },
+      {
+        "id": "format",
+        "agent": "apollo",
+        "action": "format_output",
+        "parallel": true,
+        "depends_on": [
+          "write"
+        ],
+        "description": "Format and polish output"
+      }
+    ],
+    "run_count": 0,
+    "last_run": null
+  }
+}

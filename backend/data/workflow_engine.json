@@ -1,0 +1,243 @@
+{
+  "morning_routine": {
+    "name": "Morning Routine",
+    "icon": "🌅",
+    "description": "Complete morning briefing: weather, news, tasks, emails, motivation",
+    "trigger": {
+      "type": "daily",
+      "hour": 7,
+      "minute": 0
+    },
+    "steps": [
+      {
+        "id": "weather",
+        "module": "atlas",
+        "action": "weather",
+        "description": "Get today's weather forecast",
+        "params": {}
+      },
+      {
+        "id": "news",
+        "module": "sherlock",
+        "action": "news",
+        "description": "Top headlines & trending",
+        "params": {
+          "count": 5
+        }
+      },
+      {
+        "id": "tasks",
+        "module": "chronos",
+        "action": "pending_tasks",
+        "description": "Show pending reminders & tasks",
+        "params": {}
+      },
+      {
+        "id": "emails",
+        "module": "hermes",
+        "action": "unread_count",
+        "description": "Check unread emails",
+        "params": {}
+      },
+      {
+        "id": "greeting",
+        "module": null,
+        "action": "llm_generate",
+        "description": "Generate personalized morning greeting with summary",
+        "params": {
+          "prompt": "Generate a brief, motivating morning greeting. Include weather, news summary, and task count from context."
+        }
+      }
+    ],
+    "enabled": true,
+    "run_count": 0,
+    "last_run": null
+  },
+  "news_digest": {
+    "name": "News Digest",
+    "icon": "📰",
+    "description": "Fetch, categorize, and summarize top news",
+    "trigger": {
+      "type": "interval",
+      "hours": 4
+    },
+    "steps": [
+      {
+        "id": "tech_news",
+        "module": "sherlock",
+        "action": "search",
+        "description": "Search tech news",
+        "params": {
+          "query": "latest technology news today"
+        }
+      },
+      {
+        "id": "world_news",
+        "module": "sherlock",
+        "action": "search",
+        "description": "Search world news",
+        "params": {
+          "query": "top world news today"
+        }
+      },
+      {
+        "id": "summarize",
+        "module": null,
+        "action": "llm_generate",
+        "description": "Summarize and categorize news",
+        "params": {
+          "prompt": "Summarize the news results into categories: Tech, World, Business. Keep it brief — 2-3 lines per story."
+        }
+      }
+    ],
+    "enabled": false,
+    "run_count": 0,
+    "last_run": null
+  },
+  "email_auto_sort": {
+    "name": "Email Auto-Sort",
+    "icon": "📧",
+    "description": "Check emails, categorize by priority, draft quick replies",
+    "trigger": {
+      "type": "interval",
+      "minutes": 30
+    },
+    "steps": [
+      {
+        "id": "fetch",
+        "module": "hermes",
+        "action": "check_inbox",
+        "description": "Fetch recent unread emails",
+        "params": {
+          "count": 10
+        }
+      },
+      {
+        "id": "categorize",
+        "module": null,
+        "action": "llm_generate",
+        "description": "Categorize emails by priority",
+        "params": {
+          "prompt": "Categorize these emails into: Urgent, Important, FYI, Spam. For urgent ones, suggest a 1-line reply."
+        }
+      }
+    ],
+    "enabled": false,
+    "run_count": 0,
+    "last_run": null
+  },
+  "code_health_check": {
+    "name": "Code Health Check",
+    "icon": "💻",
+    "description": "Git status, test run, error log review",
+    "trigger": {
+      "type": "daily",
+      "hour": 10,
+      "minute": 0
+    },
+    "steps": [
+      {
+        "id": "git_status",
+        "module": "hephaestus",
+        "action": "git_status",
+        "description": "Check git status",
+        "params": {}
+      },
+      {
+        "id": "run_tests",
+        "module": "hephaestus",
+        "action": "run_tests",
+        "description": "Run project tests",
+        "params": {}
+      },
+      {
+        "id": "error_review",
+        "module": null,
+        "action": "llm_generate",
+        "description": "Summarize code health",
+        "params": {
+          "prompt": "Based on git status and test results, give a brief code health summary."
+        }
+      }
+    ],
+    "enabled": false,
+    "run_count": 0,
+    "last_run": null
+  },
+  "daily_planner": {
+    "name": "Daily Planner",
+    "icon": "📅",
+    "description": "Plan your day: tasks, calendar, priorities",
+    "trigger": {
+      "type": "daily",
+      "hour": 8,
+      "minute": 30
+    },
+    "steps": [
+      {
+        "id": "tasks",
+        "module": "chronos",
+        "action": "pending_tasks",
+        "description": "Get all pending tasks",
+        "params": {}
+      },
+      {
+        "id": "calendar",
+        "module": "chronos",
+        "action": "today_events",
+        "description": "Today's calendar events",
+        "params": {}
+      },
+      {
+        "id": "plan",
+        "module": null,
+        "action": "llm_generate",
+        "description": "Create prioritized day plan",
+        "params": {
+          "prompt": "Create a prioritized daily plan based on tasks and calendar. Suggest time blocks and breaks."
+        }
+      }
+    ],
+    "enabled": false,
+    "run_count": 0,
+    "last_run": null
+  },
+  "security_patrol": {
+    "name": "Security Patrol",
+    "icon": "🛡️",
+    "description": "System health + security scan",
+    "trigger": {
+      "type": "daily",
+      "hour": 22,
+      "minute": 0
+    },
+    "steps": [
+      {
+        "id": "health",
+        "module": "sentinel",
+        "action": "system_health",
+        "description": "Check system health",
+        "params": {}
+      },
+      {
+        "id": "audit",
+        "module": "sentinel",
+        "action": "audit_recent",
+        "description": "Review recent audit logs",
+        "params": {}
+      },
+      {
+        "id": "summary",
+        "module": null,
+        "action": "llm_generate",
+        "description": "Security summary",
+        "params": {
+          "prompt": "Summarize system health and any security concerns from audit logs."
+        }
+      }
+    ],
+    "enabled": false,
+    "run_count": 0,
+    "last_run": null
+  }
+}
