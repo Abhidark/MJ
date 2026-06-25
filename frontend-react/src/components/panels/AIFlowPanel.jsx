@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import AudioSpectrum from '@/components/effects/AudioSpectrum';
 
 // ─── AI Processing Flow Visualization ───
 // Resizable right panel showing live AI pipeline stages
@@ -98,6 +99,12 @@ export default function AIFlowPanel({ onClose, modelInfo, chatStage }) {
             {modelInfo.provider?.toUpperCase()}
           </span>
         )}
+      </div>
+
+      {/* Signal Analysis — real-time voice spectrum (reacts to MJ TTS) */}
+      <div className="aiflow-signal">
+        <div className="aiflow-section-label">SIGNAL ANALYSIS</div>
+        <AudioSpectrum bars={36} height={96} />
       </div>
 
       {/* Flow pipeline */}

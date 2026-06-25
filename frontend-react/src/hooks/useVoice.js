@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import * as audioAnalyser from '@/services/audioAnalyser';
 
 /**
  * useVoice — Web Speech API recognition + TTS via backend
@@ -185,6 +186,9 @@ export function useVoice({ onTranscript, onWake } = {}) {
       const data = await res.json();
       const audio = new Audio(data.audio_url);
       audioRef.current = audio;
+      // Route the real voice stream into the shared FFT analyser so the
+      // AudioSpectrum visualizer reacts to MJ's actual speech.
+      try { audioAnalyser.attach(audio); } catch (_) {}
       setOrbState('speaking');
 
       audio.onended = () => {
