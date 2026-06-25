@@ -78,6 +78,7 @@ from intelligence.jarvis_ultimate import (
     unified_controller, pwa_manager, smart_home_hub,
     notification_center, get_jarvis_status,
     sw_manager, command_palette, theme_engine, app_launcher, voice_hub,
+    live_sync, mobile_shell, global_hotkeys, widget_framework, system_tray, boot_manager,
 )
 
 # Intelligence Layer
@@ -4659,6 +4660,282 @@ async def jarvis_voice_status():
 async def jarvis_available_voices():
     return voice_hub.get_available_voices()
 
+# ------- V25 FINAL: Live Sync, Mobile Shell, Hotkeys, Widgets, Tray, Boot -------
+
+@app.post("/jarvis/live-sync/pair")
+async def jarvis_sync_pair(req: Request):
+    body = await req.json()
+    return live_sync.pair_device(body.get("device_id", ""), body.get("name", ""),
+                                  body.get("type", "desktop"))
+
+@app.post("/jarvis/live-sync/unpair")
+async def jarvis_sync_unpair(req: Request):
+    body = await req.json()
+    return live_sync.unpair_device(body.get("device_id", ""))
+
+@app.get("/jarvis/live-sync/devices")
+async def jarvis_sync_devices():
+    return live_sync.get_paired_devices()
+
+@app.post("/jarvis/live-sync/push")
+async def jarvis_sync_push(req: Request):
+    body = await req.json()
+    return live_sync.push_sync(body.get("data_type", ""), body.get("payload", {}),
+                                body.get("source", "local"))
+
+@app.get("/jarvis/live-sync/queue")
+async def jarvis_sync_queue(limit: int = 30):
+    return live_sync.get_sync_queue(limit)
+
+@app.post("/jarvis/live-sync/resolve")
+async def jarvis_sync_resolve(req: Request):
+    body = await req.json()
+    return live_sync.resolve_conflict(body.get("conflict_id", ""), body.get("resolution", "keep-local"))
+
+@app.get("/jarvis/live-sync/conflicts")
+async def jarvis_sync_conflicts():
+    return live_sync.get_conflicts()
+
+@app.get("/jarvis/live-sync/config")
+async def jarvis_sync_config():
+    return live_sync.get_config()
+
+@app.put("/jarvis/live-sync/config")
+async def jarvis_sync_update_config(req: Request):
+    body = await req.json()
+    return live_sync.update_config(body)
+
+@app.get("/jarvis/live-sync/status")
+async def jarvis_sync_status():
+    return live_sync.get_sync_status()
+
+@app.get("/jarvis/mobile/nav")
+async def jarvis_mobile_nav():
+    return mobile_shell.get_nav()
+
+@app.post("/jarvis/mobile/nav")
+async def jarvis_mobile_set_nav(req: Request):
+    body = await req.json()
+    return mobile_shell.set_nav(body.get("items", []))
+
+@app.post("/jarvis/mobile/nav/add")
+async def jarvis_mobile_add_nav(req: Request):
+    body = await req.json()
+    return mobile_shell.add_nav_item(body.get("id", ""), body.get("label", ""),
+                                      body.get("icon", ""), body.get("route", ""))
+
+@app.post("/jarvis/mobile/nav/remove")
+async def jarvis_mobile_remove_nav(req: Request):
+    body = await req.json()
+    return mobile_shell.remove_nav_item(body.get("id", ""))
+
+@app.get("/jarvis/mobile/gestures")
+async def jarvis_mobile_gestures():
+    return mobile_shell.get_gestures()
+
+@app.post("/jarvis/mobile/gesture")
+async def jarvis_mobile_set_gesture(req: Request):
+    body = await req.json()
+    return mobile_shell.set_gesture(body.get("gesture", ""), body.get("action", ""))
+
+@app.get("/jarvis/mobile/haptics")
+async def jarvis_mobile_haptics():
+    return mobile_shell.get_haptics()
+
+@app.post("/jarvis/mobile/haptics")
+async def jarvis_mobile_set_haptics(req: Request):
+    body = await req.json()
+    return mobile_shell.set_haptics(body.get("enabled", True), body.get("intensity", "medium"))
+
+@app.get("/jarvis/mobile/layout")
+async def jarvis_mobile_layout():
+    return mobile_shell.get_layout()
+
+@app.put("/jarvis/mobile/layout")
+async def jarvis_mobile_update_layout(req: Request):
+    body = await req.json()
+    return mobile_shell.update_layout(body)
+
+@app.get("/jarvis/mobile/status")
+async def jarvis_mobile_status():
+    return mobile_shell.get_shell_status()
+
+@app.post("/jarvis/hotkeys/register")
+async def jarvis_hotkey_register(req: Request):
+    body = await req.json()
+    return global_hotkeys.register(body.get("id", ""), body.get("keys", ""),
+                                    body.get("action", ""), body.get("label", ""))
+
+@app.post("/jarvis/hotkeys/unregister")
+async def jarvis_hotkey_unregister(req: Request):
+    body = await req.json()
+    return global_hotkeys.unregister(body.get("id", ""))
+
+@app.get("/jarvis/hotkeys/bindings")
+async def jarvis_hotkey_bindings():
+    return global_hotkeys.get_bindings()
+
+@app.post("/jarvis/hotkeys/enabled")
+async def jarvis_hotkey_enabled(req: Request):
+    body = await req.json()
+    return global_hotkeys.set_enabled(body.get("enabled", True))
+
+@app.post("/jarvis/hotkeys/profile/save")
+async def jarvis_hotkey_save_profile(req: Request):
+    body = await req.json()
+    return global_hotkeys.save_profile(body.get("name", ""))
+
+@app.post("/jarvis/hotkeys/profile/load")
+async def jarvis_hotkey_load_profile(req: Request):
+    body = await req.json()
+    return global_hotkeys.load_profile(body.get("name", ""))
+
+@app.get("/jarvis/hotkeys/profiles")
+async def jarvis_hotkey_profiles():
+    return global_hotkeys.get_profiles()
+
+@app.post("/jarvis/hotkeys/profile/delete")
+async def jarvis_hotkey_delete_profile(req: Request):
+    body = await req.json()
+    return global_hotkeys.delete_profile(body.get("name", ""))
+
+@app.post("/jarvis/hotkeys/reset")
+async def jarvis_hotkey_reset():
+    return global_hotkeys.reset_defaults()
+
+@app.get("/jarvis/widgets/registry")
+async def jarvis_widget_registry():
+    return widget_framework.get_registry()
+
+@app.post("/jarvis/widgets/add")
+async def jarvis_widget_add(req: Request):
+    body = await req.json()
+    return widget_framework.add_to_dashboard(body.get("widget_id", ""),
+                                              body.get("x", 0), body.get("y", 0),
+                                              body.get("w", 0), body.get("h", 0))
+
+@app.post("/jarvis/widgets/remove")
+async def jarvis_widget_remove(req: Request):
+    body = await req.json()
+    return widget_framework.remove_from_dashboard(body.get("widget_id", ""))
+
+@app.post("/jarvis/widgets/resize")
+async def jarvis_widget_resize(req: Request):
+    body = await req.json()
+    return widget_framework.resize_widget(body.get("widget_id", ""),
+                                           body.get("w", 2), body.get("h", 2))
+
+@app.post("/jarvis/widgets/move")
+async def jarvis_widget_move(req: Request):
+    body = await req.json()
+    return widget_framework.move_widget(body.get("widget_id", ""),
+                                         body.get("x", 0), body.get("y", 0))
+
+@app.get("/jarvis/widgets/layout")
+async def jarvis_widget_layout():
+    return widget_framework.get_layout()
+
+@app.post("/jarvis/widgets/layout/save")
+async def jarvis_widget_save_layout(req: Request):
+    body = await req.json()
+    return widget_framework.save_layout(body.get("name", ""))
+
+@app.post("/jarvis/widgets/layout/load")
+async def jarvis_widget_load_layout(req: Request):
+    body = await req.json()
+    return widget_framework.load_layout(body.get("name", ""))
+
+@app.get("/jarvis/widgets/layouts")
+async def jarvis_widget_saved_layouts():
+    return widget_framework.get_saved_layouts()
+
+@app.post("/jarvis/widgets/custom/register")
+async def jarvis_widget_register_custom(req: Request):
+    body = await req.json()
+    return widget_framework.register_custom_widget(
+        body.get("id", ""), body.get("name", ""), body.get("category", "custom"),
+        body.get("min_w", 1), body.get("min_h", 1),
+        body.get("default_w", 2), body.get("default_h", 2))
+
+@app.post("/jarvis/widgets/custom/unregister")
+async def jarvis_widget_unregister_custom(req: Request):
+    body = await req.json()
+    return widget_framework.unregister_custom_widget(body.get("id", ""))
+
+@app.get("/jarvis/tray/menu")
+async def jarvis_tray_menu():
+    return system_tray.get_menu()
+
+@app.post("/jarvis/tray/menu/add")
+async def jarvis_tray_add_menu(req: Request):
+    body = await req.json()
+    return system_tray.add_menu_item(body.get("id", ""), body.get("label", ""),
+                                      body.get("action", ""), body.get("icon", ""))
+
+@app.post("/jarvis/tray/menu/remove")
+async def jarvis_tray_remove_menu(req: Request):
+    body = await req.json()
+    return system_tray.remove_menu_item(body.get("id", ""))
+
+@app.post("/jarvis/tray/badge")
+async def jarvis_tray_badge(req: Request):
+    body = await req.json()
+    return system_tray.set_badge(body.get("visible", False), body.get("count", 0))
+
+@app.post("/jarvis/tray/tooltip")
+async def jarvis_tray_tooltip(req: Request):
+    body = await req.json()
+    return system_tray.set_tooltip(body.get("text", ""))
+
+@app.post("/jarvis/tray/minimize")
+async def jarvis_tray_minimize():
+    return system_tray.minimize_to_tray()
+
+@app.post("/jarvis/tray/restore")
+async def jarvis_tray_restore():
+    return system_tray.restore_from_tray()
+
+@app.get("/jarvis/tray/status")
+async def jarvis_tray_status():
+    return system_tray.get_tray_status()
+
+@app.get("/jarvis/boot/sequence")
+async def jarvis_boot_sequence():
+    return boot_manager.get_sequence()
+
+@app.post("/jarvis/boot/step/add")
+async def jarvis_boot_add_step(req: Request):
+    body = await req.json()
+    return boot_manager.add_boot_step(body.get("id", ""), body.get("name", ""),
+                                       body.get("order", 99), body.get("required", False),
+                                       body.get("timeout_sec", 5))
+
+@app.post("/jarvis/boot/step/remove")
+async def jarvis_boot_remove_step(req: Request):
+    body = await req.json()
+    return boot_manager.remove_boot_step(body.get("id", ""))
+
+@app.post("/jarvis/boot/step/reorder")
+async def jarvis_boot_reorder(req: Request):
+    body = await req.json()
+    return boot_manager.reorder(body.get("id", ""), body.get("order", 1))
+
+@app.post("/jarvis/boot/run")
+async def jarvis_boot_run():
+    return boot_manager.run_boot()
+
+@app.post("/jarvis/boot/auto-start")
+async def jarvis_boot_auto_start(req: Request):
+    body = await req.json()
+    return boot_manager.set_auto_start(body.get("enabled", True))
+
+@app.get("/jarvis/boot/log")
+async def jarvis_boot_log(limit: int = 10):
+    return boot_manager.get_boot_log(limit)
+
+@app.get("/jarvis/boot/status")
+async def jarvis_boot_status():
+    return boot_manager.get_boot_status()
 
 # SPA catch-all: serve React index.html for client-side routes
 @app.get("/{path:path}")

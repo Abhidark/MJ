@@ -818,4 +818,85 @@ export const jarvisExtendedAPI = {
   getAvailableVoices: () => api.get('/jarvis/voice/voices'),
 };
 
+// ===== Live Sync API (V25 → 100%) =====
+export const liveSyncAPI = {
+  pairDevice: (deviceId, name, type) => api.post('/jarvis/live-sync/pair', { device_id: deviceId, name, type }),
+  unpairDevice: (deviceId) => api.post('/jarvis/live-sync/unpair', { device_id: deviceId }),
+  getDevices: () => api.get('/jarvis/live-sync/devices'),
+  pushSync: (dataType, payload, source) => api.post('/jarvis/live-sync/push', { data_type: dataType, payload, source }),
+  getQueue: (limit) => api.get(`/jarvis/live-sync/queue?limit=${limit || 30}`),
+  resolveConflict: (conflictId, resolution) => api.post('/jarvis/live-sync/resolve', { conflict_id: conflictId, resolution }),
+  getConflicts: () => api.get('/jarvis/live-sync/conflicts'),
+  getConfig: () => api.get('/jarvis/live-sync/config'),
+  updateConfig: (data) => api.put('/jarvis/live-sync/config', data),
+  getStatus: () => api.get('/jarvis/live-sync/status'),
+};
+
+// ===== Mobile Shell API (V25 → 100%) =====
+export const mobileShellAPI = {
+  getNav: () => api.get('/jarvis/mobile/nav'),
+  setNav: (items) => api.post('/jarvis/mobile/nav', { items }),
+  addNavItem: (id, label, icon, route) => api.post('/jarvis/mobile/nav/add', { id, label, icon, route }),
+  removeNavItem: (id) => api.post('/jarvis/mobile/nav/remove', { id }),
+  getGestures: () => api.get('/jarvis/mobile/gestures'),
+  setGesture: (gesture, action) => api.post('/jarvis/mobile/gesture', { gesture, action }),
+  getHaptics: () => api.get('/jarvis/mobile/haptics'),
+  setHaptics: (enabled, intensity) => api.post('/jarvis/mobile/haptics', { enabled, intensity }),
+  getLayout: () => api.get('/jarvis/mobile/layout'),
+  updateLayout: (data) => api.put('/jarvis/mobile/layout', data),
+  getStatus: () => api.get('/jarvis/mobile/status'),
+};
+
+// ===== Global Hotkeys API (V25 → 100%) =====
+export const hotkeysAPI = {
+  register: (id, keys, action, label) => api.post('/jarvis/hotkeys/register', { id, keys, action, label }),
+  unregister: (id) => api.post('/jarvis/hotkeys/unregister', { id }),
+  getBindings: () => api.get('/jarvis/hotkeys/bindings'),
+  setEnabled: (enabled) => api.post('/jarvis/hotkeys/enabled', { enabled }),
+  saveProfile: (name) => api.post('/jarvis/hotkeys/profile/save', { name }),
+  loadProfile: (name) => api.post('/jarvis/hotkeys/profile/load', { name }),
+  getProfiles: () => api.get('/jarvis/hotkeys/profiles'),
+  deleteProfile: (name) => api.post('/jarvis/hotkeys/profile/delete', { name }),
+  resetDefaults: () => api.post('/jarvis/hotkeys/reset'),
+};
+
+// ===== Widget Framework API (V25 → 100%) =====
+export const widgetAPI = {
+  getRegistry: () => api.get('/jarvis/widgets/registry'),
+  addWidget: (widgetId, x, y, w, h) => api.post('/jarvis/widgets/add', { widget_id: widgetId, x, y, w, h }),
+  removeWidget: (widgetId) => api.post('/jarvis/widgets/remove', { widget_id: widgetId }),
+  resizeWidget: (widgetId, w, h) => api.post('/jarvis/widgets/resize', { widget_id: widgetId, w, h }),
+  moveWidget: (widgetId, x, y) => api.post('/jarvis/widgets/move', { widget_id: widgetId, x, y }),
+  getLayout: () => api.get('/jarvis/widgets/layout'),
+  saveLayout: (name) => api.post('/jarvis/widgets/layout/save', { name }),
+  loadLayout: (name) => api.post('/jarvis/widgets/layout/load', { name }),
+  getSavedLayouts: () => api.get('/jarvis/widgets/layouts'),
+  registerCustom: (id, name, category, minW, minH, defaultW, defaultH) => api.post('/jarvis/widgets/custom/register', { id, name, category, min_w: minW, min_h: minH, default_w: defaultW, default_h: defaultH }),
+  unregisterCustom: (id) => api.post('/jarvis/widgets/custom/unregister', { id }),
+};
+
+// ===== System Tray API (V25 → 100%) =====
+export const systemTrayAPI = {
+  getMenu: () => api.get('/jarvis/tray/menu'),
+  addMenuItem: (id, label, action, icon) => api.post('/jarvis/tray/menu/add', { id, label, action, icon }),
+  removeMenuItem: (id) => api.post('/jarvis/tray/menu/remove', { id }),
+  setBadge: (visible, count) => api.post('/jarvis/tray/badge', { visible, count }),
+  setTooltip: (text) => api.post('/jarvis/tray/tooltip', { text }),
+  minimize: () => api.post('/jarvis/tray/minimize'),
+  restore: () => api.post('/jarvis/tray/restore'),
+  getStatus: () => api.get('/jarvis/tray/status'),
+};
+
+// ===== Boot Manager API (V25 → 100%) =====
+export const bootManagerAPI = {
+  getSequence: () => api.get('/jarvis/boot/sequence'),
+  addStep: (id, name, order, required, timeoutSec) => api.post('/jarvis/boot/step/add', { id, name, order, required, timeout_sec: timeoutSec }),
+  removeStep: (id) => api.post('/jarvis/boot/step/remove', { id }),
+  reorder: (id, order) => api.post('/jarvis/boot/step/reorder', { id, order }),
+  runBoot: () => api.post('/jarvis/boot/run'),
+  setAutoStart: (enabled) => api.post('/jarvis/boot/auto-start', { enabled }),
+  getLog: (limit) => api.get(`/jarvis/boot/log?limit=${limit || 10}`),
+  getStatus: () => api.get('/jarvis/boot/status'),
+};
+
 export default api;
