@@ -4,6 +4,7 @@ Pipeline orchestrator, parallel execution, peer-to-peer messaging,
 agent groups, and dependency-based task graphs.
 """
 
+import os
 import json
 import time
 import asyncio
@@ -37,6 +38,74 @@ def _save_json(path, data):
         path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
         pass
+
+
+# ========================
+# REAL LLM STAGE EXECUTOR
+# ========================
+# Used when a pipeline stage has no matching registered agent module
+# (e.g. the "zeus" summarize stage, or an agent that failed to load).
+# Instead of returning a "[Simulated]" placeholder, we run real inference
+# via Groq (cloud — works on laptop) and fall back to local Ollama.
+
+import httpx as _httpx
+
+OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
+
+
+def _llm_complete_sync(prompt: str, system: str = "", max_tokens: int = 700,
+                       timeout: float = 30.0) -> Optional[str]:
+    """
+    Synchronous LLM completion. Tries Groq first (cloud, fast, no GPU),
+    then local Ollama. Returns generated text, or None if no provider works.
+    Safe to call from worker threads and (via asyncio.to_thread) from async code.
+    """
+    # ---- 1. Groq (cloud) ----
+    try:
+        from intelligence.groq_provider import _load_api_key, GROQ_API_URL, GROQ_MODELS
+        key = _load_api_key()
+        if key:
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            payload = {
+                "model": GROQ_MODELS[0],
+                "messages": messages,
+                "temperature": 0.6,
+                "max_tokens": max_tokens,
+                "stream": False,
+            }
+            headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+            with _httpx.Client(timeout=timeout) as client:
+                resp = client.post(GROQ_API_URL, json=payload, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if text and text.strip():
+                        return text.strip()
+    except Exception as e:
+        logger.debug(f"Groq stage completion failed: {e}")
+
+    # ---- 2. Ollama (local GPU) ----
+    try:
+        full_prompt = (f"{system}\n\n{prompt}" if system else prompt)
+        model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+        with _httpx.Client(timeout=timeout) as client:
+            resp = client.post(OLLAMA_GENERATE_URL, json={
+                "model": model,
+                "prompt": full_prompt,
+                "stream": False,
+                "options": {"num_predict": max_tokens},
+            })
+            if resp.status_code == 200:
+                text = resp.json().get("response", "")
+                if text and text.strip():
+                    return text.strip()
+    except Exception as e:
+        logger.debug(f"Ollama stage completion failed: {e}")
+
+    return None
 
 
 # ========================
@@ -365,8 +434,62 @@ class PipelineOrchestrator:
 
     # ---- EXECUTION ----
 
+    def _build_stage_input(self, stage: dict, context: dict) -> str:
+        """Build the natural-language input for a stage from its action,
+        description, and any upstream stage outputs in the shared context."""
+        action = stage.get("action", "")
+        description = stage.get("description", "") or stage.get("id", "")
+        text = description
+        if action:
+            text = f"{description} (action: {action})"
+
+        # Append upstream results so the stage has the data it depends on
+        upstream = []
+        for dep in stage.get("depends_on", []):
+            prior = context.get(f"stage_{dep}")
+            if prior:
+                upstream.append(f"- {dep}: {str(prior)[:800]}")
+        if upstream:
+            text += "\n\nInput from previous stages:\n" + "\n".join(upstream)
+        return text
+
+    def _execute_via_llm(self, stage: dict, agent_name: str, stage_input: str) -> dict:
+        """Run a stage with a real LLM, role-played as the target agent.
+        Returns a result dict (status 'completed' with source 'llm', or 'simulated')."""
+        result = {
+            "stage_id": stage["id"],
+            "agent": agent_name or "llm",
+            "description": stage.get("description", ""),
+            "status": "pending",
+        }
+        system = (
+            f"You are '{agent_name or 'an AI agent'}', a specialized agent inside the MJ "
+            f"multi-agent assistant. Perform the requested step concisely and concretely. "
+            f"Action requested: {stage.get('action', 'process')}. "
+            f"Return only the useful result of this step — no preamble."
+        )
+        text = _llm_complete_sync(stage_input, system=system, max_tokens=700)
+        if text:
+            result["status"] = "completed"
+            result["source"] = "llm"
+            result["response"] = text[:1500]
+        else:
+            # Last resort only when no LLM provider is reachable at all
+            result["status"] = "simulated"
+            result["source"] = "placeholder"
+            result["response"] = f"[Simulated] {stage.get('description', stage['id'])}"
+            result["reason"] = "No agent module and no LLM provider (Groq/Ollama) available"
+        return result
+
     def _execute_stage(self, stage: dict, modules: dict, context: dict) -> dict:
-        """Execute a single pipeline stage."""
+        """Execute a single pipeline stage.
+
+        Resolution order:
+          1. Real registered agent module (if enabled)
+          2. Capability-based remap to another registered module that can do it
+          3. Real LLM inference (role-played as the agent)  ← no more fake [Simulated]
+          4. Placeholder simulation (only if no LLM provider is reachable)
+        """
         result = {
             "stage_id": stage["id"],
             "agent": stage.get("agent", "unknown"),
@@ -375,25 +498,52 @@ class PipelineOrchestrator:
         }
 
         agent_name = stage.get("agent")
+        stage_input = self._build_stage_input(stage, context)
+
+        # ---- 1. Direct registered module ----
         if agent_name and modules and agent_name in modules:
             mod = modules[agent_name]
             if hasattr(mod, "enabled") and mod.enabled:
                 try:
-                    resp = mod.execute(stage.get("description", ""), context)
+                    resp = mod.execute(stage_input, context)
                     result["status"] = "completed"
-                    result["response"] = resp.get("response", "")[:500]
+                    result["source"] = "module"
+                    result["response"] = (resp.get("response", "") or "")[:1500]
                     result["data"] = resp.get("data")
+                    return result
                 except Exception as e:
                     result["status"] = "error"
                     result["error"] = str(e)[:200]
-            else:
-                result["status"] = "skipped"
-                result["reason"] = f"Agent '{agent_name}' not available"
-        else:
-            result["status"] = "simulated"
-            result["response"] = f"[Simulated] {stage.get('description', stage['id'])}"
+                    return result
+            # Module exists but disabled → fall through to capability remap / LLM
 
-        return result
+        # ---- 2. Capability-based remap to a capable registered module ----
+        if modules:
+            wanted_caps = self.AGENT_CAPABILITIES.get((agent_name or "").lower(), [])
+            action = (stage.get("action") or "").lower()
+            for cap in ([action] + wanted_caps):
+                if not cap:
+                    continue
+                hit = self.find_capable_agent(cap).get("agents", [])
+                for cand in hit:
+                    cname = cand["agent"]
+                    if cname in modules and cname != agent_name:
+                        cmod = modules[cname]
+                        if getattr(cmod, "enabled", False):
+                            try:
+                                resp = cmod.execute(stage_input, context)
+                                result["status"] = "completed"
+                                result["source"] = "module_remap"
+                                result["agent"] = cname
+                                result["original_agent"] = agent_name
+                                result["response"] = (resp.get("response", "") or "")[:1500]
+                                result["data"] = resp.get("data")
+                                return result
+                            except Exception:
+                                pass  # try next candidate / fall through to LLM
+
+        # ---- 3 & 4. Real LLM, else placeholder ----
+        return self._execute_via_llm(stage, agent_name, stage_input)
 
     async def run_pipeline(self, pipeline_id: str, modules: dict = None, context: dict = None) -> dict:
         """Run a pipeline with dependency resolution and parallel execution."""
@@ -424,9 +574,12 @@ class PipelineOrchestrator:
                     if result.get("response"):
                         shared_context[f"stage_{result['stage_id']}"] = result["response"]
 
-            # Run sequential stages in order
+            # Run sequential stages in order. Offload to a worker thread so the
+            # synchronous LLM/module calls don't block the asyncio event loop.
             for stage in sequential_stages:
-                result = self._execute_stage(stage, modules, shared_context)
+                result = await asyncio.to_thread(
+                    self._execute_stage, stage, modules, dict(shared_context)
+                )
                 all_results.append(result)
                 if result.get("response"):
                     shared_context[f"stage_{result['stage_id']}"] = result["response"]
@@ -436,8 +589,12 @@ class PipelineOrchestrator:
         pipeline["last_run"] = datetime.now().isoformat()
         self._save_pipelines()
 
-        completed = sum(1 for r in all_results if r["status"] in ("completed", "simulated"))
-        self._log(pipeline_id, "completed", all_results, duration)
+        # Real completions = executed by a module or a real LLM.
+        completed = sum(1 for r in all_results if r["status"] == "completed")
+        simulated = sum(1 for r in all_results if r["status"] == "simulated")
+        errored = sum(1 for r in all_results if r["status"] == "error")
+        overall = "completed" if errored == 0 else "partial"
+        self._log(pipeline_id, overall, all_results, duration)
 
         return {
             "success": True,
@@ -445,6 +602,8 @@ class PipelineOrchestrator:
             "waves": len(waves),
             "stages_total": len(all_results),
             "stages_completed": completed,
+            "stages_simulated": simulated,
+            "stages_errored": errored,
             "duration": round(duration, 2),
             "results": all_results,
         }
