@@ -19,6 +19,10 @@ import Scanline from '@/components/effects/Scanline';
 import ToastContainer from '@/components/ui/ToastContainer';
 import ProcessPanel from '@/components/panels/ProcessPanel';
 import ErrorPanel from '@/components/panels/ErrorPanel';
+import HotkeysPanel from '@/components/panels/HotkeysPanel';
+import WidgetManagerPanel from '@/components/panels/WidgetManagerPanel';
+import SystemTrayPanel from '@/components/panels/SystemTrayPanel';
+import EventLogPanel from '@/components/panels/EventLogPanel';
 
 function ModulesView() {
   return (
@@ -42,6 +46,10 @@ function AppLayout() {
   const [aiFlowOpen, setAiFlowOpen] = useState(false);
   const [processOpen, setProcessOpen] = useState(false);
   const [errorPanelOpen, setErrorPanelOpen] = useState(false);
+  const [hotkeysOpen, setHotkeysOpen] = useState(false);
+  const [widgetsOpen, setWidgetsOpen] = useState(false);
+  const [trayOpen, setTrayOpen] = useState(false);
+  const [eventLogOpen, setEventLogOpen] = useState(false);
 
   if (checking) {
     return (
@@ -67,6 +75,10 @@ function AppLayout() {
         onOrbSettings={() => setSettingsOpen(true)}
         onRoadmap={() => setRoadmapOpen(true)}
         onSecurity={() => setSecurityOpen(true)}
+        onHotkeys={() => setHotkeysOpen(true)}
+        onWidgets={() => setWidgetsOpen(true)}
+        onTray={() => setTrayOpen(true)}
+        onEventLog={() => setEventLogOpen(true)}
       />
 
       <MainContent isResizing={isResizing}>
@@ -110,6 +122,10 @@ function AppLayout() {
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
       {processOpen && <ProcessPanel onClose={() => setProcessOpen(false)} />}
       {errorPanelOpen && <ErrorPanel onClose={() => setErrorPanelOpen(false)} />}
+      {hotkeysOpen && <HotkeysPanel onClose={() => setHotkeysOpen(false)} />}
+      {widgetsOpen && <WidgetManagerPanel onClose={() => setWidgetsOpen(false)} />}
+      {trayOpen && <SystemTrayPanel onClose={() => setTrayOpen(false)} />}
+      {eventLogOpen && <EventLogPanel onClose={() => setEventLogOpen(false)} />}
       <ToastContainer />
     </>
   );

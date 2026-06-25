@@ -183,7 +183,7 @@ function formatUptime(seconds) {
 // ═══════════════════════════════════════════════
 // MAIN SIDEBAR EXPORT
 // ═══════════════════════════════════════════════
-export default function Sidebar({ width, iconsOnly, isResizing, onResizeStart, onOrbSettings, onRoadmap, onSecurity }) {
+export default function Sidebar({ width, iconsOnly, isResizing, onResizeStart, onOrbSettings, onRoadmap, onSecurity, onHotkeys, onWidgets, onTray, onEventLog }) {
   const { stats } = useSystemStats(3000);
 
   const cpu = stats?.cpu_percent ?? 0;
@@ -231,6 +231,10 @@ export default function Sidebar({ width, iconsOnly, isResizing, onResizeStart, o
         <HudButton icon={'⚙'} label="ORB SETTINGS" subtext="Configure" onClick={onOrbSettings} />
         <HudButton icon={'\u{1F680}'} label="ROADMAP" subtext="V1 → V25" subtextColor="#ffd900" onClick={onRoadmap} />
         <HudButton icon={'\u{1F512}'} label="SECURITY" subtext="Logout / Password" onClick={onSecurity} />
+        <HudButton icon={'\u{2328}'} label="HOTKEYS" subtext="Shortcuts" onClick={onHotkeys} />
+        <HudButton icon={'\u{1F4E6}'} label="WIDGETS" subtext="Dashboard" onClick={onWidgets} />
+        <HudButton icon={'\u{1F5D4}'} label="TRAY" subtext="System Tray" onClick={onTray} />
+        <HudButton icon={'\u{1F4CB}'} label="EVENT LOG" subtext="System Events" onClick={onEventLog} />
 
         <div className="hud-divider" />
 
